@@ -16,24 +16,37 @@
 #include <Arduino.h>
 #include <Encoder.h>
 
-class Motors
+class DCmotor
 {
     public:
 
-        /*
-        enum class Direction { //create "Direction" class?
+        //create "Direction" class?
+        enum class Direction { 
             FORWARD,
             BACKWARD,
             LEFT,
             RIGHT
         };
-        */
+      
 
-        Motors(int in1, int int2, int pwm, bool invert, 
+        DCmotor(int in1, int int2, int pwm, bool invert, 
             int encoder_pin1, int encoder_pin2, float d);
 
-        Motors(int in1, int int2, int pwm, bool invert, 
+        DCmotor(int in1, int int2, int pwm, bool invert, 
             int encoder_pin1, int encoder_pin2); //without diameter
+        
+        ~DCmotor();    
+
+        
+        void begin();
+        void move(int speed, Direction direction);
+        void stop();
+        int getEncoderCount();
+        double getPRotation(); // Position Rotation
+        float getPMeters(); // Position Meters
+
+
+
 
     private:
     // change to class/header (constants/motor)
@@ -43,8 +56,12 @@ class Motors
         int encoder_pin1;
         int encoder_pin2;
         bool inverted;
+        float diameter;
+
+        Direction current;
         
         Encoder* encoder_;
+    
 
 
 
