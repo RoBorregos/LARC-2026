@@ -10,32 +10,30 @@
  * @date 2026-01-14
  */
 
-#ifdef MOTORS_HPP
+#ifndef MOTORS_HPP
 #define MOTORS_HPP
 
 #include <Arduino.h>
 #include <Encoder.h>
 
-class DCmotor
+class DCMotor
 {
     public:
 
         //create "Direction" class?
         enum class Direction { 
             FORWARD,
-            BACKWARD,
-            LEFT,
-            RIGHT
+            BACKWARD
         };
       
 
-        DCmotor(int in1, int int2, int pwm, bool invert, 
+        DCMotor(int in1, int in2, int pwm, bool invert, 
             int encoder_pin1, int encoder_pin2, float d);
 
-        DCmotor(int in1, int int2, int pwm, bool invert, 
+        DCMotor(int in1, int in2, int pwm, bool invert, 
             int encoder_pin1, int encoder_pin2); //without diameter
         
-        ~DCmotor();    
+        ~DCMotor();    
 
         
         void begin();
@@ -58,11 +56,11 @@ class DCmotor
         bool inverted;
         float diameter;
 
-        Direction current;
+        Direction current = Direction::FORWARD;
         
-        Encoder* encoder_;
+        Encoder* encoder_ = nullptr;
     
-
+        int rotation_factor = 473; //adjust
 
 
 };
