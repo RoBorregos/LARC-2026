@@ -7,7 +7,7 @@
  *
  * @version 0.1
  * 
- * @date 2026-01-14
+ * @date 2026-01-12
  */
 
 #ifndef MOTORS_HPP
@@ -51,8 +51,8 @@ class DCMotor
         int in1_pin;
         int in2_pin;
         int pwm_pin;
-        int encoder_pin1;
-        int encoder_pin2;
+        int encoder_pin1_;
+        int encoder_pin2_;
         bool inverted;
         float diameter;
 
