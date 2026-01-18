@@ -9,11 +9,14 @@
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
 
+#include <Arduino.h>
 #include <math.h>
 
 namespace Constants
 {
-    
+    // For kinematics ("omni_motors") class
+    static constexpr float DEG2RAD = PI / 180.0f;
+
 }
 
 #endif

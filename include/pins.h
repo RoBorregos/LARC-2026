@@ -1,7 +1,7 @@
 #ifndef Pins_h
 #define Pins_h
 
-#include <Arduino.h>  // preguntar
+#include <Arduino.h>
 
 namespace Pins
 {
