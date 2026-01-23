@@ -1,13 +1,15 @@
 /*
  * @file motors.hpp
  *
- * @author Ximena Patricia Garcia Magdaleno
+ * @author Ximena Patricia García Magdaleno
  * 
  * @brief Header file for the Omnidirectional Motor class, which is the class for the Omnidirectional motor.
- *
+ * 
  * @version 0.1
  * 
  * @date 2026-01-12
+ * 
+ * 
  */
 
 #ifndef MOTORS_HPP
@@ -30,15 +32,23 @@ class DCMotor
         DCMotor(int in1, int in2, int pwm, bool invert, 
             int encoder_pin1, int encoder_pin2, float d);
 
+
+
         DCMotor(int in1, int in2, int pwm, bool invert, 
             int encoder_pin1, int encoder_pin2); //without diameter
         
+
+
         ~DCMotor();    
 
         
+        
+
         void begin();
         void move(int speed, Direction direction);
+        void move(int speed);
         void stop();
+        void brakeStop();
         int getEncoderCount();
         double getPRotation(); // Position Rotation
         float getPMeters(); // Position Meters
@@ -47,6 +57,7 @@ class DCMotor
 
 
     private:
+    
     // change to class/header (constants/motor)
         int in1_pin;
         int in2_pin;
