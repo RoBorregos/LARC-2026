@@ -13,6 +13,7 @@ DCMotor::DCMotor(int in1, int in2, int pwm, bool invert,
             int encoder_pin1, int encoder_pin2, float d)
         : diameter(d)
 {
+
     in1_pin = in1;
     in2_pin = in2;
     pwm_pin = pwm;
@@ -22,14 +23,13 @@ DCMotor::DCMotor(int in1, int in2, int pwm, bool invert,
 
     inverted = invert;
 
-
-
 }
 
 
 DCMotor::DCMotor(int in1, int in2, int pwm, bool invert, 
             int encoder_pin1, int encoder_pin2)
 {
+
     in1_pin = in1;
     in2_pin = in2;
     pwm_pin = pwm;
@@ -37,6 +37,7 @@ DCMotor::DCMotor(int in1, int in2, int pwm, bool invert,
     encoder_pin2_ = encoder_pin2;
 
     inverted = invert;
+    
 }
 
 DCMotor::~DCMotor()
@@ -63,6 +64,7 @@ void DCMotor::begin()
 
     encoder_ = new Encoder(encoder_pin1_, encoder_pin2_);
 }
+
 
 void DCMotor::move(int speed, Direction direction)
 {
@@ -128,10 +130,12 @@ int DCMotor::getEncoderCount()
     return (encoder_ != nullptr) ? (int)encoder_->read() : 0;
 }
 
+
 double DCMotor::getPRotation()
 {
     return (encoder_ != nullptr) ? (double)encoder_->read() / rotation_factor : 0.0;
 }
+
 
 float DCMotor::getPMeters()
 {

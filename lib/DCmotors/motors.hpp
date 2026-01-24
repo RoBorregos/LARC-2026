@@ -27,18 +27,18 @@ class DCMotor
             FORWARD,
             BACKWARD
         };
-      
+        
 
         DCMotor(int in1, int in2, int pwm, bool invert, 
             int encoder_pin1, int encoder_pin2, float d);
 
-
-
+        
+        
         DCMotor(int in1, int in2, int pwm, bool invert, 
             int encoder_pin1, int encoder_pin2); //without diameter
         
-
-
+        
+        
         ~DCMotor();    
 
         
@@ -53,7 +53,7 @@ class DCMotor
         double getPRotation(); // Position Rotation
         float getPMeters(); // Position Meters
 
-
+            
 
 
     private:
