@@ -14,8 +14,22 @@
 
 namespace Constants
 {
-    // For kinematics ("omni_motors") class
-    static constexpr float DEG2RAD = PI / 180.0f;
+    namespace SystemConstants
+    {
+        constexpr float kUpdateInterval = 20.0;
+    }
+
+    namespace DriveConstants
+    {
+        // "omni_motors" class
+    static constexpr float kDEG2RAD = PI / 180.0f;
+
+    constexpr float kWheelDiameter = 0.109f;
+    constexpr float kWheelRaius = kWheelDiameter/2.0;
+    constexpr float kWheelCircumference = 2*M_PI*kWheelRaius;
+
+    
+    }
 
 }
 
