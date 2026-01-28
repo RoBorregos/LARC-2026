@@ -1,11 +1,3 @@
-/*
- * @file motors.cpp
- * @author Ximena Patricia García Magdaleno
- * @brief Omnidirectional Motor class
- * @version 0.1
- * @date 2026-01-12
- */
-
  /*
  * @file bno.cpp
  * @author Ximena Patricia García Magdaleno
@@ -22,14 +14,15 @@ BNO::BNO() : bno(55, 0x28, &Wire), initialized(false)
 
 bool BNO::begin()
 {
-    Serial.println("Initializing BNO055");
+    //To begin BNO
+    Serial.println("BEGIN >>>> BNO055 <<<<");
 
     while (!bno.begin())
     {
-        Serial.println("Failed to initialize BNO055");
+        Serial.println("Failed to BEGIN >>>> BNO055 <<<<");
         delay(1000);
     }
-    Serial.println("BNO055 initialized successfully");
+    Serial.println(">>>> BNO055 <<<< BEGINED successfully");
 
     delay(1000); // Give the sensor time to initialize
     bno.setExtCrystalUse(true);
@@ -37,8 +30,7 @@ bool BNO::begin()
     return true;
 }
 
-/// @brief Update the BNO sensor
-/// @note Call this function in the main loop
+// Call this function in the main loop
 void BNO::update()
 {
     if (!initialized)
@@ -46,16 +38,17 @@ void BNO::update()
     bno.getEvent(&event);
 }
 
+
 float BNO::wrapAngle(float angle) const
 {
-    // Normalize angle to [0, 360)
+    // Normalize angle to [0, 360) : range
     angle = fmod(angle, 360.0f);
     if (angle < 0)
     {
         angle += 360.0f;
     }
 
-    // Wrap to [-180, 180]
+    // Wrap to [-180, 180] : shortest way
     if (angle > 180.0f)
     {
         angle -= 360.0f;
@@ -97,6 +90,7 @@ std::tuple<float, float, float> BNO::getLinealAcceleration()
 
 void BNO::getAngular()
 {
+    //Get on screen Yaw, Roll and Pitch values:
     update();
 
     float current_yaw = getYaw();
@@ -118,36 +112,38 @@ void BNO::getAngular()
 
 void BNO::runCalibration()
 {
+    // Get on screen values and calibration status >>> diagnosis <<<
     Serial.println("====== BNO055 SENSOR TEST ======");
 
     if (!initialized)
     {
-        Serial.println("ERROR: BNO055 not initialized! Call begin() first.");
+        Serial.println("ERROR: BNO055 not initialized! Call >> begin() << first.");
         return;
     }
 
     Serial.println("1. SENSOR CONNECTION:");
     Serial.println("   BNO055 successfully initialized");
-    Serial.print("   Temperature: ");
-    Serial.print(bno.getTemp());
-    Serial.println("°C");
 
     Serial.println("\n2. CALIBRATION STATUS:");
     uint8_t system_cal, gyro_cal, accel_cal, mag_cal;
     bno.getCalibration(&system_cal, &gyro_cal, &accel_cal, &mag_cal);
     
-    Serial.print("   System: ");
+    Serial.print("   System: "); //print on screen vlues
     Serial.print(system_cal);
     Serial.println("/3");
+
     Serial.print("   Gyroscope: ");
     Serial.print(gyro_cal);
     Serial.println("/3");
+
     Serial.print("   Accelerometer: ");
     Serial.print(accel_cal);
     Serial.println("/3");
+    
     Serial.print("   Magnetometer: ");
     Serial.print(mag_cal);
-    Serial.println("/3");
+    Serial.println("/3"); //print on screen vaules
+
 
     if (system_cal < 3)
     {
@@ -156,9 +152,10 @@ void BNO::runCalibration()
     }
     else
     {
-        Serial.println("   ✓ Sensor fully calibrated!");
+        Serial.println(" Sensor fully calibrated! :D");
     }
 
+    //Print Test (10 times): 
     Serial.println("\n3. ORIENTATION TEST (10 readings):");
     Serial.println("   Reading | Yaw (Z) | Roll (Y) | Pitch (X) | Temp(°C)");
     Serial.println("   --------|---------|----------|-----------|----------");
@@ -170,7 +167,6 @@ void BNO::runCalibration()
         float yaw = getYaw();
         float roll = getRoll();
         float pitch = getPitch();
-        int8_t temp = bno.getTemp();
 
         Serial.print("      ");
         Serial.print(i + 1);
@@ -180,11 +176,9 @@ void BNO::runCalibration()
         Serial.print(roll, 2);
         Serial.print("°    | ");
         Serial.print(pitch, 2);
-        Serial.print("°     | ");
-        Serial.print(temp);
-        Serial.println("°C");
+        Serial.println("°     | ");
 
-        delay(500);
+        delay(500); 
     }
 
     Serial.println("\n4. ANGULAR MOVEMENT TEST:");
@@ -293,5 +287,5 @@ void BNO::runCalibration()
 
     Serial.println("\n====== BNO055 TEST COMPLETED ======");
     Serial.println("Test finished! Check results above.\n");
-}
+} //Ends the Calribation Test
 

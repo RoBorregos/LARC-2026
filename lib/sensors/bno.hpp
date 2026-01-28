@@ -30,7 +30,7 @@ public:
     float getRoll() const;
     float getPitch() const;
     float getYaw() const;
-    void runCalibration();
+    void runCalibration(); //get a "diagnosis" on screen
     void getAngular();
     std::tuple<float, float, float> getLinealAcceleration();
 
