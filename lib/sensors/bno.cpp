@@ -1,10 +1,10 @@
- /*
+/*
  * @file bno.cpp
  * @author Ximena Patricia García Magdaleno
  * @brief Source file for the BNO class.
  * @version 0.1
  * @date 2026-01-12
- */
+*/
 
 #include "bno.hpp"
 
@@ -24,7 +24,7 @@ bool BNO::begin()
     }
     Serial.println(">>>> BNO055 <<<< BEGINED successfully");
 
-    delay(1000); // Give the sensor time to initialize
+    delay(2000); // Give the sensor time to initialize
     bno.setExtCrystalUse(true);
     initialized = true;
     return true;
@@ -33,8 +33,9 @@ bool BNO::begin()
 // Call this function in the main loop
 void BNO::update()
 {
-    if (!initialized)
+    if (!initialized) //if BNO is not initialized 
         return;
+
     bno.getEvent(&event);
 }
 
@@ -62,10 +63,11 @@ float BNO::wrapAngle(float angle) const
 }
 
 
-
 float BNO::getYaw() const
 {
-    return -wrapAngle(event.orientation.x);
+    float yawDeg;
+    yawDeg = -wrapAngle(event.orientation.x);
+    return yawDeg * (M_PI/180.0f);// convertimos a radianes
 }
 
 float BNO::getRoll() const
@@ -79,7 +81,7 @@ float BNO::getPitch() const
 }
 
 
-std::tuple<float, float, float> BNO::getLinealAcceleration()
+std::tuple<float, float, float> BNO::getLinealAcceleration() //acceleration tuple <x,y,z>
 {
     sensors_event_t event;
     bno.getEvent(&event, Adafruit_BNO055::adafruit_vector_type_t::VECTOR_LINEARACCEL);
@@ -183,7 +185,8 @@ void BNO::runCalibration()
 
     Serial.println("\n4. ANGULAR MOVEMENT TEST:");
     Serial.println("   Rotate the robot and observe changes:");
-
+    
+    update();
     float initial_yaw = getYaw();
     unsigned long test_start = millis();
     float max_yaw = initial_yaw;
