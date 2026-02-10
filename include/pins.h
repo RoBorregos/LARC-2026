@@ -46,6 +46,16 @@ namespace Pins
         {35, 33}, // FRONT RIGHT {TRIG, ECHO}
     };
 
+    // QTR / 74HC4067 Multiplexer
+    // NOTE: These pin values are TEMPORARY PLACEHOLDERS.
+    // The QTR library was modified to depend on pins.h instead of hardcoded pins.
+    // Final pin assignment will be defined later once the pinout is agreed with the team.
+    static constexpr uint8_t kMuxSig = A0;  // SIG -> A0 (analog)
+    static constexpr uint8_t kMuxS0  = 26;
+    static constexpr uint8_t kMuxS1  = 27;
+    static constexpr uint8_t kMuxS2  = 28;
+    static constexpr uint8_t kMuxS3  = 29;
+
     // ======== Line Sensors ========
 
     static constexpr uint8_t kLineSensorFL = 28;
