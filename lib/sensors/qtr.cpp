@@ -1,4 +1,4 @@
-
+#include "pins.h"
 #include "qtr.hpp"
 
 // 74HC4067
@@ -9,11 +9,6 @@
 //   S2 - pin 28
 //   S3 - pin 29
 //   EN - GND (siempre enabled)
-static constexpr uint8_t MUX_SIG = A0;
-static constexpr uint8_t MUX_S0  = 26;
-static constexpr uint8_t MUX_S1  = 27;
-static constexpr uint8_t MUX_S2  = 28;
-static constexpr uint8_t MUX_S3  = 29;
 
 static constexpr bool LINE_IS_BLACK = true;
 
@@ -29,10 +24,10 @@ static const uint16_t REAR_MAX[QTR::N]  = {3100, 3200, 3050, 3300, 3350, 3250, 3
 // helpers del mux
 static inline void muxSelect(uint8_t ch)
 {
-    digitalWrite(MUX_S0, (ch >> 0) & 1);
-    digitalWrite(MUX_S1, (ch >> 1) & 1);
-    digitalWrite(MUX_S2, (ch >> 2) & 1);
-    digitalWrite(MUX_S3, (ch >> 3) & 1);
+    digitalWrite(Pins::kMuxS0, (ch >> 0) & 1);
+    digitalWrite(Pins::kMuxS1, (ch >> 1) & 1);
+    digitalWrite(Pins::kMuxS2, (ch >> 2) & 1);
+    digitalWrite(Pins::kMuxS3, (ch >> 3) & 1);
 }
 
 static bool s_muxPinsInitialized = false;
@@ -41,11 +36,11 @@ static inline void initMuxPinsOnce()
     if (s_muxPinsInitialized)
         return;
 
-    pinMode(MUX_SIG, INPUT);
-    pinMode(MUX_S0, OUTPUT);
-    pinMode(MUX_S1, OUTPUT);
-    pinMode(MUX_S2, OUTPUT);
-    pinMode(MUX_S3, OUTPUT);
+    pinMode(Pins::kMuxSig, INPUT);
+    pinMode(Pins::kMuxS0, OUTPUT);
+    pinMode(Pins::kMuxS1, OUTPUT);
+    pinMode(Pins::kMuxS2, OUTPUT);
+    pinMode(Pins::kMuxS3, OUTPUT);
     muxSelect(0);
 
     s_muxPinsInitialized = true;
@@ -120,7 +115,7 @@ void QTR::update()
     {
         muxSelect(firstCh + i);
         delayMicroseconds(5);
-        raw[i] = analogRead(MUX_SIG);
+        raw[i] = analogRead(Pins::kMuxSig);
     }
 
     // 2) Normalizar a 0..1000 usando calMin/calMax
