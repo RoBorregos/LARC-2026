@@ -18,6 +18,7 @@
 #include <Arduino.h>
 #include <Encoder.h>
 
+
 class DCMotor
 {
     public:
@@ -53,7 +54,7 @@ class DCMotor
         double getPRotation(); // Position Rotation
         float getPMeters(); // Position Meters
 
-            
+
 
 
     private:

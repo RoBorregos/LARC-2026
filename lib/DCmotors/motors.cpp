@@ -7,6 +7,8 @@
  */
 
 #include "motors.hpp"
+//#include "constants.h"
+
 #include <math.h>
 
 DCMotor::DCMotor(int in1, int in2, int pwm, bool invert, 
@@ -16,9 +18,9 @@ DCMotor::DCMotor(int in1, int in2, int pwm, bool invert,
 
     in1_pin = in1;
     in2_pin = in2;
-    pwm_pin = pwm;
+    pwm_pin = pwm; 
 
-    encoder_pin1_ = encoder_pin1; // change to encoder_pin1_
+    encoder_pin1_ = encoder_pin1; 
     encoder_pin2_ = encoder_pin2;
 
     inverted = invert;
@@ -37,7 +39,7 @@ DCMotor::DCMotor(int in1, int in2, int pwm, bool invert,
     encoder_pin2_ = encoder_pin2;
 
     inverted = invert;
-    
+
 }
 
 DCMotor::~DCMotor()
@@ -51,7 +53,6 @@ DCMotor::~DCMotor()
 }
 
 
-//=======================Revisar bien lo siguiente:
 
 void DCMotor::begin()
 {
@@ -81,6 +82,7 @@ void DCMotor::move(int speed, Direction direction)
         digitalWrite(in1_pin, HIGH);
         digitalWrite(in2_pin, LOW);
     }
+    
     else // BACKWARD
     {
         digitalWrite(in1_pin, LOW);

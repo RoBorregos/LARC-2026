@@ -1,50 +1,48 @@
 // Usar los numeros al cuadrado para mayor diferencia
 
 #ifndef PID_CONTROLLER_HPP
-#define PID CONTROLLER_HPP
+#define PID_CONTROLLER_HPP
 
 #include <PID_v1.h>
 #include <Arduino.h> 
 
-class PIDController 
-{
-public:
-    PIDController();
+class PIDController {
 
-    PIDController(float kp, float ki, float kd, float outputMin, float outputMax);
+    public:
+        PIDController();
 
-    ~PIDController();
+        PIDController(float kp, float ki, float kd, float outputMin, float outputMax);
 
-    float update(float measurement, float setpoint);
+        ~PIDController();
 
-    void reset();
+        float update(float measurement, float setpoint);
 
-    void setGains(float kp, float ki, float kd);
+        void reset();
 
-    void setOutputLimits(float min, float max);
+        void setGains(float kp, float ki, float kd);
 
-    void setEnabled(bool enabled);
+        void setOutputLimits(float min, float max);
 
-    bool isEnabled() const;
+        void setEnabled(bool enabled);
 
-    float getError() const;
+        bool isEnabled() const;
 
-    float getOutput() const;
+        float getError() const;
 
-    void setAngleWrapping(bool enabled);
+        float getOutput() const;
 
-    bool isAngleWrappingEnabled() const;
+        void setAngleWrapping(bool enabled);
 
+        bool isAngleWrappingEnabled() const;
 
-private:
-    double lastMeasurement_;
-    double lastSetpoint_;
-    double output_;
-    bool enabled_;
-    bool angleWrapping_;
-    PID* pid_;
+    private:
 
-
+        double lastMeasurement_;
+        double lastSetpoint_;
+        double output_;
+        bool enabled_;
+        bool angleWrapping_;
+        PID* pid_;
 };
 
 #endif

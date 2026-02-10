@@ -1,22 +1,16 @@
 #include "PIDController.hpp"
 #include <math.h>
 
-//later because we dont have PID yet
-
-#include "PIDController.hpp"
-#include <math.h>
-
 PIDController::PIDController()
     : lastMeasurement_(0.0), lastSetpoint_(0.0), output_(0.0), enabled_(true), angleWrapping_(false)
 {
-    // Initialize the PID controller with DEFAULT values
+        // Initialize the PID controller with DEFAULT values
     pid_ = new PID(&lastMeasurement_, &output_, &lastSetpoint_, 0.0, 0.0, 0.0, DIRECT);
 
     // Set the mode and output limits
     pid_->SetMode(AUTOMATIC);
-    pid_->SetOutputLimits(-1.0, 1.0); 
+    pid_->SetOutputLimits(-1.0, 1.0);
 }
-
 
 
 PIDController::PIDController(float kp, float ki, float kd, float outputMin, float outputMax)
@@ -25,11 +19,10 @@ PIDController::PIDController(float kp, float ki, float kd, float outputMin, floa
     // Initialize the PID controller with "pointers" to our variables
     pid_ = new PID(&lastMeasurement_, &output_, &lastSetpoint_, (double)kp, (double)ki, (double)kd, DIRECT);
 
-    // Set the mode and output limits
+    //Set the mode and output limits
     pid_->SetMode(AUTOMATIC);
     pid_->SetOutputLimits((double)outputMin, (double)outputMax);
 }
-
 
 
 PIDController::~PIDController()
@@ -63,9 +56,9 @@ float PIDController::update(float measurement, float setpoint)
         // Adjust measurement so PID sees the shortest path across ±π
         float error = setpoint - measurement;
         if (error > M_PI)
-            measurement += 2 * M_PI;
-        else if (error < -M_PI)
             measurement -= 2 * M_PI;
+        else if (error < -M_PI)
+            measurement += 2 * M_PI;
     }
 
     // Update the PID inputs
@@ -77,7 +70,6 @@ float PIDController::update(float measurement, float setpoint)
 
     return (float)output_;
 }
-
 
 
 
@@ -95,20 +87,16 @@ void PIDController::reset()
 
 
 
-//                     "Getters and Setters"
-
-
+//          ========== "Getters and Setters" ==========
 void PIDController::setGains(float kp, float ki, float kd)
 {
     pid_->SetTunings((double)kp, (double)ki, (double)kd);
 }
 
-
 void PIDController::setOutputLimits(float min, float max)
 {
     pid_->SetOutputLimits((double)min, (double)max);
 }
-
 
 void PIDController::setEnabled(bool enabled)
 {
