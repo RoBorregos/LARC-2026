@@ -28,7 +28,8 @@ namespace Pins
         9   // IN4.2 LOWER RIGHT MOTOR
     };
 
-    constexpr uint8_t kEncoders[8]{
+    constexpr uint8_t kEncoders[8]
+    {
         40, // ENC1B
         39, // ENC1A
         15, // ENC2A
@@ -39,12 +40,42 @@ namespace Pins
         16  // ENC4B
     };
 
+    // =======Line Sensor=======
+    constexpr uint8_t kQTR1[8]
+    {
+        44, // ENC1B
+        49, // ENC1A
+        25, // ENC2A
+        24, // ENC2B
+        51, // ENC3A
+        33, // ENC3B
+        27, // ENC4A
+        26  // ENC4B
+    };
+
+
+    constexpr uint8_t kQTR2[8]{
+        50, // ENC1B
+        49, // ENC1A
+        55, // ENC2A
+        64, // ENC2B
+        31, // ENC3A
+        73, // ENC3B
+        97, // ENC4A
+        26  // ENC4B
+    };
+
+
     // ======== Distance Sensors========
 
     constexpr uint8_t kDistanceSensors[4][2] = {
         {36, 34}, // FRONT LEFT {TRIG, ECHO}
         {35, 33}, // FRONT RIGHT {TRIG, ECHO}
+        {37, 32}, // BACK RIGHT {TRIG, ECHO}     >>>    nuevos
+        {31, 34}, // BACK LEFt {TRIG, ECHO}
     };
+
+
 
     // ======== Line Sensors ========
 
@@ -58,22 +89,35 @@ namespace Pins
 
     // NOT READY
     constexpr uint8_t kSorterStepPin = 7;
-    constexpr uint8_t kSorterDirPin = 23;
+    constexpr uint8_t kSorterDirPin = 23; 
 
-    // ======== Elevator ========
+    // ========= Elevator =======
 
     constexpr uint8_t kElevatorINA1 = 1;
     constexpr uint8_t kElevatorINA2 = 8;
     constexpr uint8_t kElevatorPWM = 22;
 
+
     // ======== Intake ========
 
-    const uint8_t kUpperIntakeServo = 3;
-    const uint8_t kLowerIntakeServo = 6;
-    const uint8_t kRampIntakeServo = 4;
+    const uint8_t kUpperIntakeServo = 37;
+    const uint8_t kLowerIntakeServo = 60;
+    const uint8_t kRampIntakeServo = 43;
 
-    // NOT READY
-    const uint8_t kDropperServo = 30;
+
+    // ======== Servos ========
+    const uint8_t kDropperServo1 = 21;//nuevo
+    const uint8_t kDropperServo2 = 31;
+    const uint8_t kDropperServo3 = 41;
+    const uint8_t kDropperServo4 = 35;
+    const uint8_t kDropperServo5 = 10;
+    const uint8_t kDropperServo6 = 9;
+
+
+    // ====== LED =====
+    const uint8_t kLed1 = 6;
+    const uint8_t kLed2 = 10;
+
 
 }
 

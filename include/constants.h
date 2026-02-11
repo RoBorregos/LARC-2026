@@ -19,6 +19,16 @@ namespace Constants
         constexpr float kUpdateInterval = 20.0;
     }
 
+
+    namespace Kinematics
+    {
+        // "omni_motors" class
+    constexpr float M1_ANGLE = 135.0f;  //M1
+    constexpr float M2_ANGLE = 45.0f;   //M2
+    constexpr float M3_ANGLE = -45.0f;  //M3
+    constexpr float M4_ANGLE = -135.0f; //M4
+    
+    }
     namespace DriveConstants
     {
         // "omni_motors" class
@@ -26,10 +36,9 @@ namespace Constants
 
     constexpr float kWheelDiameter = 0.109f;
     constexpr float kWheelRaius = kWheelDiameter/2.0;
-    constexpr float kWheelCircumference = 2*M_PI*kWheelRaius;
-
-    
+    constexpr float kWheelCircumference = 2*M_PI*kWheelRaius;   
     }
+
 
 }
 

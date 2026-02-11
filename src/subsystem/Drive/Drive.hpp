@@ -17,7 +17,7 @@ public:
   void begin();
   void update();
 
-  // Opcional: control desde afuera
+  // Opcional:
   void setTargetYaw(float yawRad);     // setpoint en radianes
   float getYaw() const;
   void allStop();
@@ -29,7 +29,7 @@ private:
   static float rad2deg(float r);
   static float clampf(float x, float lo, float hi);
 
-  void transitionTo(uint8_t next);   // estado por índice (simple)
+  void transitionTo(uint8_t next);   //estado
   void demoStateMachine(uint32_t now);
   void applyDemoVxVy(float &vx, float &vy);
 
