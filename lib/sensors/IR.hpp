@@ -6,14 +6,13 @@
  *
  * Nota: la salida digital puede venir invertida según el módulo/cableado.
  * En muchos sensores: NEGRO = LOW(0) y BLANCO = HIGH(1).
- * Modificar lineIsBlack según el comportamiento en pista.
+ * Modificar "normal" según el comportamiento en pista.
  */
 
 #ifndef IR_HPP
 #define IR_HPP
 
 #include <Arduino.h>
-#include "pins.h"
 
 class IRLine
 {
@@ -28,8 +27,11 @@ public:
         BR = 3  // Back Right
     };
 
-    // lineIsBlack=true: considera "línea" cuando el sensor ve negro.
-    explicit IRLine(bool lineIsBlack = true);
+    // Constructor: recibe los pines (en orden FL, FR, BL, BR)
+    IRLine(uint8_t flPin, uint8_t frPin, uint8_t blPin, uint8_t brPin, bool normal = true);
+
+    // Alternativa: recibe un arreglo de 4 pines {FL, FR, BL, BR}
+    explicit IRLine(const uint8_t pins_[N], bool normal = true);
 
     // Configura los pines como INPUT
     bool begin();
@@ -40,20 +42,19 @@ public:
     // Valor crudo del pin (HIGH/LOW)
     bool raw(Index i) const;
 
-    // Valor interpretado: true si detecta "línea" según lineIsBlack
+    // Valor interpretado: true si detecta "línea" según normal
     bool onLine(Index i) const;
 
 private:
     bool initialized;
-    bool lineIsBlack;
+    bool normal;
+    uint8_t pins[N];
 
     bool rawState[N];
     bool lineState[N];
-
-    static uint8_t pinFor(Index i);
 };
 /*Ejemplo para llamarlo en code:
-IRLine ir(true);   // línea negra
+IRLine ir(Pins::kLineSensorFL, Pins::kLineSensorFR, Pins::kLineSensorBL, Pins::kLineSensorBR, true);   // línea negra
 
 void setup() {
   ir.begin();
