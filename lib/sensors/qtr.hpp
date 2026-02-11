@@ -22,13 +22,23 @@ public:
     //Característica compartida de los QTR (tienen 8 sensores)
     static constexpr uint8_t N = 8;
 
+    // Configuración del mux (pines select + pin de señal analógica)
+    struct MuxConfig
+    {
+        uint8_t s0;
+        uint8_t s1;
+        uint8_t s2;
+        uint8_t s3;
+        uint8_t sig; // pin analógico conectado a SIG del 74HC4067
+    };
+
     // firstChannel es el canal donde empieza el mux, por ej.
-    //QTR qtrFront(0); (C0..C7)
-    //QTR qtrRear(8); (C8..C15)
-    explicit QTR(uint8_t firstChannel);
+    // QTR qtrFront(0, mux); (C0..C7)
+    // QTR qtrRear(8, mux);  (C8..C15)
+    explicit QTR(uint8_t firstChannel, const MuxConfig& mux);
 
 
-    // Inicializa los pines mux (una sola vez) y deja el QTR listo pa jalar.
+    // Inicializa los pines del mux (según MuxConfig) y deja el QTR listo pa jalar.
     // Se llama UNA sola vez en setup()
     // Siempre antes de cualquier update() o lectura
     // void setup() {
@@ -69,6 +79,8 @@ private:
     //donde empieza el qtr en el mux
     uint8_t firstCh;
     bool initialized;
+
+    MuxConfig mux;
 
     //valores crudos del ADC
     uint16_t raw[N];

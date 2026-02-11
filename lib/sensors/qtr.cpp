@@ -1,4 +1,3 @@
-#include "pins.h"
 #include "qtr.hpp"
 
 // 74HC4067
@@ -22,32 +21,36 @@ static const uint16_t REAR_MIN[QTR::N]  = {120, 130, 115, 140, 150, 135, 128, 12
 static const uint16_t REAR_MAX[QTR::N]  = {3100, 3200, 3050, 3300, 3350, 3250, 3150, 3000};
 
 // helpers del mux
-static inline void muxSelect(uint8_t ch)
+static bool s_muxPinsInitialized = false;
+static QTR::MuxConfig s_muxCfg = {0, 0, 0, 0, 0};
+
+static inline void muxSelect(const QTR::MuxConfig& mux, uint8_t ch)
 {
-    digitalWrite(Pins::kMuxS0, (ch >> 0) & 1);
-    digitalWrite(Pins::kMuxS1, (ch >> 1) & 1);
-    digitalWrite(Pins::kMuxS2, (ch >> 2) & 1);
-    digitalWrite(Pins::kMuxS3, (ch >> 3) & 1);
+    digitalWrite(mux.s0, (ch >> 0) & 1);
+    digitalWrite(mux.s1, (ch >> 1) & 1);
+    digitalWrite(mux.s2, (ch >> 2) & 1);
+    digitalWrite(mux.s3, (ch >> 3) & 1);
 }
 
-static bool s_muxPinsInitialized = false;
-static inline void initMuxPinsOnce()
+static inline void initMuxPinsOnce(const QTR::MuxConfig& mux)
 {
     if (s_muxPinsInitialized)
         return;
 
-    pinMode(Pins::kMuxSig, INPUT);
-    pinMode(Pins::kMuxS0, OUTPUT);
-    pinMode(Pins::kMuxS1, OUTPUT);
-    pinMode(Pins::kMuxS2, OUTPUT);
-    pinMode(Pins::kMuxS3, OUTPUT);
-    muxSelect(0);
+    s_muxCfg = mux;
+
+    pinMode(s_muxCfg.sig, INPUT);
+    pinMode(s_muxCfg.s0, OUTPUT);
+    pinMode(s_muxCfg.s1, OUTPUT);
+    pinMode(s_muxCfg.s2, OUTPUT);
+    pinMode(s_muxCfg.s3, OUTPUT);
+    muxSelect(s_muxCfg, 0);
 
     s_muxPinsInitialized = true;
 }
 
-QTR::QTR(uint8_t firstChannel)
-    : firstCh(firstChannel), initialized(false), position(0)
+QTR::QTR(uint8_t firstChannel, const MuxConfig& mux_)
+    : firstCh(firstChannel), initialized(false), mux(mux_), position(0)
 {
     for (uint8_t i = 0; i < N; i++)
     {
@@ -60,10 +63,10 @@ QTR::QTR(uint8_t firstChannel)
 
 bool QTR::begin()
 {
-    initMuxPinsOnce();
+    initMuxPinsOnce(mux);
 
     // Select this array's first channel (nice for sanity)
-    muxSelect(firstCh);
+    muxSelect(s_muxCfg, firstCh);
 
     initialized = true;
     return true;
@@ -113,9 +116,9 @@ void QTR::update()
     // 1) Leer raw (ADC)
     for (uint8_t i = 0; i < N; i++)
     {
-        muxSelect(firstCh + i);
+        muxSelect(s_muxCfg, firstCh + i);
         delayMicroseconds(5);
-        raw[i] = analogRead(Pins::kMuxSig);
+        raw[i] = analogRead(s_muxCfg.sig);
     }
 
     // 2) Normalizar a 0..1000 usando calMin/calMax
