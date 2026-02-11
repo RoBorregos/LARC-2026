@@ -43,55 +43,6 @@ static constexpr float kV = 0.45f;         // magnitud (0..1)
 static constexpr float kW = 0.30f;         // giro (0..1)
 
 
-void allFoward(DCMotor& m1, DCMotor& m2, DCMotor& m3, DCMotor& m4, float kPwm)
-{
-
-  Serial.println(" ALL motors going FORWARD:    on    ");
-
-
-  m1.move(kPwm, DCMotor::Direction::FORWARD); 
-  m2.move(kPwm, DCMotor::Direction::FORWARD);
-  m3.move(kPwm, DCMotor::Direction::FORWARD); 
-  m4.move(kPwm, DCMotor::Direction::FORWARD); 
-}
-
-//                        ======== FUNCIONES =========
-void allBackward(DCMotor& m1, DCMotor& m2, DCMotor& m3, DCMotor& m4, float kPwm)
-{
-  Serial.println(" ALL motors going BACKWARD:    on   ");
-
-
-  m1.move(kPwm, DCMotor::Direction::BACKWARD);
-  m2.move(kPwm, DCMotor::Direction::BACKWARD);
-  m3.move(kPwm, DCMotor::Direction::BACKWARD);
-  m4.move(kPwm, DCMotor::Direction::BACKWARD); 
-
-} 
-
-void allStop(DCMotor& m1, DCMotor& m2, DCMotor& m3, DCMotor& m4)
-{
-
-  Serial.println(" ALL motors going STOP     on     ");
-
-  m1.stop();
-  m2.stop();
-  m3.stop();
-  m4.stop();
-
-}
-
-// Print Encoders lectures  
-void printEncoders(const char*tag)
-{
-  Serial.print(tag);
-
-  Serial.print(" | UL: "); Serial.print(m1_ul.getEncoderCount());
-  Serial.print(" UR: ");   Serial.print(m2_ur.getEncoderCount());
-  Serial.print(" LR: ");   Serial.print(m3_lr.getEncoderCount());
-  Serial.print(" LL: ");   Serial.print(m4_ll.getEncoderCount());
-
-  Serial.println();
-}
 
 
 void setup()
