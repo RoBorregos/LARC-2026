@@ -1,8 +1,18 @@
 #include <Arduino.h>
+#include "pins.h"
 #include "qtr.hpp"
 
-QTR qtrFront(0);
-QTR qtrRear(8);
+// Config del 74HC4067 (toma pines desde pins.h, pero el driver QTR ya no depende de pins.h)
+static const QTR::MuxConfig kMux {
+  Pins::kMuxS0,
+  Pins::kMuxS1,
+  Pins::kMuxS2,
+  Pins::kMuxS3,
+  Pins::kMuxSig
+};
+
+QTR qtrFront(0, kMux);
+QTR qtrRear(8, kMux);
 
 static constexpr uint32_t CAL_MS = 5000;
 
@@ -17,7 +27,7 @@ void calibrateOne(QTR& qtr, uint16_t outMin[QTR::N], uint16_t outMax[QTR::N], ui
   uint32_t t0 = millis();
   while (millis() - t0 < ms) {
     qtr.update();
-    const uint16_t* r = qtr.getRaw();   // valores crudos 0 a 4095 aprox
+    const uint16_t* r = qtr.getRaw();   // valores crudos (o a 4095 aprox)
 
     for (uint8_t i = 0; i < QTR::N; i++) {
       if (r[i] < outMin[i]) outMin[i] = r[i];
