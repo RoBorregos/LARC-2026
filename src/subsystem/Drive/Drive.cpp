@@ -7,13 +7,13 @@ Drive::Drive()
     m3_ll_(Pins::kLowerMotors[0], Pins::kLowerMotors[1], Pins::kPwmPin[2], true,  LL_ENC_A, LL_ENC_B, kWheelDiameter),
     m4_lr_(Pins::kLowerMotors[2], Pins::kLowerMotors[3], Pins::kPwmPin[3], false, LR_ENC_A, LR_ENC_B, kWheelDiameter),
     omni_(m1_ul_, m2_ur_, m3_ll_, m4_lr_),
-    yawPid_(kKp, kKi, kKd, -kOmegaMax, +kOmegaMax)
+    yawPid_(P, kKi, kKd, -kOmegaMax, +kOmegaMax)
 {
 }
 
 void Drive::begin() {
   Serial.begin(115200);
-  delay(1000);
+  delay(500);
 
   analogWriteResolution(8);
 
@@ -33,31 +33,38 @@ void Drive::begin() {
   yawPid_.reset();
 
   targetYaw_ = bno_.getYaw(); // rad
-  transitionTo(ADELANTE);
+  yawHoldEnabled_ = true;
+
+  // Arranca detenido
+  vxCmd_ = 0.0f;
+  vyCmd_ = 0.0f;
 }
 
 void Drive::update() {
   const uint32_t now = millis();
 
-  // ===== Control loop 100 Hz =====
   if (now - lastControl_ >= kControlMs) {
     lastControl_ = now;
 
     bno_.update();
-    const float yaw = bno_.getYaw();          // rad
-    float omega = yawPid_.update(yaw, targetYaw_);
-    omega = clampf(omega, -kOmegaMax, +kOmegaMax);
+    const float yaw = bno_.getYaw(); // rad
 
-    float vx = 0.0f, vy = 0.0f;
+    float omega = 0.0f;
 
-    if (demoEnabled_) {
-      demoStateMachine(now);
-      applyDemoVxVy(vx, vy);
+    if (manualOmegaEnabled_) {
+      omega = manualOmega_;
+    } else if (yawHoldEnabled_) {
+      omega = yawPid_.update(yaw, targetYaw_);
+    } else {
+      omega = 0.0f;
     }
 
-    omni_.MoveXYW(vx, vy, -omega);
+    omega = clampf(omega, -kOmegaMax, +kOmegaMax);
 
-    // ===== Print 10 Hz =====
+
+    omni_.MoveXYW(vxCmd_, vyCmd_, -omega);
+
+    //Print 10 Hz <opcional>
     if (now - lastPrint_ >= kPrintMs) {
       lastPrint_ = now;
 
@@ -68,12 +75,6 @@ void Drive::update() {
       Serial.print(now);
       Serial.print("\t");
       Serial.print(rad2deg(yaw), 2);
-
-
-
-
-
-      
       Serial.print("\t\t");
       Serial.print(rad2deg(targetYaw_), 2);
       Serial.print("\t\t");
@@ -81,10 +82,29 @@ void Drive::update() {
       Serial.print("\t\t");
       Serial.print(omega, 4);
       Serial.print("\t");
-      Serial.print(vx, 2);
+      Serial.print(vxCmd_, 2);
       Serial.print("\t");
-      Serial.println(vy, 2);
+      Serial.println(vyCmd_, 2);
     }
+  }
+}
+
+// ====== Funciones de movimiento ======
+void Drive::forward(float speed)  { vxCmd_ = +speed; vyCmd_ = 0.0f; }
+void Drive::backward(float speed) { vxCmd_ = -speed; vyCmd_ = 0.0f; }
+void Drive::left(float speed)  { vxCmd_ = 0.0f; vyCmd_ = -speed; }
+void Drive::right(float speed) { vxCmd_ = 0.0f; vyCmd_ = +speed; }
+void Drive::stop() {
+  vxCmd_ = 0.0f;
+  vyCmd_ = 0.0f;
+}
+
+
+void Drive::holdYaw(bool enable) {
+  yawHoldEnabled_ = enable;
+  if (enable) {
+    targetYaw_ = bno_.getYaw();
+    yawPid_.reset();
   }
 }
 
@@ -97,8 +117,16 @@ float Drive::getYaw() const {
   return ((Drive*)this)->bno_.getYaw();
 }
 
-void Drive::enableDemo(bool enable) {
-  demoEnabled_ = enable;
+// ====== Omega manual opcional ======
+void Drive::setManualOmega(float omegaRadS) {
+  manualOmegaEnabled_ = true;
+  manualOmega_ = omegaRadS;
+}
+
+void Drive::clearManualOmega() {
+  manualOmegaEnabled_ = false;
+  manualOmega_ = 0.0f;
+  yawPid_.reset();
 }
 
 void Drive::allStop() {
@@ -108,49 +136,10 @@ void Drive::allStop() {
   m4_lr_.stop();
 }
 
-float Drive::rad2deg(float r) { return r * (180.0f / M_PI); }
+float Drive::rad2deg(float r) { return r * (180.0f / M_PI); } //para los prints
 
 float Drive::clampf(float x, float lo, float hi) {
   if (x < lo) return lo;
   if (x > hi) return hi;
   return x;
-}
-
-void Drive::transitionTo(uint8_t next) {
-  state_ = (DemoState)next;
-  stateStartMs_ = millis();
-}
-
-void Drive::demoStateMachine(uint32_t now) {
-  if (now - stateStartMs_ > 1500) {
-    switch (state_) {
-      case ADELANTE:  transitionTo(STOP);      break;
-      case STOP:      transitionTo(DERECHA);   break;
-      case DERECHA:   transitionTo(STOP2);     break;
-      case STOP2:     transitionTo(ATRAS);     break;
-      case ATRAS:     transitionTo(STOP3);     break;
-      case STOP3:     transitionTo(IZQUIERDA); break;
-      case IZQUIERDA: transitionTo(STOP4);     break;
-      case STOP4:     transitionTo(ADELANTE);  break;
-    }
-  }
-}
-
-void Drive::applyDemoVxVy(float &vx, float &vy) {
-  vx = 0.0f; vy = 0.0f;
-
-  switch (state_) {
-    case ADELANTE:   vx =  0.35f; vy =  0.00f; break;
-    case ATRAS:      vx = -0.35f; vy =  0.00f; break;
-    case IZQUIERDA:  vx =  0.00f; vy = -0.35f; break;
-    case DERECHA:    vx =  0.00f; vy =  0.35f; break;
-
-    case STOP:
-    case STOP2:
-    case STOP3:
-    case STOP4:
-      allStop();
-      vx = 0.0f; vy = 0.0f;
-      break;
-  }
 }

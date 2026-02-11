@@ -4,6 +4,7 @@
 #include <Wire.h>
 #include <math.h>
 
+#include "constants.h"
 #include "pins.h"
 #include "bno.hpp"
 #include "motors.hpp"
@@ -17,28 +18,33 @@ public:
   void begin();
   void update();
 
-  // Opcional:
+  void forward(float speed);     
+  void backward(float speed);    
+  void left(float speed);       
+  void right(float speed);       
+  void stop();                   
+
+  // ====== Yaw hold ======
+  void holdYaw(bool enable);
   void setTargetYaw(float yawRad);     // setpoint en radianes
   float getYaw() const;
-  void allStop();
 
-  void enableDemo(bool enable);
+  // ====== Opcional: mandar omega directo (sin PID) ======
+  void setManualOmega(float omegaRadS); 
+  void clearManualOmega();  //regresar a PID
+
+  void allStop(); //freno fuerte
 
 private:
   // Helpers
   static float rad2deg(float r);
   static float clampf(float x, float lo, float hi);
 
-  void transitionTo(uint8_t next);   //estado
-  void demoStateMachine(uint32_t now);
-  void applyDemoVxVy(float &vx, float &vy);
-
 private:
-  // ============ Hardware ============
+
   BNO bno_;
 
   static constexpr float kWheelDiameter = 0.109f;
-
 
   static constexpr uint8_t UL_ENC_A = Pins::kEncoders[1];
   static constexpr uint8_t UL_ENC_B = Pins::kEncoders[0];
@@ -57,37 +63,26 @@ private:
   OmniMotors omni_;
 
   // ============ PID yaw-hold ============
-  static constexpr float kKp = 4.8f;
-  static constexpr float kKi = 0.002f;
-  static constexpr float kKd = 0.06f;
-  static constexpr float kOmegaMax = 0.25f;
+  static constexpr float P    = Constants::PID::kKp;
+  static constexpr float kKi  = Constants::PID::kKi;
+  static constexpr float kKd  = Constants::PID::kKd;
+  static constexpr float kOmegaMax = Constants::PID::kOmegaMax;
 
   PIDController yawPid_;
+  float targetYaw_ = 0.0f; // rad
+  bool yawHoldEnabled_ = true;
 
-  // ============ Timing ============
+  float vxCmd_ = 0.0f;
+  float vyCmd_ = 0.0f;
+
+  // ====== Omega manual (opcional) ======
+  bool manualOmegaEnabled_ = false;
+  float manualOmega_ = 0.0f;
+
+  // ============ Timing ============ 
   static constexpr uint32_t kControlMs = 10;   // 100 Hz
   static constexpr uint32_t kPrintMs   = 100;  // 10 Hz
 
   uint32_t lastControl_ = 0;
   uint32_t lastPrint_   = 0;
-
-  // ============ Setpoint ============
-  float targetYaw_ = 0.0f; // rad
-
-  // ============ Demo state machine ============
-  bool demoEnabled_ = true;
-
-  enum DemoState : uint8_t {
-    ADELANTE,
-    ATRAS,
-    IZQUIERDA,
-    DERECHA,
-    STOP,
-    STOP2,
-    STOP3,
-    STOP4
-  };
-
-  DemoState state_ = ADELANTE;
-  uint32_t stateStartMs_ = 0;
 };
