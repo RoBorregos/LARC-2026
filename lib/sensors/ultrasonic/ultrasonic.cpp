@@ -1,8 +1,14 @@
 #include "ultrasonic.hpp"
 
 Ultrasonic::Ultrasonic(uint8_t trigPin, uint8_t echoPin)
-    : trig(trigPin), echo(echoPin),
-      distance(0.0f), valid(false)
+    : trig(trigPin),
+      echo(echoPin),
+      state(State::Idle),
+      lastPingMs(0),
+      tStateUs(0),
+      echoRiseUs(0),
+      distance(0.0f),
+      valid(false)
 {
 }
 
@@ -12,32 +18,97 @@ bool Ultrasonic::begin()
     pinMode(echo, INPUT);
 
     digitalWrite(trig, LOW);
-    delay(50);
+
+    // Usa placeholder (mover a constantes después)
+    delay(kBeginSettleMs);
+
+    lastPingMs = millis();
+    state = State::Idle;
+    valid = false;
 
     return true;
 }
 
 void Ultrasonic::update()
 {
-    digitalWrite(trig, LOW);
-    delayMicroseconds(2);
+    const uint32_t nowMs = millis();
+    const uint32_t nowUs = micros();
 
-    digitalWrite(trig, HIGH);
-    delayMicroseconds(10);
-    digitalWrite(trig, LOW);
-
-    // Leer duración del pulso ECHO
-    unsigned long duration = pulseIn(echo, HIGH, 30000); // timeout 30ms (~5m)
-
-    if (duration == 0)
+    switch (state)
     {
-        // esto solo es en caso de timeout (fuera de rango o problemas de conexión)
-        valid = false;
-        return;
-    }
+        case State::Idle:
+        {
+            // esperar a que sea tiempo de que que haga otro ping
+            if (nowMs - lastPingMs >= kPingPeriodMs)
+            {
+                lastPingMs = nowMs;
+                digitalWrite(trig, LOW);
+                tStateUs = nowUs;
+                state = State::TrigLow;
+            }
+            break;
+        }
 
-    distance = duration / 58.0f;
-    valid = true;
+        case State::TrigLow:
+        {
+            if (nowUs - tStateUs >= kTrigLowUs)
+            {
+                digitalWrite(trig, HIGH);
+                tStateUs = nowUs;
+                state = State::TrigHigh;
+            }
+            break;
+        }
+
+        case State::TrigHigh:
+        {
+            if (nowUs - tStateUs >= kTrigHighUs)
+            {
+                digitalWrite(trig, LOW);
+                tStateUs = nowUs;
+                state = State::WaitEchoRise;
+            }
+            break;
+        }
+
+        case State::WaitEchoRise:
+        {
+            // Espera a que ECHO este HIGH o timeout
+            if (digitalRead(echo) == HIGH)
+            {
+                echoRiseUs = micros();
+                state = State::WaitEchoFall;
+            }
+            else if (nowUs - tStateUs >= kEchoTimeoutUs)
+            {
+                // Timeout: no se detectó el echo
+                valid = false;
+                state = State::Idle;
+            }
+            break;
+        }
+
+        case State::WaitEchoFall:
+        {
+            if (digitalRead(echo) == LOW)
+            {
+                const uint32_t duration = micros() - echoRiseUs;
+
+                // Convertir a cm (speed of sound factor)
+                distance = duration / 58.0f;
+                valid = true;
+
+                state = State::Idle;
+            }
+            else if (micros() - echoRiseUs >= kEchoTimeoutUs)
+            {
+                // esperando que ECHO vuelva a LOW
+                valid = false;
+                state = State::Idle;
+            }
+            break;
+        }
+    }
 }
 
 float Ultrasonic::distanceCm() const
