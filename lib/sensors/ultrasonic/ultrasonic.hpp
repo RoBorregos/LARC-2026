@@ -49,7 +49,7 @@ public:
     void update();
 
     /** @return Distancia en cm de la última medición válida. */
-    float distanceCm() const;
+    float getdistance() const;
 
     /**
      * @return true si la última medición fue válida.

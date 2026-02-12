@@ -111,7 +111,7 @@ void Ultrasonic::update()
     }
 }
 
-float Ultrasonic::distanceCm() const
+float Ultrasonic::getdistance() const
 {
     return distance;
 }
