@@ -6,7 +6,7 @@
  * @date 2026-01-12
 */
 
-#include "bno.hpp"
+#include "BNO/bno.hpp"
 
 BNO::BNO() : bno(55, 0x28, &Wire), initialized(false)
 {
