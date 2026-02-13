@@ -3,7 +3,7 @@
 #include <math.h>
 
 #include "pins.h"
-#include "bno.hpp"
+#include "BNO/bno.hpp"
 #include "motors.hpp"
 #include "omni_motors.hpp"
 #include "PIDController.hpp"

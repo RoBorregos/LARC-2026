@@ -2,7 +2,7 @@
 #include <Arduino.h>
 #include <Wire.h>
 #include "constants.h"
-#include "bno.hpp"
+#include "BNO/bno.hpp"
 #include "pins.h" 
 #include "motors.hpp"
 #include "omni_motors.hpp"
