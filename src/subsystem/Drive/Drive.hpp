@@ -6,7 +6,7 @@
 
 #include "constants.h"
 #include "pins.h"
-#include "bno.hpp"
+#include "BNO/bno.hpp"
 #include "motors.hpp"
 #include "omni_motors.hpp"
 #include "PIDController.hpp"
@@ -18,6 +18,8 @@ public:
   void begin();
   void update();
 
+
+  //Funciones de movimiento
   void forward(float speed);     
   void backward(float speed);    
   void left(float speed);       
