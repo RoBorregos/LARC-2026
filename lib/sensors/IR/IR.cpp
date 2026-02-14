@@ -68,12 +68,17 @@ void IRLine::update()
     }
 }
 
-bool IRLine::raw(Index i) const
+bool IRLine::getRaw(Sensor s) const
 {
-    return rawState[(uint8_t)i];
+    return rawState[(uint8_t)s];
 }
 
-bool IRLine::onLine(Index i) const
+bool IRLine::getState(Sensor s) const
 {
-    return lineState[(uint8_t)i];
+    return lineState[(uint8_t)s];
+}
+
+uint8_t IRLine::getPin(Sensor s) const
+{
+    return pins[(uint8_t)s];
 }
