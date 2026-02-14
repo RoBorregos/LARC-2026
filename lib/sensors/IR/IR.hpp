@@ -39,10 +39,10 @@ public:
     // Lee sensores y actualiza estados internos
     void update();
 
-    // Estado interpretado: true si detecta "línea" según normal
+    // Estado invertido del pin
     bool getState(Sensor s) const;
 
-    // Estado crudo del pin: HIGH/LOW (true=HIGH, false=LOW)
+    // Estado crudo del pin
     bool getRaw(Sensor s) const;
 
     // Acceso al pin físico (debug)
