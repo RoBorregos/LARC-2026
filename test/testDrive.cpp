@@ -3,9 +3,6 @@
 #include <math.h>
 
 #include "pins.h"
-#include "BNO/bno.hpp"
-#include "motors.hpp"
-#include "omni_motors.hpp"
 #include "PIDController.hpp"
 #include "subsystem/Drive/Drive.hpp"
 
