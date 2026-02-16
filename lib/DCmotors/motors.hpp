@@ -23,7 +23,6 @@ class DCMotor
 {
     public:
 
-        //create "Direction" class?
         enum class Direction { 
             FORWARD,
             BACKWARD
@@ -36,7 +35,7 @@ class DCMotor
         
         
         DCMotor(int in1, int in2, int pwm, bool invert, 
-            int encoder_pin1, int encoder_pin2); //without diameter
+            int encoder_pin1, int encoder_pin2);
         
         
         
@@ -58,8 +57,6 @@ class DCMotor
 
 
     private:
-    
-    // change to class/header (constants/motor)
         int in1_pin;
         int in2_pin;
         int pwm_pin;
@@ -72,7 +69,7 @@ class DCMotor
         
         Encoder* encoder_ = nullptr;
     
-        int rotation_factor = 473; //adjust
+        int rotation_factor = 473;
 
 
 };
