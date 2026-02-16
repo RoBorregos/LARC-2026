@@ -7,8 +7,6 @@
  */
 
 #include "motors.hpp"
-//#include "constants.h"
-
 #include <math.h>
 
 DCMotor::DCMotor(int in1, int in2, int pwm, bool invert, 
@@ -120,7 +118,7 @@ void DCMotor::stop()
     digitalWrite(in2_pin, LOW);
 }
 
-void DCMotor::brakeStop() // Lo que me explico JP de parar los motores haciendo "corto" <no dagna los motores>
+void DCMotor::brakeStop()
 {
     digitalWrite(in1_pin, HIGH);
     digitalWrite(in2_pin, HIGH);
