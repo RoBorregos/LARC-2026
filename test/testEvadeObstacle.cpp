@@ -40,20 +40,15 @@ void loop()
   us1.update();
   us2.update();
 
-  //[1]---------Tal vez, todo esto se pueda obtener directamente de la libreria como booleano -------
-  // Distancias (cm)
+
   float d1 = us1.getdistance();
   float d2 = us2.getdistance();
 
-  //Identifica obstaculo cuando ambos son menores a 10 cm
   bool obstacle =
     (us1.isValid() && d1 < 15.0f) ||
     (us2.isValid() && d2 < 15.0f);
 
-  //-----------------------------------------------------------------------------------------------[1]
 
-  //[2]---------------------------------------------Esta parte ver si la quiero llamar en main, en la libreria de los US o un Drive especial para este momento de la maquina de estados ------/
-  // Posible funcion "US decision"
   const uint32_t now = millis();
 
   // Logica
@@ -64,7 +59,7 @@ void loop()
   if (obstacle)
   {
     state = State::RIGHT;
-    clearStartMs = 0; // por si venía de antes
+    clearStartMs = 0; 
   }
 }
 else // RIGHT
@@ -89,6 +84,5 @@ else // RIGHT
   }
 }
 
-//----------------------------------------------------------------------------------[2]
 
 }
