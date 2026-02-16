@@ -3,12 +3,12 @@
 
 Drive::Drive()
   : bno_(),
-    m1_ul_(Pins::kUpperMotors[0], Pins::kUpperMotors[1], Pins::kPwmPin[0], false, UL_ENC_A, UL_ENC_B, kWheelDiameter),
-    m2_ur_(Pins::kUpperMotors[2], Pins::kUpperMotors[3], Pins::kPwmPin[1], true,  UR_ENC_A, UR_ENC_B, kWheelDiameter),
-    m3_ll_(Pins::kLowerMotors[0], Pins::kLowerMotors[1], Pins::kPwmPin[2], true,  LL_ENC_A, LL_ENC_B, kWheelDiameter),
-    m4_lr_(Pins::kLowerMotors[2], Pins::kLowerMotors[3], Pins::kPwmPin[3], false, LR_ENC_A, LR_ENC_B, kWheelDiameter),
+    m1_ul_(Pins::kUpperMotors[0], Pins::kUpperMotors[1], Pins::kPwmPin[0], false, UL_ENC_A, UL_ENC_B, diameter),
+    m2_ur_(Pins::kUpperMotors[2], Pins::kUpperMotors[3], Pins::kPwmPin[1], true,  UR_ENC_A, UR_ENC_B, diameter),
+    m3_ll_(Pins::kLowerMotors[0], Pins::kLowerMotors[1], Pins::kPwmPin[2], true,  LL_ENC_A, LL_ENC_B, diameter),
+    m4_lr_(Pins::kLowerMotors[2], Pins::kLowerMotors[3], Pins::kPwmPin[3], false, LR_ENC_A, LR_ENC_B, diameter),
     omni_(m1_ul_, m2_ur_, m3_ll_, m4_lr_),
-    yawPid_(P, kKi, kKd, -kOmegaMax, +kOmegaMax)
+    yawPid_(P, I, D, -kOmegaMax, +kOmegaMax)
 {
 }
 
@@ -36,7 +36,7 @@ void Drive::begin() {
   targetYaw_ = bno_.getYaw(); // rad
   yawHoldEnabled_ = true;
 
-  // Arranca detenido
+  // Starts on stop
   vxCmd_ = 0.0f;
   vyCmd_ = 0.0f;
 }
@@ -118,6 +118,8 @@ float Drive::getYaw() const {
   return ((Drive*)this)->bno_.getYaw();
 }
 
+float Drive::rad2deg(float r) { return r * (180.0f / M_PI); } //para los prints
+
 // ====== Omega manual opcional ======
 void Drive::setManualOmega(float omegaRadS) {
   manualOmegaEnabled_ = true;
@@ -137,10 +139,9 @@ void Drive::allStop() {
   m4_lr_.stop();
 }
 
-float Drive::rad2deg(float r) { return r * (180.0f / M_PI); } //para los prints
-
 float Drive::clampf(float x, float lo, float hi) {
   if (x < lo) return lo;
   if (x > hi) return hi;
   return x;
 }
+
