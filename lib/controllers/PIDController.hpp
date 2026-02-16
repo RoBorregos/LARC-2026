@@ -1,5 +1,3 @@
-// Usar los numeros al cuadrado para mayor diferencia
-
 #ifndef PID_CONTROLLER_HPP
 #define PID_CONTROLLER_HPP
 
