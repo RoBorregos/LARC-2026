@@ -69,14 +69,16 @@ namespace Pins
     // ======== Distance Sensors========
 
     constexpr uint8_t kDistanceSensors[4][2] = {
-        {36, 34}, // FRONT LEFT {TRIG, ECHO}
+        {36, 34}, // FRONT LEFT {TRIG, ECHO} 
         {35, 33}, // FRONT RIGHT {TRIG, ECHO}
         {37, 32}, // BACK RIGHT {TRIG, ECHO}     >>>    nuevos
-        {31, 34}, // BACK LEFt {TRIG, ECHO}
+        {31, 34}, // BACK LEFt {TRIG, ECHO}         
     };
 
 
 
+
+    
     // ======== Line Sensors ========
 
     static constexpr uint8_t kLineSensorFL = 28;

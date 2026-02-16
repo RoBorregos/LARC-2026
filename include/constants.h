@@ -5,12 +5,22 @@
  *
  * @brief Constants for the robot.
  */
+/**
+ * @file constants.h
+ * @date 12/01/2026
+ * @author Ximena Patricia García Magdaleno
+ *
+ * @brief Constants for the robot.
+ */
+
 
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
 
 #include <Arduino.h>
 #include <math.h>
+
+
 
 namespace Constants
 {
@@ -37,6 +47,14 @@ namespace Constants
     constexpr float kWheelDiameter = 0.109f;
     constexpr float kWheelRaius = kWheelDiameter/2.0;
     constexpr float kWheelCircumference = 2*M_PI*kWheelRaius;   
+    }
+
+    namespace PID
+    {
+    static constexpr float kKp = 4.8f;
+    static constexpr float kKi = 0.002f;
+    static constexpr float kKd = 0.06f;
+    static constexpr float kOmegaMax = 0.25f;
     }
 
 
