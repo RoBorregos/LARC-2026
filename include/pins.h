@@ -53,7 +53,6 @@ namespace Pins
         26  // ENC4B
     };
 
-
     constexpr uint8_t kQTR2[8]{
         50, // ENC1B
         49, // ENC1A
@@ -65,7 +64,6 @@ namespace Pins
         26  // ENC4B
     };
 
-
     // ======== Distance Sensors========
 
     constexpr uint8_t kDistanceSensors[4][2] = {
@@ -75,10 +73,6 @@ namespace Pins
         {31, 34}, // BACK LEFt {TRIG, ECHO}         
     };
 
-
-
-
-    
     // ======== Line Sensors ========
 
     static constexpr uint8_t kLineSensorFL = 28;
@@ -99,13 +93,11 @@ namespace Pins
     constexpr uint8_t kElevatorINA2 = 8;
     constexpr uint8_t kElevatorPWM = 22;
 
-
     // ======== Intake ========
 
     const uint8_t kUpperIntakeServo = 37;
     const uint8_t kLowerIntakeServo = 60;
     const uint8_t kRampIntakeServo = 43;
-
 
     // ======== Servos ========
     const uint8_t kDropperServo1 = 21;//nuevo
@@ -115,11 +107,9 @@ namespace Pins
     const uint8_t kDropperServo5 = 10;
     const uint8_t kDropperServo6 = 9;
 
-
     // ====== LED =====
     const uint8_t kLed1 = 6;
     const uint8_t kLed2 = 10;
-
 
 }
 
