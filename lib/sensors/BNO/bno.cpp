@@ -66,8 +66,8 @@ float BNO::wrapAngle(float angle) const
 float BNO::getYaw() const
 {
     float yawDeg;
-    yawDeg = -wrapAngle(event.orientation.x);
-    return yawDeg * (M_PI/180.0f);// convertimos a radianes
+    yawDeg = -event.orientation.x; //-wrapAngle(event.orientation.x); 
+    return yawDeg * (M_PI/180.0f);// convert to radians
 }
 
 float BNO::getRoll() const
@@ -291,4 +291,3 @@ void BNO::runCalibration()
     Serial.println("\n====== BNO055 TEST COMPLETED ======");
     Serial.println("Test finished! Check results above.\n");
 } //Ends the Calribation Test
-
