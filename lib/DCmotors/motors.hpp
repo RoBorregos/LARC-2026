@@ -37,12 +37,7 @@ class DCMotor
         DCMotor(int in1, int in2, int pwm, bool invert, 
             int encoder_pin1, int encoder_pin2);
         
-        
-        
         ~DCMotor();    
-
-        
-        
 
         void begin();
         void move(int speed, Direction direction);
@@ -53,7 +48,7 @@ class DCMotor
         double getPRotation(); // Position Rotation
         float getPMeters(); // Position Meters
 
-
+        void testForwardBackward();
 
 
     private:

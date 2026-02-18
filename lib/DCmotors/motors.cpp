@@ -84,6 +84,7 @@ void DCMotor::move(int speed, Direction direction)
     else // BACKWARD
     {
         digitalWrite(in1_pin, LOW);
+        
         digitalWrite(in2_pin, HIGH);
     }
 
@@ -141,3 +142,26 @@ float DCMotor::getPMeters()
 {
     return (encoder_ != nullptr) ? (float)(encoder_->read() * diameter * M_PI / rotation_factor) : 0.0f;
 }
+
+
+
+void DCMotor::testForwardBackward(){
+    const int pwm = 120;
+    const uint32_t time = 1500;
+    const uint32_t pause = 600;
+
+  Serial.println("===>>> Test DCmotors: one by one <<<===");
+
+  // Forward
+  Serial.println("M1");
+  move(pwm);
+  delay(time);
+  stop(); delay(pause);
+
+    // Backward
+  move(-pwm);
+  delay(time);
+  stop(); delay(pause);
+
+}
+
