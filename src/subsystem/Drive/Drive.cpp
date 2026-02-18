@@ -145,3 +145,41 @@ float Drive::clampf(float x, float lo, float hi) {
   return x;
 }
 
+
+// Test kinematics
+void Drive::testKinematics(float v, uint32_t T) {
+
+  holdYaw(false);
+
+  Serial.println("Forward (+vx)");
+  omni_.MoveXYW(+v, 0.0f, 0.0f);
+  delay(T);
+
+  Serial.println("Backward (-vx)");
+  omni_.MoveXYW(-v, 0.0f, 0.0f);
+  delay(T);
+
+  Serial.println("Right (+vy)");
+  omni_.MoveXYW(0.0f, +v, 0.0f);
+  delay(T);
+
+  Serial.println("Left (-vy)");
+  omni_.MoveXYW(0.0f, -v, 0.0f);
+  delay(T);
+
+  Serial.println("Diag (+vx,+vy)");
+  omni_.MoveXYW(+v, +v, 0.0f);
+  delay(T);
+
+  Serial.println("Diag (-vx,-vy)");
+  omni_.MoveXYW(-v, -v, 0.0f);
+  delay(T);
+
+  Serial.println("Diag (+vx,-vy)");
+  omni_.MoveXYW(+v, -v, 0.0f);
+  delay(T);
+
+  Serial.println("Stop");
+  omni_.Stop();
+  delay(1200);
+}

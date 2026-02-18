@@ -46,8 +46,8 @@ public:
   void clearManualOmega();  //go back to PID
 
   void allStop(); //brake
-
-  void lectureBNO();
+  
+  void testKinematics(float v = 0.45f, uint32_t T = 2000);
 
 private:
   // Helpers
