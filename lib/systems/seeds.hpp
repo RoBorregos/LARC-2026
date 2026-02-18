@@ -1,63 +1,43 @@
-/**
- * @file seeds.hpp
- * @date 2026-02-05
- *
- * @brief Clasificación de semillas usando rangos de lecturas crudas del TCS34725 (Clear, R, G, B)
- */
-
-#ifndef SEEDS_HPP
-#define SEEDS_HPP
-
+#pragma once
 #include <Arduino.h>
 #include "rgb.hpp"
 
-// Tipos de semilla (sin VERDE)
 enum class SeedType : uint8_t {
-    MADURO_ROJO = 0,
-    MADURO_AMARILLO,
-    MADURO_NARANJA,
-    SOBREMADURO_AZUL,
-    SOBREMADURO_NEGRO,
-
-    UNKNOWN,// No cayó en ningún rango
-    NOT_INITIALIZED // El sensor RGB no está inicializado
+    MADURO = 0, // Rojo, Amarillo, Naranja combinados
+    SOBREMADURO = 1,// Azul, Negro combinados
+    NOT_INITIALIZED,
+    UNKNOWN
 };
 
-// Un rango de comparación para (Clear, Red, Green, Blue)
+/**
+ * Rango RGB para clasificación
+ */
 struct SeedRange {
-    uint16_t cMin, cMax;
-    uint16_t rMin, rMax;
-    uint16_t gMin, gMax;
-    uint16_t bMin, bMax;
+    uint16_t cMin, cMax; // Clear (brillo)
+    uint16_t rMin, rMax;// Red
+    uint16_t gMin, gMax;// Green
+    uint16_t bMin, bMax;// Blue
 
-    // Devuelve true si (c,r,g,b) cae dentro del rango.
-    //si useClear=false, ignora cMin/cMax (clear).
-    bool contains(uint16_t c,
-                  uint16_t r,
-                  uint16_t g,
-                  uint16_t b,
-                  bool useClear) const;
+    bool contains(uint16_t c, uint16_t r, uint16_t g, uint16_t b, bool useClear = false) const;
 };
 
 class SeedClassifier {
 public:
-    //Solo las clases reales (las primeras 5 del enum)
-    static constexpr uint8_t N_TYPES = 5;
+    static constexpr uint8_t N_TYPES = 2;
 
     SeedClassifier();
 
-    // Lee el sensor y clasifica según los rangos definidos en Templates()
+    /**
+     * Clasificar semilla según lectura RGB
+     */
     SeedType classify(RGB& rgb, bool useClear = false);
 
-    //Convierte SeedType a texto para debug (Serial)
+    /**
+     * Obtener texto descriptivo del tipo
+     */
     static const char* toString(SeedType type);
 
 private:
-    //rangos por clase (orden: rojo, amarillo, naranja, azul, negro)
     SeedRange ranges[N_TYPES];
-
-    // Carga rangos hardcodeados (aquí se debe editar a mano cuando se tengan los rangos de pista)
     void Templates();
 };
-
-#endif // SEEDS_HPP
