@@ -9,12 +9,12 @@
 //   S3 - pin 29
 //   EN - GND (siempre enabled)
 
-static constexpr bool LINE_IS_BLACK = true;
+static constexpr bool LINE_IS_BLACK = false;
 
 // Perfiles de calibración (PLACEHOLDERS)
 // Profile 0: FRONT
-static const uint16_t FRONT_MIN[QTR::N] = {120, 130, 115, 140, 150, 135, 128, 122};
-static const uint16_t FRONT_MAX[QTR::N] = {3100, 3200, 3050, 3300, 3350, 3250, 3150, 3000};
+static const uint16_t FRONT_MIN[QTR::N] = {800, 800, 800, 800, 800, 800, 800, 800};
+static const uint16_t FRONT_MAX[QTR::N] = {1017, 1017, 1017, 1017, 1017, 1017, 1017, 1017};
 
 // Profile 1: REAR
 static const uint16_t REAR_MIN[QTR::N]  = {120, 130, 115, 140, 150, 135, 128, 122};
@@ -168,4 +168,27 @@ bool QTR::onLine(uint16_t threshold) const
             maxv = norm[i];
 
     return maxv > threshold;
+}
+
+
+void QTR::debugPrint() const
+{
+    Serial.print(F("RAW : "));
+    for (uint8_t i = 0; i < N; i++)
+    {
+        Serial.print(raw[i]);
+        if (i < N - 1) Serial.print('\t');
+    }
+    Serial.println();
+
+    Serial.print(F("NORM: "));
+    for (uint8_t i = 0; i < N; i++)
+    {
+        Serial.print(norm[i]);
+        if (i < N - 1) Serial.print('\t');
+    }
+    Serial.println();
+
+    Serial.print(F("POS : "));
+    Serial.println(position);
 }

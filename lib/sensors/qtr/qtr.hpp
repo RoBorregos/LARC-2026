@@ -75,6 +75,8 @@ public:
     const uint16_t *getRaw() const { return raw; }
     const uint16_t *getNorm() const { return norm; }
 
+    void debugPrint() const;
+
 private:
     //donde empieza el qtr en el mux
     uint8_t firstCh;
