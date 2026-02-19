@@ -77,7 +77,7 @@ void SeedClassifier::Templates()
         0, 1800 // B
     };
 
-    // ===== SOBREMADURO =====
+    //SOBREMADURO
     // Combina: Azul, Negro
     ranges[(int)SeedType::SOBREMADURO] = SeedRange{
         0, 300, // C
