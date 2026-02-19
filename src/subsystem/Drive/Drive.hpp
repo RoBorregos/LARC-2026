@@ -6,7 +6,7 @@
 #include "pins.h"
 #include "BNO/bno.hpp"
 #include "motors.hpp"
-#include "omni_motors.hpp"
+#include "kinematics.hpp"
 #include "PIDController.hpp"
 
 //Constants
