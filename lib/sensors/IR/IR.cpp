@@ -2,15 +2,17 @@
  * @file IR.cpp
  * @date 2026-02-10
  *
- * @brief Implementación de sensores IR de línea
+ * @brief Implementación de sensores IR de línea con inversión por sensor
  */
 
 #include "IR.hpp"
 
-// Constructor
-IRLine::IRLine(uint8_t flPin, uint8_t frPin, uint8_t blPin, uint8_t brPin, bool normal)
+// Constructores 
+
+IRLine::IRLine(uint8_t flPin, uint8_t frPin, uint8_t blPin, uint8_t brPin,
+               uint8_t invertedMask)
     : initialized(false),
-      normal(normal)
+      invertedMask(invertedMask)
 {
     pins[FL] = flPin;
     pins[FR] = frPin;
@@ -19,36 +21,36 @@ IRLine::IRLine(uint8_t flPin, uint8_t frPin, uint8_t blPin, uint8_t brPin, bool 
 
     for (uint8_t i = 0; i < N; i++)
     {
-        rawState[i] = false;
+        rawState[i]  = false;
         lineState[i] = false;
     }
 }
 
-// Constructor (arreglo de pines)
-IRLine::IRLine(const uint8_t pins_[N], bool normal)
+IRLine::IRLine(const uint8_t pins_[N], uint8_t invertedMask)
     : initialized(false),
-      normal(normal)
+      invertedMask(invertedMask)
 {
     for (uint8_t i = 0; i < N; i++)
     {
-        pins[i] = pins_[i];
-        rawState[i] = false;
+        pins[i]      = pins_[i];
+        rawState[i]  = false;
         lineState[i] = false;
     }
 }
+
+// Inicialización 
 
 bool IRLine::begin()
 {
-    // Configurar pinMode para cada sensor
     for (uint8_t i = 0; i < N; i++)
-    {
         pinMode(pins[i], INPUT);
-    }
 
     initialized = true;
     update(); // primera lectura
     return true;
 }
+
+//Lectura
 
 void IRLine::update()
 {
@@ -57,28 +59,17 @@ void IRLine::update()
 
     for (uint8_t i = 0; i < N; i++)
     {
-        const bool v = (digitalRead(pins[i]) == HIGH); // true=HIGH, false=LOW
+        const bool raw = (digitalRead(pins[i]) == HIGH); // HIGH true
+        rawState[i] = raw;
 
-        rawState[i] = v;
-
-        // Interpretación típica (cambiar si la lectura es invertida):
-        //Negro suele dar LOW(0)
-        // Blanco suele dar HIGH(1)
-        lineState[i] = normal ? (!v) : (v);
+        const bool isInverted = (invertedMask >> i) & 0x01;
+        lineState[i] = isInverted ? (!raw) : raw;
     }
 }
 
-bool IRLine::getRaw(Sensor s) const
-{
-    return rawState[(uint8_t)s];
-}
+// Getters
 
 bool IRLine::getState(Sensor s) const
 {
     return lineState[(uint8_t)s];
-}
-
-uint8_t IRLine::getPin(Sensor s) const
-{
-    return pins[(uint8_t)s];
 }

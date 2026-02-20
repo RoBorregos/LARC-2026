@@ -1,75 +1,67 @@
+#pragma once
+
 /**
  * @file IR.hpp
  * @date 2026-02-10
  *
- * @brief Sensores IR de línea para detección de salida de pista
- *
- * Nota: la salida digital puede venir invertida según el módulo/cableado.
- * En muchos sensores: NEGRO = LOW(0) y BLANCO = HIGH(1).
- * Ajusta "normal" según el comportamiento en pista.
+ * @brief Declaración de sensores IR de línea con inversión por sensor
  */
-
-#ifndef IR_HPP
-#define IR_HPP
 
 #include <Arduino.h>
 
 class IRLine
 {
 public:
-    static constexpr uint8_t N = 4;
-
+    // Índices de sensores
     enum Sensor : uint8_t
     {
-        FL = 0, // Front Left
-        FR = 1, // Front Right
-        BL = 2, // Back Left
-        BR = 3  // Back Right
+        FL = 0, // Front-Left
+        FR = 1, // Front-Right
+        BL = 2, // Back-Left
+        BR = 3, // Back-Right
+        N  = 4
     };
 
-    // Constructor: pines en orden FL, FR, BL, BR
-    IRLine(uint8_t flPin, uint8_t frPin, uint8_t blPin, uint8_t brPin, bool normal = true);
+    /**
+     * @brief Constructor con pines individuales.
+     *
+     * @param flPin Pin Front-Left
+     * @param frPin Pin Front-Right
+     * @param blPin Pin Back-Left
+     * @param brPin Pin Back-Right
+     * @param invertedMask  Bitmask de sensores invertidos.
+     * Bit 0:FL, Bit 1: FR, Bit 2: BL, Bit 3: BR.
+     * Ejemplo: 0b0011 invierte FL y FR.
+     * Por defecto 0b1111 (todos invertidos).
+     */
+    IRLine(uint8_t flPin, uint8_t frPin, uint8_t blPin, uint8_t brPin,
+           uint8_t invertedMask = 0b1111);
 
-    // Alternativa: arreglo {FL, FR, BL, BR}
-    explicit IRLine(const uint8_t pins_[N], bool normal = true);
+    /**
+     * @brief Constructor con arreglo de pines.
+     *
+     * @param pins_ Arreglo de 4 pines en orden FL, FR, BL, BR
+     * @param invertedMask Bitmask de sensores invertidos (igual que el otro constructor)
+     */
+    IRLine(const uint8_t pins_[N], uint8_t invertedMask = 0b1111);
 
-    // Configura pines como INPUT
+    /** @brief Inicializa los pines y hace la primera lectura. */
     bool begin();
 
-    // Lee sensores y actualiza estados internos
+    /** @brief Lee todos los sensores. Llamar periódicamente. */
     void update();
 
-    // Estado invertido del pin
+    /**
+     * @brief Devuelve el estado lógico del sensor (ya aplicada la inversión).
+     *true = línea
+     *false = sin línea
+     */
     bool getState(Sensor s) const;
 
-    // Estado crudo del pin
-    bool getRaw(Sensor s) const;
-
-    // Acceso al pin físico (debug)
-    uint8_t getPin(Sensor s) const;
-
-    // --- Compatibilidad (opcional): puedes borrar esto si ya migraste ---
-    using Index = Sensor;
-    bool onLine(Index i) const { return getState(i); }
-    bool raw(Index i) const { return getRaw(i); }
-
 private:
-    bool initialized;
-    bool normal;
+    bool    initialized;
     uint8_t pins[N];
-
-    bool rawState[N];
-    bool lineState[N];
+    bool    rawState[N];
+    bool    lineState[N];
+    uint8_t invertedMask; // bit i = 1 = sensor i está invertido
 };
-
-#endif // IR_HPP
-
-/*
-Lo llamas así:
-
-  bool fl = ir.getState(IRLine::FL); (Front Left)
-  bool fr = ir.getState(IRLine::FR); (Front Right)
-  bool bl = ir.getState(IRLine::BL); (Back Left)
-  bool br = ir.getState(IRLine::BR); (Back Right)
-
-*/
