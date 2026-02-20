@@ -28,8 +28,7 @@ namespace Pins
         9   // IN4.2 LOWER RIGHT MOTOR
     };
 
-    constexpr uint8_t kEncoders[8]
-    {
+    constexpr uint8_t kEncoders[8]{
         40, // ENC1B
         39, // ENC1A
         15, // ENC2A
@@ -41,8 +40,7 @@ namespace Pins
     };
 
     // =======Line Sensor=======
-    constexpr uint8_t kQTR1[8]
-    {
+    constexpr uint8_t kQTR1[8]{
         44, // ENC1B
         49, // ENC1A
         25, // ENC2A
@@ -67,10 +65,10 @@ namespace Pins
     // ======== Distance Sensors========
 
     constexpr uint8_t kDistanceSensors[4][2] = {
-        {36, 34}, // FRONT LEFT {TRIG, ECHO} 
+        {36, 34}, // FRONT LEFT {TRIG, ECHO}
         {35, 33}, // FRONT RIGHT {TRIG, ECHO}
         {37, 32}, // BACK RIGHT {TRIG, ECHO}     >>>    nuevos
-        {31, 34}, // BACK LEFt {TRIG, ECHO}         
+        {31, 34}, // BACK LEFt {TRIG, ECHO}
     };
 
     // ======== Line Sensors ========
@@ -85,7 +83,7 @@ namespace Pins
 
     // NOT READY
     constexpr uint8_t kSorterStepPin = 7;
-    constexpr uint8_t kSorterDirPin = 23; 
+    constexpr uint8_t kSorterDirPin = 23;
 
     // ========= Elevator =======
 
@@ -100,7 +98,7 @@ namespace Pins
     const uint8_t kRampIntakeServo = 43;
 
     // ======== Servos ========
-    const uint8_t kDropperServo1 = 21;//nuevo
+    const uint8_t kDropperServo1 = 21; // nuevo
     const uint8_t kDropperServo2 = 31;
     const uint8_t kDropperServo3 = 41;
     const uint8_t kDropperServo4 = 35;
