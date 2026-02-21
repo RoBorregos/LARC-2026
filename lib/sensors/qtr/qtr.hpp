@@ -52,8 +52,7 @@ public:
     bool begin();
 
     //carga calibración predeterminada (fija) para los QTR.
-
-    void setCalibration(const uint16_t (&minVals)[N], const uint16_t (&maxVals)[N]);
+    void setCalibration(const uint16_t* minVals, const uint16_t* maxVals);
 
     // llama a setCalibration y se carga el perfil de cada qtr 
     // hardcodeado dentro del qtr.cpp

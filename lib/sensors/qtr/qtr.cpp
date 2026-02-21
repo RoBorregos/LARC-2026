@@ -1,4 +1,5 @@
 #include "qtr.hpp"
+#include "constants.h"
 
 // 74HC4067
 // Wiring (per schematic):
@@ -10,15 +11,6 @@
 //   EN - GND (siempre enabled)
 
 static constexpr bool LINE_IS_BLACK = false;
-
-// Perfiles de calibración (PLACEHOLDERS)
-// Profile 0: FRONT
-static const uint16_t FRONT_MIN[QTR::N] = {800, 800, 800, 800, 800, 800, 800, 800};
-static const uint16_t FRONT_MAX[QTR::N] = {1017, 1017, 1017, 1017, 1017, 1017, 1017, 1017};
-
-// Profile 1: REAR
-static const uint16_t REAR_MIN[QTR::N]  = {120, 130, 115, 140, 150, 135, 128, 122};
-static const uint16_t REAR_MAX[QTR::N]  = {3100, 3200, 3050, 3300, 3350, 3250, 3150, 3000};
 
 // helpers del mux
 static bool s_muxPinsInitialized = false;
@@ -81,29 +73,28 @@ void QTR::ensureCalValid()
     }
 }
 
-void QTR::setCalibration(const uint16_t (&minVals)[N], const uint16_t (&maxVals)[N])
+// qtr.cpp
+void QTR::setCalibration(const uint16_t* minVals, const uint16_t* maxVals)
 {
     for (uint8_t i = 0; i < N; i++)
     {
         calMin[i] = minVals[i];
         calMax[i] = maxVals[i];
     }
-
     ensureCalValid();
 }
-
 void QTR::useDefaultCalibration(uint8_t profile)
 {
-    // Nota: Si por alguna razón llaman profile "equivocado",
-    // sigue funcionando; solo cambia qué rangos usa para normalizar.
+    using namespace Constants::QTRCalibration;
+
     switch (profile)
     {
     case 1: // REAR
-        setCalibration(REAR_MIN, REAR_MAX);
+        setCalibration(Rear.min, Rear.max);
         break;
     case 0: // FRONT
     default:
-        setCalibration(FRONT_MIN, FRONT_MAX);
+        setCalibration(Front.min, Front.max);
         break;
     }
 }
