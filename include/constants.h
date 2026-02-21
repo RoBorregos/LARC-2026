@@ -51,6 +51,26 @@ namespace Constants
     static constexpr uint32_t kEchoTimeoutUs = 25000; // µs (~4 m máx)
     } // namespace UltrasonicConstants
 
-} // namespace Constants
+    namespace QTRCalibration
+    {
+        constexpr size_t kNumSensors = 8;
+
+        struct Profile
+        {
+            uint16_t min[kNumSensors];
+            uint16_t max[kNumSensors];
+        };
+        // PLACEHOLDERS
+        constexpr Profile Front = {
+            {800, 800, 800, 800, 800, 800, 800, 800},
+            {1017, 1017, 1017, 1017, 1017, 1017, 1017, 1017}
+        };
+
+        constexpr Profile Rear = {
+            {120, 130, 115, 140, 150, 135, 128, 122},
+            {3100, 3200, 3050, 3300, 3350, 3250, 3150, 3000}
+        };
+    } // namespace QTRCalibration
+}
 
 #endif
