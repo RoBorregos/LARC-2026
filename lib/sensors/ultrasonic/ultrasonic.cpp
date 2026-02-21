@@ -1,32 +1,25 @@
+/**
+ * @file ultrasonic.cpp
+ * @brief Sensor ultrasónico HC-SR04 sin delay
+ */
+
 #include "ultrasonic.hpp"
 
 Ultrasonic::Ultrasonic(uint8_t trigPin, uint8_t echoPin)
-    : trig(trigPin),
-      echo(echoPin),
+    : trig(trigPin), echo(echoPin),
       state(State::Idle),
-      lastPingMs(0),
-      tStateUs(0),
-      echoRiseUs(0),
-      distance(0.0f),
-      valid(false)
-{
-}
+      lastPingMs(0), trigStartUs(0), echoRiseUs(0),
+      distance(0.0f), valid(false)
+{}
 
-bool Ultrasonic::begin()
+void Ultrasonic::begin()
 {
     pinMode(trig, OUTPUT);
     pinMode(echo, INPUT);
-
     digitalWrite(trig, LOW);
 
-    // Usa placeholder (mover a constantes después)
-    delay(kBeginSettleMs);
-
+    state      = State::Idle;
     lastPingMs = millis();
-    state = State::Idle;
-    valid = false;
-
-    return true;
 }
 
 void Ultrasonic::update()
@@ -36,87 +29,61 @@ void Ultrasonic::update()
 
     switch (state)
     {
+        //Idle: esperar el período entre pings
         case State::Idle:
-        {
-            // esperar a que sea tiempo de que que haga otro ping
-            if (nowMs - lastPingMs >= kPingPeriodMs)
-            {
-                lastPingMs = nowMs;
-                digitalWrite(trig, LOW);
-                tStateUs = nowUs;
-                state = State::TrigLow;
-            }
-            break;
-        }
-
-        case State::TrigLow:
-        {
-            if (nowUs - tStateUs >= kTrigLowUs)
+            if (nowMs - lastPingMs >= pingperiodms)
             {
                 digitalWrite(trig, HIGH);
-                tStateUs = nowUs;
-                state = State::TrigHigh;
+                trigStartUs = nowUs;
+                state       = State::Trig_High;
             }
             break;
-        }
 
-        case State::TrigHigh:
-        {
-            if (nowUs - tStateUs >= kTrigHighUs)
+        //Trig High: mantener trigger en HIGH 10 µs
+        case State::Trig_High:
+            if (nowUs - trigStartUs >= trighighus)
             {
                 digitalWrite(trig, LOW);
-                tStateUs = nowUs;
-                state = State::WaitEchoRise;
+                state = State::Wait_Echo_Up;
             }
             break;
-        }
 
-        case State::WaitEchoRise:
-        {
-            // Espera a que ECHO este HIGH o timeout
+        //Wait echo high: esperar subida del echo
+        // Timeout global: si pasan kEchoTimeoutUs sin subida = reset
+        case State::Wait_Echo_Up:
             if (digitalRead(echo) == HIGH)
             {
-                echoRiseUs = micros();
-                state = State::WaitEchoFall;
+                echoRiseUs = nowUs;
+                state      = State::Wait_Echo_Down;
             }
-            else if (nowUs - tStateUs >= kEchoTimeoutUs)
+            else if (nowUs - trigStartUs >= echotimeoutus)
             {
-                // Timeout: no se detectó el echo
-                valid = false;
-                state = State::Idle;
+                // Sin echo: objeto fuera de rango o fallo
+                valid      = false;
+                lastPingMs = nowMs; // reinicia período desde ahora
+                state      = State::Idle;
             }
             break;
-        }
 
-        case State::WaitEchoFall:
-        {
+        //Wait echo down: esperar bajada del echo calcular distancia
+        case State::Wait_Echo_Down:
             if (digitalRead(echo) == LOW)
             {
-                const uint32_t duration = micros() - echoRiseUs;
-
-                // Convertir a cm (speed of sound factor)
-                distance = duration / 58.0f;
-                valid = true;
-
-                state = State::Idle;
+                distance   = (nowUs - echoRiseUs) / 58.0f;
+                valid      = true;
+                lastPingMs = nowMs;
+                state      = State::Idle;
             }
-            else if (micros() - echoRiseUs >= kEchoTimeoutUs)
+            else if (nowUs - echoRiseUs >= echotimeoutus)
             {
-                // esperando que ECHO vuelva a LOW
-                valid = false;
-                state = State::Idle;
+                // Echo se quedó en HIGH demasiado tiempo → objeto muy lejos
+                valid      = false;
+                lastPingMs = nowMs;
+                state      = State::Idle;
             }
             break;
-        }
     }
 }
 
-float Ultrasonic::getdistance() const
-{
-    return distance;
-}
-
-bool Ultrasonic::isValid() const
-{
-    return valid;
-}
+float Ultrasonic::getdistance() const { return distance; }
+bool  Ultrasonic::isValid()     const { return valid; }
