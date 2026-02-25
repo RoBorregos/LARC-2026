@@ -66,7 +66,7 @@ float BNO::wrapAngle(float angle) const
 float BNO::getYaw() const
 {
     float yawDeg;
-    yawDeg = -event.orientation.x; //-wrapAngle(event.orientation.x); 
+    yawDeg = -wrapAngle(event.orientation.x); //-event.orientation.x; 
     return yawDeg * (M_PI/180.0f);// convert to radians
 }
 
