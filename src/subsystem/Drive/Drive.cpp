@@ -75,26 +75,32 @@ void Drive::update() {
 
       Serial.print(now);
       Serial.print("\t");
+      Serial.print("YAW: ");
       Serial.print(rad2deg(yaw), 2);
       Serial.print("\t\t");
+      Serial.print("targuet yaw: ");
       Serial.print(rad2deg(targetYaw_), 2);
       Serial.print("\t\t");
+      Serial.print("error");
       Serial.print(rad2deg(err), 2);
       Serial.print("\t\t");
+      Serial.print("omega");
       Serial.print(omega, 4);
       Serial.print("\t");
+      Serial.print("vxCmd");
       Serial.print(vxCmd_, 2);
       Serial.print("\t");
+      Serial.print("vyCmd");
       Serial.println(vyCmd_, 2);
     }
   }
 }
 
 // ====== Funciones de movimiento ======
-void Drive::forward(float speed)  { vxCmd_ = +speed; vyCmd_ = 0.0f; }
-void Drive::backward(float speed) { vxCmd_ = -speed; vyCmd_ = 0.0f; }
-void Drive::left(float speed)  { vxCmd_ = 0.0f; vyCmd_ = -speed; }
-void Drive::right(float speed) { vxCmd_ = 0.0f; vyCmd_ = +speed; }
+void Drive::left(float speed)  { vxCmd_ = +speed; vyCmd_ = 0.0f; }//before: forward
+void Drive::backward(float speed) { vxCmd_ = -speed; vyCmd_ = 0.0f; }//before: backward
+void Drive::backward(float speed)  { vxCmd_ = 0.0f; vyCmd_ = -speed; }   //before: left
+void Drive::forward(float speed) { vxCmd_ = 0.0f; vyCmd_ = +speed; }   //before: right
 void Drive::stop() {
   vxCmd_ = 0.0f;
   vyCmd_ = 0.0f;
@@ -182,4 +188,9 @@ void Drive::testKinematics(float v, uint32_t T) {
   Serial.println("Stop");
   omni_.Stop();
   delay(1200);
+}
+
+void Drive::setTranslation(float vx, float vy) {
+  vxCmd_ = vx;
+  vyCmd_ = vy;
 }
