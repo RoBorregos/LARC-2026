@@ -1,7 +1,15 @@
+/**
+ * @file pins.h
+ * @date 12/01/2026
+ * @author Ximena Patricia García Magdaleno
+ *
+ * @brief Pin definitions for the robot.
+ */
+
 #ifndef Pins_h
 #define Pins_h
 
-#include <Arduino.h>  // preguntar
+#include <Arduino.h>
 
 namespace Pins
 {
@@ -39,25 +47,35 @@ namespace Pins
         16  // ENC4B
     };
 
-    // ======== Distance Sensors========
+    // ======== Distance Sensors ========
 
     constexpr uint8_t kDistanceSensors[4][2] = {
-        {36, 34}, // FRONT LEFT {TRIG, ECHO}
+        {36, 34}, // FRONT LEFT  {TRIG, ECHO}
         {35, 33}, // FRONT RIGHT {TRIG, ECHO}
     };
 
-    // QTR / 74HC4067 Multiplexer
-    // NOTE: These pin values are TEMPORARY PLACEHOLDERS.
-    // The QTR library was modified to depend on pins.h instead of hardcoded pins.
-    // Final pin assignment will be defined later once the pinout is agreed with the team.
-    static constexpr uint8_t kMuxSig = A0;  // SIG -> A0 (analog)
-    static constexpr uint8_t kMuxS0  = 26;
-    static constexpr uint8_t kMuxS1  = 27;
-    static constexpr uint8_t kMuxS2  = 28;
-    static constexpr uint8_t kMuxS3  = 29;
+    // ======== 74HC4067 Multiplexer ========
+    // NOTE: Valores TEMPORALES. Confirmar con el equipo antes de soldar.
+    static constexpr uint8_t kMuxSig = 24; // SIG → pin analógico
+    static constexpr uint8_t kMuxS0  = 21;
+    static constexpr uint8_t kMuxS1  = 25;
+    static constexpr uint8_t kMuxS2  = 2;
+    static constexpr uint8_t kMuxS3  = 27;
 
-    // ======== Line Sensors ========
+    // ======== QTR – Canales en el mux ========
+    // Primer canal del arreglo frontal (C0..C7)
+    static constexpr uint8_t kQtrFrontFirstCh = 0;
+    // Primer canal del arreglo trasero (C8..C15)
+    static constexpr uint8_t kQtrRearFirstCh  = 8;
 
+    // ======== IR Line – Canales en el mux ========
+    // ← Modificar estos valores para reasignar los canales físicos del mux
+    static constexpr uint8_t kIrChFL = 15;  // Canal mux - sensor Front-Left
+    static constexpr uint8_t kIrChFR = 14;  // Canal mux - sensor Front-Right
+    static constexpr uint8_t kIrChBL = 13;  // Canal mux - sensor Back-Left
+    static constexpr uint8_t kIrChBR = 12;  // Canal mux - sensor Back-Right
+
+    // ======== Line Sensors (digital, próxima competencia) ========
     static constexpr uint8_t kLineSensorFL = 28;
     static constexpr uint8_t kLineSensorFC = 0;
     static constexpr uint8_t kLineSensorFR = 27;
@@ -65,25 +83,19 @@ namespace Pins
     static constexpr uint8_t kLineSensorBR = 20;
 
     // ======== Sorter ========
-
-    // NOT READY
     constexpr uint8_t kSorterStepPin = 7;
-    constexpr uint8_t kSorterDirPin = 23;
+    constexpr uint8_t kSorterDirPin  = 23;
 
     // ======== Elevator ========
-
     constexpr uint8_t kElevatorINA1 = 1;
     constexpr uint8_t kElevatorINA2 = 8;
-    constexpr uint8_t kElevatorPWM = 22;
+    constexpr uint8_t kElevatorPWM  = 22;
 
     // ======== Intake ========
-
     const uint8_t kUpperIntakeServo = 3;
     const uint8_t kLowerIntakeServo = 6;
-    const uint8_t kRampIntakeServo = 4;
-
-    // NOT READY
-    const uint8_t kDropperServo = 30;
+    const uint8_t kRampIntakeServo  = 4;
+    const uint8_t kDropperServo     = 30; // NOT READY
 
 }
 
