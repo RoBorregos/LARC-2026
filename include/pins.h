@@ -15,17 +15,17 @@ namespace Pins
     };
 
     constexpr uint8_t kUpperMotors[4] = {
-        12, // IN1.1 UPPER LEFT MOTOR
-        11, // IN1.2 UPPER LEFT MOTOR
-        38, // IN2.1 UPPER RIGHT MOTOR
-        37, // IN2.2 UPPER RIGHT MOTOR
+        12, // IN1.1 UPPER LEFT MOTOR    m1
+        11, // IN1.2 UPPER LEFT MOTOR    m1
+        38, // IN2.1 UPPER RIGHT MOTOR   m2
+        37, // IN2.2 UPPER RIGHT MOTOR   m2
     };
 
     constexpr uint8_t kLowerMotors[4] = {
-        32, // IN3.1 LOWER LEFT MOTOR
-        31, // IN3.2 LOWER LEFT MOTOR
-        26, // IN4.1 LOWER RIGHT MOTOR
-        9   // IN4.2 LOWER RIGHT MOTOR
+        32, // IN3.1 LOWER LEFT MOTOR   m3
+        31, // IN3.2 LOWER LEFT MOTOR   m3
+        26, // IN4.1 LOWER RIGHT MOTOR  m4
+        9   // IN4.2 LOWER RIGHT MOTOR  m4
     };
 
     constexpr uint8_t kEncoders[8]{
