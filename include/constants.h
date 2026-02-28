@@ -22,10 +22,10 @@ namespace Constants
     namespace Kinematics
     {
         // "omni_motors" class
-        constexpr float M1_ANGLE = 135.0f;  // M1
-        constexpr float M2_ANGLE = 45.0f;   // M2
-        constexpr float M3_ANGLE = -135.0f; // M3 -45.0f;
-        constexpr float M4_ANGLE = -45.0f; // M4 -135.0f;
+        constexpr float M1_ANGLE = 135.0f;  // M1     UL
+        constexpr float M2_ANGLE = 45.0f;   // M2     UR
+        constexpr float M3_ANGLE = -135.0f; // M3     LL
+        constexpr float M4_ANGLE = -45.0f;  // M4     LR
     } // namespace Kinematics
 
     namespace DriveConstants
