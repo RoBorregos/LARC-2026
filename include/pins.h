@@ -57,10 +57,10 @@ namespace Pins
     // ======== 74HC4067 Multiplexer ========
     // NOTE: Valores TEMPORALES. Confirmar con el equipo antes de soldar.
     static constexpr uint8_t kMuxSig = 24; // SIG → pin analógico
-    static constexpr uint8_t kMuxS0  = 21;
-    static constexpr uint8_t kMuxS1  = 25;
-    static constexpr uint8_t kMuxS2  = 2;
-    static constexpr uint8_t kMuxS3  = 27;
+    static constexpr uint8_t kMuxS0  = 27;
+    static constexpr uint8_t kMuxS1  = 21;
+    static constexpr uint8_t kMuxS2  = 0;
+    static constexpr uint8_t kMuxS3  = 25;
 
     // ======== QTR – Canales en el mux ========
     // Primer canal del arreglo frontal (C0..C7)
@@ -70,10 +70,10 @@ namespace Pins
 
     // ======== IR Line – Canales en el mux ========
     // ← Modificar estos valores para reasignar los canales físicos del mux
-    static constexpr uint8_t kIrChFL = 15;  // Canal mux - sensor Front-Left
-    static constexpr uint8_t kIrChFR = 14;  // Canal mux - sensor Front-Right
-    static constexpr uint8_t kIrChBL = 13;  // Canal mux - sensor Back-Left
-    static constexpr uint8_t kIrChBR = 12;  // Canal mux - sensor Back-Right
+    static constexpr uint8_t kIrChFL = 13;  // Canal mux - sensor Front-Left
+    static constexpr uint8_t kIrChFR = 12;  // Canal mux - sensor Front-Right
+    static constexpr uint8_t kIrChBL = 11;  // Canal mux - sensor Back-Left
+    static constexpr uint8_t kIrChBR = 10;  // Canal mux - sensor Back-Right
 
     // ======== Line Sensors (digital, próxima competencia) ========
     static constexpr uint8_t kLineSensorFL = 28;
@@ -93,9 +93,10 @@ namespace Pins
 
     // ======== Intake ========
     const uint8_t kUpperIntakeServo = 3;
-    const uint8_t kLowerIntakeServo = 6;
-    const uint8_t kRampIntakeServo  = 4;
-    const uint8_t kDropperServo     = 30; // NOT READY
+    const uint8_t kLowerIntakeServo = 4;
+    const uint8_t kSeparatorServo   = 255;
+    const uint8_t kRedBenefitServo  = 255;
+    const uint8_t kBlueBenefitServo  = 255;
 
 }
 
