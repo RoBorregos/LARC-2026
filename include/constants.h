@@ -84,6 +84,43 @@ namespace Constants
         static constexpr uint16_t kThreshBR = 512; // Back-Right
     } // namespace IRCalibration
 
+    namespace ServoAngles
+    {
+        // Intake Superior
+
+        static constexpr uint8_t kIntakeUpperHome   = 0;   // retractado, 
+        static constexpr uint8_t kIntakeUpperDeploy = 80;  // posición de tumble
+
+        // Intake Inferior
+
+        static constexpr uint8_t kIntakeLowerHome   = 0;   // retractado
+        static constexpr uint8_t kIntakeLowerDeploy = 80;  // posición de tumble
+
+        // Compuerta Separadora
+        // Compuerta que dirige la semilla al canal correcto
+        static constexpr uint8_t kSeparatorCenter = 90;  // neutro/hold
+        static constexpr uint8_t kSeparatorLeft   = 45;  // canal izquierdo
+        static constexpr uint8_t kSeparatorRight  = 135; // canal derecho
+
+        // Servo Beneficiadero Rojo
+        // Permanece cerrado hasta recibir señal
+        static constexpr uint8_t kBenefitRedClosed = 0;   // cerrado
+        static constexpr uint8_t kBenefitRedOpen   = 90;  // abierto
+
+        // Servo Beneficiadero Azul
+        // Permanece cerrado hasta recibir señal
+        static constexpr uint8_t kBenefitBlueClosed = 0;   // cerrado
+        static constexpr uint8_t kBenefitBlueOpen   = 90;  // abierto
+
+        // Tiempo de movimiento (ms)
+        // Ajustar si queremos que se tarde o que la respuesta sea inmediata a la señal que recibe.
+        static constexpr uint32_t kIntakeUpperMoveMs  = 300;
+        static constexpr uint32_t kIntakeLowerMoveMs  = 300;
+        static constexpr uint32_t kSeparatorMoveMs    = 300;
+        static constexpr uint32_t kBenefitRedMoveMs   = 300;
+        static constexpr uint32_t kBenefitBlueMoveMs  = 300;
+    } // namespace ServoAngles
+
 } // namespace Constants
 
 #endif
