@@ -24,8 +24,8 @@ namespace Constants
         // "omni_motors" class
         constexpr float M1_ANGLE = 135.0f;  // M1
         constexpr float M2_ANGLE = 45.0f;   // M2
-        constexpr float M3_ANGLE = -45.0f;  // M3
-        constexpr float M4_ANGLE = -135.0f; // M4
+        constexpr float M3_ANGLE = -135.0f; // M3 -45.0f;
+        constexpr float M4_ANGLE = -45.0f; // M4 -135.0f;
     } // namespace Kinematics
 
     namespace DriveConstants
@@ -38,9 +38,9 @@ namespace Constants
     } // namespace DriveConstants
     namespace PID
     {
-        static constexpr float kKp = 4.8f;
-        static constexpr float kKi = 0.002f;
-        static constexpr float kKd = 0.06f;
+        static constexpr float kKp = 8.8f; // 4.8f
+        static constexpr float kKi = 0.002f; //0.002f
+        static constexpr float kKd = 0.06f;  //0.06f;   
         static constexpr float kOmegaMax = 0.25f;
     } // namespace PID
 } // namespace Constants
