@@ -16,8 +16,11 @@ State state = State::FORWARD;
 uint32_t stateStart = 0;
 
 // Arriba, global:
-static uint32_t clearStartMs = 0; //limpiar/reiniciar conteo
+static uint32_t clearStartMs = 0; //limpiar y reiniciar conteo
 static constexpr uint32_t kClearDelayMs = 300; // espera 300 ms sin obstaculo antes de salir de RIGHT
+
+static uint32_t velocity = 0.45f; 
+
 
 void setup()
 {
@@ -34,9 +37,7 @@ void setup()
 void loop()
 {
  
-  drive.update(); // control update
-
-  // Lectura simultanea: no bloquea 
+  drive.update(); //control update
   us1.update();
   us2.update();
 
@@ -54,7 +55,7 @@ void loop()
   // Logica
   if (state == State::FORWARD)
 {
-  drive.forward(0.35f);
+  drive.forward(velocity); //0.35f antes (chasis viejito)
 
   if (obstacle)
   {
@@ -64,11 +65,11 @@ void loop()
 }
 else // RIGHT
 {
-  drive.left(0.35f);
+  drive.left(velocity);
 
   if (obstacle)
   {
-    // Sigue habiendo obstaculo -> reinicia “despeje”
+    // Sigue habiendo obstaculo -> reinicia
     clearStartMs = 0;
   }
   else
