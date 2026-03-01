@@ -3,10 +3,10 @@
 
 Drive::Drive()
   : bno_(),
-    m1_ul_(Pins::kUpperMotors[0], Pins::kUpperMotors[1], Pins::kPwmPin[0], false, UL_ENC_A, UL_ENC_B, diameter),
+    m1_ul_(Pins::kUpperMotors[0], Pins::kUpperMotors[1], Pins::kPwmPin[0], true, UL_ENC_A, UL_ENC_B, diameter),
     m2_ur_(Pins::kUpperMotors[2], Pins::kUpperMotors[3], Pins::kPwmPin[1], true,  UR_ENC_A, UR_ENC_B, diameter),
     m3_ll_(Pins::kLowerMotors[0], Pins::kLowerMotors[1], Pins::kPwmPin[2], true,  LL_ENC_A, LL_ENC_B, diameter),
-    m4_lr_(Pins::kLowerMotors[2], Pins::kLowerMotors[3], Pins::kPwmPin[3], false, LR_ENC_A, LR_ENC_B, diameter),
+    m4_lr_(Pins::kLowerMotors[2], Pins::kLowerMotors[3], Pins::kPwmPin[3], true, LR_ENC_A, LR_ENC_B, diameter),
     omni_(m1_ul_, m2_ur_, m3_ll_, m4_lr_),
     yawPid_(P, I, D, -kOmegaMax, +kOmegaMax)
 {
@@ -97,10 +97,10 @@ void Drive::update() {
 }
 
 // ====== Funciones de movimiento ======
-void Drive::left(float speed)  { vxCmd_ = +speed; vyCmd_ = 0.0f; }//before: forward
-void Drive::backward(float speed) { vxCmd_ = -speed; vyCmd_ = 0.0f; }//before: backward
-void Drive::backward(float speed)  { vxCmd_ = 0.0f; vyCmd_ = -speed; }   //before: left
-void Drive::forward(float speed) { vxCmd_ = 0.0f; vyCmd_ = +speed; }   //before: right
+void Drive::forward(float speed)  { vxCmd_ = +speed; vyCmd_ = 0.0f; }
+void Drive::backward(float speed) { vxCmd_ = -speed; vyCmd_ = 0.0f; }
+void Drive::right(float speed)  { vxCmd_ = 0.0f; vyCmd_ = -speed; } 
+void Drive::left(float speed) { vxCmd_ = 0.0f; vyCmd_ = +speed; }   
 void Drive::stop() {
   vxCmd_ = 0.0f;
   vyCmd_ = 0.0f;
@@ -124,7 +124,7 @@ float Drive::getYaw() const {
   return ((Drive*)this)->bno_.getYaw();
 }
 
-float Drive::rad2deg(float r) { return r * (180.0f / M_PI); } //para los prints
+float Drive::rad2deg(float r) { return r * (180.0f / M_PI); } 
 
 // ====== Omega manual opcional ======
 void Drive::setManualOmega(float omegaRadS) {
