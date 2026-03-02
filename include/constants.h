@@ -38,7 +38,7 @@ namespace Constants
     } // namespace DriveConstants
     namespace PID
     {
-        static constexpr float kKp = 8.8f; // 4.8f
+        static constexpr float kKp = 2.5f; // 4.8f
         static constexpr float kKi = 0.002f; //0.002f
         static constexpr float kKd = 0.06f;  //0.06f;   
         static constexpr float kOmegaMax = 0.25f;
