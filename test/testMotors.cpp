@@ -20,7 +20,7 @@ static constexpr uint8_t LR_ENC_A = Pins::kEncoders[6];
 static constexpr uint8_t LR_ENC_B = Pins::kEncoders[7];
 
 
-// Crea los motores con tus pines
+
 DCMotor m1_ul(Pins::kUpperMotors[0], Pins::kUpperMotors[1], Pins::kPwmPin[0], true, UL_ENC_A, UL_ENC_B, diameter);
 DCMotor m2_ur(Pins::kUpperMotors[2], Pins::kUpperMotors[3], Pins::kPwmPin[1], false,  UR_ENC_A, UR_ENC_B, diameter);
 DCMotor m3_ll(Pins::kLowerMotors[0], Pins::kLowerMotors[1], Pins::kPwmPin[2], true,  LL_ENC_A, LL_ENC_B, diameter);
