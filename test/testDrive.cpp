@@ -22,8 +22,8 @@ enum Step : uint8_t {
 static Step step = FWD;
 static uint32_t stepStart = 0;
 
-static constexpr uint32_t kStepMs = 1500; // 1.5s cada paso
-static constexpr float kSpeed = 0.35f;
+static constexpr uint32_t kStepMs = 1500; // 1.5s each state
+static constexpr float kSpeed = Constants::PID::kcurrentVelocity; 
 
 void setStep(Step s) {
   step = s;
@@ -37,7 +37,7 @@ void setup() {
   delay(500);
 
   drive.begin();
-  drive.holdYaw(true);         // se usa el PID para mantener yaw
+  drive.holdYaw(true);      
   drive.setTargetYaw(drive.getYaw());
 
   setStep(FWD);
@@ -47,7 +47,7 @@ void loop() {
   //Actualiza drive <<<BNO + PID + motores>>>
   drive.update();
 
-  // Logica de secuencia (demo)
+  //Logic Sequence
   uint32_t now = millis();
   if (now - stepStart > kStepMs) {
     switch (step) {
