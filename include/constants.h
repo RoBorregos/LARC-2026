@@ -42,6 +42,8 @@ namespace Constants
         static constexpr float kKi = 0.0f; //0.002f
         static constexpr float kKd = 0.0f;  //0.06f;   
         static constexpr float kOmegaMax = 0.25f;
+        static constexpr float kcurrentVelocity = 0.42f; //Velocity according to PID
+
     } // namespace PID
 } // namespace Constants
 
