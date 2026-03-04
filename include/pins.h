@@ -92,18 +92,11 @@ namespace Pins
     constexpr uint8_t kElevatorPWM = 22;
 
     // ======== Intake ========
-
-    const uint8_t kUpperIntakeServo = 37;
-    const uint8_t kLowerIntakeServo = 60;
-    const uint8_t kRampIntakeServo = 43;
-
-    // ======== Servos ========
-    const uint8_t kDropperServo1 = 21; // nuevo
-    const uint8_t kDropperServo2 = 31;
-    const uint8_t kDropperServo3 = 41;
-    const uint8_t kDropperServo4 = 35;
-    const uint8_t kDropperServo5 = 10;
-    const uint8_t kDropperServo6 = 9;
+    const uint8_t kUpperIntakeServo = 3;
+    const uint8_t kLowerIntakeServo = 4;
+    const uint8_t kSeparatorServo   = 255;
+    const uint8_t kRedBenefitServo  = 255;
+    const uint8_t kBlueBenefitServo  = 255;
 
     // ====== LED =====
     const uint8_t kLed1 = 6;
