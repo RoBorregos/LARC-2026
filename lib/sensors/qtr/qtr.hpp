@@ -4,10 +4,10 @@
  *
  * @brief QTR-8A (8-channel reflectance array) read through a shared 74HC4067 analog mux.
  *
- * Caso de uso: DOS arrays separados de QTR en el mismo mux.
- *  - QTR Frontal conectado de C0 a C7 (firstChannel = 0)
- *  - QTR Trasero conectado de C8 a C15 (firstChannel = 8)
- * La maquina de estados los puede usar independientemente
+ * Case of use, 2 separate arrays connected to the same mux:
+ *  - QTR Frontal front connected form C0 to C7 (firstChannel = 0)
+ *  - QTR Back connected from C8 to C15 (firstChannel = 8)
+ * State machine can use them independently
  */
 
 #ifndef QTR_HPP
@@ -20,41 +20,33 @@
 class QTR
 {
 public:
-    //Característica compartida de los QTR (tienen 8 sensores)
+
     static constexpr uint8_t N = 8;
 
-    // firstChannel es el canal donde empieza el mux, por ej.
+    // firstChannel as it states is where the QTR starts in the mux.
     // QTR qtrFront(0, mux); (C0..C7)
     // QTR qtrRear(8, mux);  (C8..C15)
     explicit QTR(uint8_t firstChannel, Mux74HC4067& mux);
 
-    // Inicializa los pines del mux y deja el QTR listo pa jalar.
-    // Se llama UNA sola vez en setup()
-    // Siempre antes de cualquier update() o lectura
-    // void setup() {
-    //  qtrFront.begin();
-    //  qtrRear.begin();
-    // }
-    // Valor de retorno:
-    // true = inicialización correcta
-    // false = error (hardware no disponible, mala configuración, etc...)
+    // Initializes the pin arrangement on the mux
+    // Called once on setup()
+    
     bool begin();
 
-    // carga calibración predeterminada (fija) para los QTR.
+    // Loads preset calibration for the 8 sensors,
     void setCalibration(const uint16_t* minVals, const uint16_t* maxVals);
 
-    // llama a setCalibration y se carga el perfil de cada qtr
-    // hardcodeado dentro del qtr.cpp
+    // Calls setcalibration and loads the profile for each qtr from constants.h
     void useDefaultCalibration(uint8_t profile = 0);
 
-    // se leen los sensores y se actualizan el cache
+    // Reads the sensor and updates the cache
     void update();
 
-    // posición en el array de 0 a 7000
+    // Pos on the array from 0 (extreme left) to 7000 (extreme right)
     int getPosition() const;
 
-    // verdadero si cualquier sensor esta arriba del treshhold
-    // de 0..1000 después de la normalización
+    // True if any sensor is over the threshold.
+    // From 0 to 1000 after normalization
     bool onLine(uint16_t threshold = 200) const;
 
     // Debug
@@ -64,22 +56,22 @@ public:
     void debugPrint() const;
 
 private:
-    // donde empieza el qtr en el mux
+
     uint8_t         firstCh;
     bool            initialized;
 
     Mux74HC4067&    mux;
 
-    // valores crudos del ADC
+    // Raw values form the ADC
     uint16_t raw[N];
-    // mínimos por sensor
+    // Minimum values per sensor
     uint16_t calMin[N];
-    // máximos por sensor
+    // Maximum values per sensor
     uint16_t calMax[N];
-    // valores normalizados
+    // Normalized values
     uint16_t norm[N];
 
-    // resultado final para control
+    // Final result for control.
     int position;
 
     void ensureCalValid();

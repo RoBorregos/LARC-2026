@@ -17,7 +17,7 @@ class RGB
 public:
     static constexpr uint8_t N_CHANNELS = 4;
 
-    // Constructor: usa las mismas constantes que los ejemplos de Adafruit
+    // Constructor, uses the same parameters as Adafruit_TCS34725, with default values.
     RGB(decltype(TCS34725_INTEGRATIONTIME_50MS) it = TCS34725_INTEGRATIONTIME_50MS,
         decltype(TCS34725_GAIN_4X) gain = TCS34725_GAIN_4X);
 

@@ -28,33 +28,27 @@ public:
     };
 
     /**
-     * @brief Constructor.
-     *
-     * @param mux_ Referencia al mux compartido (ya inicializado con begin())
-     * @param channels_ Canales del mux para cada sensor en orden FL, FR, BL, BR.
-     * @param invertedMask  Bitmask de sensores invertidos.
-     * Bit 0=FL, Bit 1=FR, Bit 2=BL, Bit 3=BR.
+     * Sensor Bitmask
+     * Bit 0:FL, Bit 1: FR, Bit 2: BL, Bit 3: BR.
      * Ejemplo: 0b0011 invierte FL y FR.
-     * Por defecto 0b0000 (ninguno invertido).
+     * By default 0b1111 (all inverted).
      */
     IR_mux(Mux74HC4067& mux_, const uint8_t channels_[N],
            uint8_t invertedMask = 0b0000);
 
 
-    /** @brief Inicializa el mux y hace la primera lectura. */
+    // Configs mux and does first reading
     bool begin();
 
-    /** @brief Lee todos los sensores. Llamar periódicamente en el loop. */
+    // Reads raw values of all sensors
     void update();
 
-    /**
-     * @brief Devuelve el estado lógico del sensor (ya aplicada la inversión).
-     * true  = línea detectada
-     * false = sin línea
-     */
+    //Rrturns the logic reading of sensors (after palying inversion)
+    //true = Line
+    //false = No line
     bool getState(Sensor s) const;
 
-    /** @brief Devuelve el valor analógico crudo (0..1023) del sensor. */
+    // Rethrns the analog raw value (0..1023) of the sensor s
     uint16_t getRaw(Sensor s) const;
 
     void debugPrint() const;
@@ -63,18 +57,17 @@ public:
 private:
     Mux74HC4067& mux;
 
-    // Canales del mux asignados a cada sensor (se definen en el constructor)
+    //Channels assigned to each sensor on the mux (defined in constructor)
     uint8_t  channels[N];
 
-    //Umbrales analógicos por sensor (0..1023)
+    // Analog thresholds for each sensor (defined in constructor or constants.h)
     uint16_t threshold[N];
 
-    // bit i = 1 sensor i está invertido lógicamente
     uint8_t  invertedMask;
 
     bool     initialized;
-    uint16_t rawVal[N]; // lecturas crudas del ADC
-    bool     lineState[N]; // estado lógico final (con inversión aplicada)
+    uint16_t rawVal[N]; // ADC raw value (0..1023)
+    bool     lineState[N]; // Final logic state after applying threshold and inversion
 };
 
 #endif // IRLINE_HPP

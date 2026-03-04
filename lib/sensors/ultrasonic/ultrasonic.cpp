@@ -1,6 +1,6 @@
 /**
  * @file ultrasonic.cpp
- * @brief Sensor ultrasónico HC-SR04 sin delay
+ * @brief Ultrasonic sensor library without delays.
  */
 
 #include "ultrasonic.hpp"
@@ -29,7 +29,7 @@ void Ultrasonic::update()
 
     switch (state)
     {
-        //Idle: esperar el período entre pings
+        //Idle: wait for the period between pings
         case State::Idle:
             if (nowMs - lastPingMs >= pingperiodms)
             {
@@ -39,7 +39,7 @@ void Ultrasonic::update()
             }
             break;
 
-        //Trig High: mantener trigger en HIGH 10 µs
+        //Trig High: Maintain trig HIGH for 10 µs
         case State::Trig_High:
             if (nowUs - trigStartUs >= trighighus)
             {
@@ -48,8 +48,8 @@ void Ultrasonic::update()
             }
             break;
 
-        //Wait echo high: esperar subida del echo
-        // Timeout global: si pasan kEchoTimeoutUs sin subida = reset
+        //Wait echo high: wait for the echo to go HIGH
+        // Global timeout: if kEchoTimeoutUs passes without rising = reset
         case State::Wait_Echo_Up:
             if (digitalRead(echo) == HIGH)
             {
@@ -58,14 +58,14 @@ void Ultrasonic::update()
             }
             else if (nowUs - trigStartUs >= echotimeoutus)
             {
-                // Sin echo: objeto fuera de rango o fallo
+                // No echo: object out of range or failure
                 valid      = false;
-                lastPingMs = nowMs; // reinicia período desde ahora
+                lastPingMs = nowMs; // reset period from now
                 state      = State::Idle;
             }
             break;
 
-        //Wait echo down: esperar bajada del echo calcular distancia
+        //Wait echo down: wait for the echo to go LOW and calculate distance
         case State::Wait_Echo_Down:
             if (digitalRead(echo) == LOW)
             {
@@ -76,7 +76,7 @@ void Ultrasonic::update()
             }
             else if (nowUs - echoRiseUs >= echotimeoutus)
             {
-                // Echo se quedó en HIGH demasiado tiempo → objeto muy lejos
+                // Echo stayed HIGH for too long = object is too far away
                 valid      = false;
                 lastPingMs = nowMs;
                 state      = State::Idle;

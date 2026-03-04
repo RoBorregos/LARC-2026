@@ -2,7 +2,7 @@
  * @file rgb.hpp
  * @date 2026-01-28
  *
- * @brief TCS34725 sensor RGB
+ * @brief TCS34725 RGB Sensor
 */
 
 #include "rgb.hpp"
@@ -20,9 +20,6 @@ RGB::RGB(decltype(TCS34725_INTEGRATIONTIME_50MS) it,
 {
 }
 
-// begin():
-//se ntenta detectar/inicializar el sensor por I2C.
-// Si no lo encuentra, regresa false.
 bool RGB::begin()
 {
     if (!tcs.begin())
@@ -35,14 +32,14 @@ bool RGB::begin()
     return true;
 }
 
-// update():
-// Lee los 4 canales crudos del sensor y los guarda en el "cache" interno.
+
+// Reads the 4 raw channels from the sensor and stores them in the internal "cache".
 void RGB::update()
 {
     if (!initialized)
         return;
 
-    //devuelve en el orden: R, G, B, C
+    //Returns in the order: R, G, B, C
     tcs.getRawData(&red, &green, &blue, &clear);
 }
 

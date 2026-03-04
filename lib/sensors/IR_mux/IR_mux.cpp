@@ -2,8 +2,8 @@
  * @file IRLine.cpp
  * @date 2026-02-22
  *
- * @brief Implementación de sensores IR de línea analógicos con umbral por sensor
- *        a través de un 74HC4067.
+ * @brief Implementation of the IR sensors using analog read with thresholds and per-sensor inversion.
+ *        Through a 74HC4067.
  */
 
 #include "IR_mux.hpp"
@@ -25,26 +25,26 @@ IR_mux::IR_mux(Mux74HC4067& mux_, const uint8_t channels_[N],
         lineState[i] = false;
     }
 
-    // Cargar umbrales desde constants.h
-    // Para cambiar los umbrales, modificar Constants::IRCalibration en constants.h
+    // Loads thrtesholds from constants.h
+    // To change the thresholds, modify Constants::IRCalibration in constants.h
     threshold[FL] = Constants::IRCalibration::kThreshFL;
     threshold[FR] = Constants::IRCalibration::kThreshFR;
     threshold[BL] = Constants::IRCalibration::kThreshBL;
     threshold[BR] = Constants::IRCalibration::kThreshBR;
 }
 
-//Inicialización
+//Initialization
 
 bool IR_mux::begin()
 {
     mux.begin();
 
     initialized = true;
-    update(); // primera lectura
+    update(); // First reading
     return true;
 }
 
-//Lectura
+// Reading of all sensors
 
 void IR_mux::update()
 {
@@ -53,13 +53,14 @@ void IR_mux::update()
 
     for (uint8_t i = 0; i < N; i++)
     {
-        // Leer el canal correspondiente a este sensor en el mux
+        
+        // Reads the corresponding channel for this sensor on the mux
         rawVal[i] = mux.read(channels[i]);
 
-        // Si supera el umbral → detecta línea (antes de inversión)
+        // If the raw value exceeds the threshold → line detected (before inversion)
         const bool detected = (rawVal[i] >= threshold[i]);
 
-        // Aplicar inversión lógica si el bit correspondiente está activo
+        //Applym logic inversion if the corresponding bit is active
         const bool isInverted = (invertedMask >> i) & 0x01;
         lineState[i] = isInverted ? (!detected) : detected;
     }
@@ -79,7 +80,7 @@ uint16_t IR_mux::getRaw(Sensor s) const
 
 void IR_mux::debugPrint() const
 {
-    // Nombres de sensores para lectura fácil en el monitor serie
+
     static const char* const labels[N] = { "FL", "FR", "BL", "BR" };
 
     Serial.print(F("IR RAW  → "));

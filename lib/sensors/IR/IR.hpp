@@ -4,7 +4,7 @@
  * @file IR.hpp
  * @date 2026-02-10
  *
- * @brief Declaración de sensores IR de línea con inversión por sensor
+ * @brief Decalration of line IR sensors with per-sensor inversion
  */
 
 #include <Arduino.h>
@@ -12,7 +12,7 @@
 class IRLine
 {
 public:
-    // Índices de sensores
+    // Sensor Index
     enum Sensor : uint8_t
     {
         FL = 0, // Front-Left
@@ -23,39 +23,26 @@ public:
     };
 
     /**
-     * @brief Constructor con pines individuales.
-     *
-     * @param flPin Pin Front-Left
-     * @param frPin Pin Front-Right
-     * @param blPin Pin Back-Left
-     * @param brPin Pin Back-Right
-     * @param invertedMask  Bitmask de sensores invertidos.
+     * Sensor Bitmask
      * Bit 0:FL, Bit 1: FR, Bit 2: BL, Bit 3: BR.
      * Ejemplo: 0b0011 invierte FL y FR.
-     * Por defecto 0b1111 (todos invertidos).
+     * By default 0b1111 (all inverted).
      */
     IRLine(uint8_t flPin, uint8_t frPin, uint8_t blPin, uint8_t brPin,
            uint8_t invertedMask = 0b1111);
 
-    /**
-     * @brief Constructor con arreglo de pines.
-     *
-     * @param pins_ Arreglo de 4 pines en orden FL, FR, BL, BR
-     * @param invertedMask Bitmask de sensores invertidos (igual que el otro constructor)
-     */
+    // Alternate constructor with array of pins
     IRLine(const uint8_t pins_[N], uint8_t invertedMask = 0b1111);
 
-    /** @brief Inicializa los pines y hace la primera lectura. */
+    // Configs pins and does first reading
     bool begin();
 
-    /** @brief Lee todos los sensores. Llamar periódicamente. */
+    // Reads raw values of all sensors
     void update();
 
-    /**
-     * @brief Devuelve el estado lógico del sensor (ya aplicada la inversión).
-     *true = línea
-     *false = sin línea
-     */
+    // Returns the logic reading of sensors (after palying inversion)
+    // true = Line
+    // false = No line
     bool getState(Sensor s) const;
 
 private:
@@ -63,5 +50,5 @@ private:
     uint8_t pins[N];
     bool    rawState[N];
     bool    lineState[N];
-    uint8_t invertedMask; // bit i = 1 = sensor i está invertido
+    uint8_t invertedMask;
 };

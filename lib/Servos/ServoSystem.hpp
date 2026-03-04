@@ -2,10 +2,10 @@
  * @file ServoSystem.hpp
  * @date 2026-02-27
  *
- * @brief Sistema unificado de servos SG90 no bloqueante.
- *        Cada servo tiene su propio isBusy() independiente.
- *        Los ángulos se definen en Constants::ServoAngles (constants.h).
- *        Los pines se definen en Pins (pins.h).
+ * @brief Unified sysem for the SG90 servos
+ *        Each servo with its own isbusy()
+ *        Angles are defined in Constants::ServoAngles (constants.h).
+ *        Pins are defined on pins.h
  */
 
 #ifndef SERVO_SYSTEM_HPP
@@ -21,10 +21,10 @@ class ServoSystem
 public:
     ServoSystem();
 
-    // Inicializa todos los servos en su posición por defecto
+    // Starts all the servos on the default pos
     void begin();
 
-    //   Estado individual por servo  
+    // Servo state
     bool intakeUpperBusy() const;
     bool intakeLowerBusy() const;
     bool separatorBusy()   const;
@@ -39,16 +39,16 @@ public:
     void intakeLowerHome();
     void intakeLowerDeploy();
 
-    // Separador
+    // Separator
     void separatorCenter();
     void separatorLeft();
     void separatorRight();
 
-    // Beneficiadero Rojo
+    // Red benefit
     void benefitRedOpen();
     void benefitRedClose();
 
-    // Beneficiadero Azul
+    // Blue benefit
     void benefitBlueOpen();
     void benefitBlueClose();
 
@@ -59,14 +59,14 @@ private:
     Servo _benefitRed;
     Servo _benefitBlue;
 
-    // Ángulo actual por servo, evita re-escribir el mismo valor
+    // Current angle per servo to avoid overwriting
     uint8_t _curIntakeUpper;
     uint8_t _curIntakeLower;
     uint8_t _curSeparator;
     uint8_t _curBenefitRed;
     uint8_t _curBenefitBlue;
 
-    // Timestamp del último movimiento por servo
+    // Timestamp of the last movement per servo
     uint32_t _tIntakeUpper;
     uint32_t _tIntakeLower;
     uint32_t _tSeparator;

@@ -8,7 +8,7 @@
 //   S1 - pin 27
 //   S2 - pin 28
 //   S3 - pin 29
-//   EN - GND (siempre enabled)
+//   EN - GND (always enabled)
 
 static constexpr bool LINE_IS_BLACK = false;
 
@@ -28,7 +28,7 @@ bool QTR::begin()
 {
     mux.begin();
 
-    // Seleccionar el primer canal de este array
+    // Select the first channel on the array (the rest will be read sequentially)
     mux.select(firstCh);
 
     initialized = true;
@@ -75,11 +75,11 @@ void QTR::update()
     if (!initialized)
         return;
 
-    // 1) Leer raw (ADC)
+    // 1) Read raw (ADC)
     for (uint8_t i = 0; i < N; i++)
         raw[i] = mux.read(firstCh + i);
 
-    // 2) Normalizar a 0..1000 usando calMin/calMax
+    // 2) Normalize raw values to 0..1000 based on calibration
     for (uint8_t i = 0; i < N; i++)
     {
         const long x = (long)(raw[i] - calMin[i]) * 1000L;
@@ -91,7 +91,7 @@ void QTR::update()
         norm[i] = (uint16_t)v;
     }
 
-    // 3) Calcular posición tipo Pololu (0 a 7000) con el promedio ponderado
+    // 3) Calculate pos as a weighted average of sensor indices, where 0 = extreme left, 7000 = extreme right.
     uint32_t sum      = 0;
     uint32_t weighted = 0;
 
@@ -104,11 +104,11 @@ void QTR::update()
 
     if (sum == 0)
     {
-        // No se detectó línea (o muy poca señal). se conserva la última posición.
+        //If no line was detected or value is too low, it keeps the last pos.
         return;
     }
 
-    position = (int)(weighted / sum); // 0 a 7000
+    position = (int)(weighted / sum); // 0 to 7000
 }
 
 int QTR::getPosition() const

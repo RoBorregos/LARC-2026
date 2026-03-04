@@ -2,12 +2,12 @@
  * @file IR.cpp
  * @date 2026-02-10
  *
- * @brief Implementación de sensores IR de línea con inversión por sensor
+ * @brief Implementation of line IR sensors with per-sensor inversion
  */
 
 #include "IR.hpp"
 
-// Constructores 
+// Constructor 
 
 IRLine::IRLine(uint8_t flPin, uint8_t frPin, uint8_t blPin, uint8_t brPin,
                uint8_t invertedMask)
@@ -38,7 +38,7 @@ IRLine::IRLine(const uint8_t pins_[N], uint8_t invertedMask)
     }
 }
 
-// Inicialización 
+// Initialization 
 
 bool IRLine::begin()
 {
@@ -46,11 +46,11 @@ bool IRLine::begin()
         pinMode(pins[i], INPUT);
 
     initialized = true;
-    update(); // primera lectura
+    update(); // First reading
     return true;
 }
 
-//Lectura
+// Reading
 
 void IRLine::update()
 {

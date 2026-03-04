@@ -2,7 +2,7 @@
  * @file tof.cpp
  * @date 2026-01-28
  *
- * @brief Implementación VL53L1X (Pololu)
+ * @brief Implementation of VL53L1X Sensor
  */
 
 #include "tof.hpp"
@@ -16,7 +16,7 @@ ToF::ToF()
 
 bool ToF::begin()
 {
-    // Wire.begin() normalmente se llama una vez en setup() fuera de aquí.
+    // Wire.begin(); is normally called once in setup() outside of this class.
     sensor.setTimeout(50); // ms,
 
     if (!sensor.init())
@@ -25,19 +25,19 @@ bool ToF::begin()
         return false;
     }
 
-    // Modo de distancia: Short, Medium, Long
+    // Distance mode: Short/Medium/Long
     sensor.setDistanceMode(VL53L1X::Short);
 
-    // Timing budget por defecto para el begin.
+    // Timing budget by defect. Pololu recommends 50ms for balance between speed and accuracy.
     sensor.setMeasurementTimingBudget(50000); // 50,000 us = 50ms
 
-    // Por defecto arrancamos en continuo para que update() sea barato
+    // Bu defect we start on continuous so update(): is cheap
     sensor.startContinuous(50); // ms
     continuous = true;
 
     initialized = true;
 
-    // Primera lectura
+    // First reading
     update();
     return true;
 }
@@ -47,7 +47,7 @@ void ToF::update()
     if (!initialized)
         return;
 
-    // En modo continuo, read() entrega la última medición lista
+    // On continuous mode it returns the last reading, and triggers a new one. So we can call it as fast as we want.
     uint16_t d = sensor.read();
 
     if (sensor.timeoutOccurred())
@@ -64,7 +64,6 @@ void ToF::setTimingBudgetMs(uint16_t ms)
     if (!initialized)
         return;
 
-    // Pololu usa microsegundos
     sensor.setMeasurementTimingBudget((uint32_t)ms * 1000UL);
 }
 
@@ -72,8 +71,7 @@ void ToF::setInterMeasurementMs(uint16_t ms)
 {
     if (!initialized)
         return;
-
-    // Esto solo aplica si reconfiguras modo continuo con startContinuous(period)
+    //Only applies if you reconfigure continuous mode with startContinuous(period)
     if (continuous)
         sensor.startContinuous(ms);
 }

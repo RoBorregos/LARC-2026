@@ -2,13 +2,13 @@
  * @file ServoSystem.cpp
  * @date 2026-02-27
  *
- * @brief Implementación del sistema unificado de servos SG90.
+ * @brief Implementation of the unified system for servos SG90
  */
 
 #include "ServoSystem.hpp"
 
 // Constructor
-// Poniendo 255 como valor inicial para los ángulos actuales, nos aseguramos de que el primer movimiento siempre se ejecute 
+// Writing 255 as initial value, we make sure that the first movement always executes.
 
 ServoSystem::ServoSystem()
     : _curIntakeUpper(255),
@@ -23,28 +23,17 @@ ServoSystem::ServoSystem()
       _tBenefitBlue(0)
 {}
 
-// Inicialización
-// En pines se tiene 255 los servos que no se estan usando.
-// si no se asigna un pin válido, el servo no se attach y no se moverá (queda inactivo).
+// Initialization
 
 void ServoSystem::begin()
 {
-    if (Pins::kUpperIntakeServo != 255)
         _intakeUpper.attach(Pins::kUpperIntakeServo);
-
-    if (Pins::kLowerIntakeServo != 255)
         _intakeLower.attach(Pins::kLowerIntakeServo);
-
-    if (Pins::kSeparatorServo != 255)
         _separator.attach(Pins::kSeparatorServo);
-
-    if (Pins::kRedBenefitServo != 255)
         _benefitRed.attach(Pins::kRedBenefitServo);
-
-    if (Pins::kBlueBenefitServo != 255)
         _benefitBlue.attach(Pins::kBlueBenefitServo);
 
-        //Se mueven todos los servos a su posición por default
+        //All servos move to their default position
 
     _move(_intakeUpper, Constants::ServoAngles::kIntakeUpperHome,   _curIntakeUpper, _tIntakeUpper);
     _move(_intakeLower, Constants::ServoAngles::kIntakeLowerHome,   _curIntakeLower, _tIntakeLower);
@@ -76,7 +65,7 @@ void ServoSystem::intakeLowerDeploy()
     _move(_intakeLower, Constants::ServoAngles::kIntakeLowerDeploy, _curIntakeLower, _tIntakeLower);
 }
 
-// Compuerta Separadora
+// Separator
 
 void ServoSystem::separatorCenter()
 {
@@ -91,7 +80,7 @@ void ServoSystem::separatorRight()
     _move(_separator, Constants::ServoAngles::kSeparatorRight, _curSeparator, _tSeparator);
 }
 
-// Beneficio Rojo
+// Red benefit
 
 void ServoSystem::benefitRedOpen()
 {
@@ -102,7 +91,7 @@ void ServoSystem::benefitRedClose()
     _move(_benefitRed, Constants::ServoAngles::kBenefitRedClosed, _curBenefitRed, _tBenefitRed);
 }
 
-// Beneficio Azul
+// Blue benefit
 
 void ServoSystem::benefitBlueOpen()
 {
@@ -113,7 +102,7 @@ void ServoSystem::benefitBlueClose()
     _move(_benefitBlue, Constants::ServoAngles::kBenefitBlueClosed, _curBenefitBlue, _tBenefitBlue);
 }
 
-// Estado individual
+// Believed individual state per servo (true = moving, false = idle)
 
 bool ServoSystem::intakeUpperBusy() const { return _isMoving(_tIntakeUpper, Constants::ServoAngles::kIntakeUpperMoveMs); }
 bool ServoSystem::intakeLowerBusy() const { return _isMoving(_tIntakeLower, Constants::ServoAngles::kIntakeLowerMoveMs); }
@@ -121,7 +110,7 @@ bool ServoSystem::separatorBusy()   const { return _isMoving(_tSeparator,   Cons
 bool ServoSystem::benefitRedBusy()  const { return _isMoving(_tBenefitRed,  Constants::ServoAngles::kBenefitRedMoveMs);  }
 bool ServoSystem::benefitBlueBusy() const { return _isMoving(_tBenefitBlue, Constants::ServoAngles::kBenefitBlueMoveMs); }
 
-// Helpers privados
+// Private methods
 
 void ServoSystem::_move(Servo& srv, uint8_t angle, uint8_t& current, uint32_t& timestamp)
 {

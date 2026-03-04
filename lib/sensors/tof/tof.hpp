@@ -2,7 +2,7 @@
  * @file tof.hpp
  * @date 2026-01-28
  *
- * @brief VL53L1X TOF sensor de distancia (I2C)
+ * @brief VL53L1X TOF distance sensor (I2C)
 */
 
 #ifndef TOF_HPP
@@ -15,7 +15,7 @@
 class ToF
 {
 public:
-    // Distancia inválida si no hay lectura
+    // Invalid distance if timeout occurs (sensor out of range, etc)
     static constexpr uint16_t INVALID_MM = 0xFFFF;
 
     ToF();
@@ -23,22 +23,21 @@ public:
     bool begin();
     void update();
 
-    // Última distancia leída en mm
+    // Last reading in mm
     uint16_t getDistanceMm() const { return distanceMm; }
 
     bool isInitialized() const { return initialized; }
 
-    // Opcional: cambia el timing budget (precisión/velocidad)
-    // Valores típicos: 20, 33, 50, 100 ms 
-    //(depende de como funcione en pista)
+    // Optional: changes the timing budget (time spent on each measurement)
+    
     void setTimingBudgetMs(uint16_t ms);
 
-    // Opcional: cambia el periodo entre mediciones
-    // (si estás en modo continuo)
-    // *** OJO, no puede ser menor que el timing budget ***
+    // Optional: changes the time between measurements
+    // (if you´re on continuous mode)
+    // *** IMPORTANT: Cant be smaller than the timing budget ***
     void setInterMeasurementMs(uint16_t ms);
 
-    // Opcional: arranca/parar modo continuo
+    // Optional: Starts/stops continuous mode
     void startContinuous(uint16_t periodMs = 50);
     void stopContinuous();
 
