@@ -9,20 +9,14 @@
 #include "IR_mux.hpp"
 #include "qtr.hpp"
 
-Mux74HC4067 mux(
-    Pins::kMuxSig,
-    Pins::kMuxS0,
-    Pins::kMuxS1,
-    Pins::kMuxS2,
-    Pins::kMuxS3
-);
+Mux74HC4067 mux;
 
-// Canales del mux por sensor
+// Revisar conexiones físicamente y ajustar los canales según el cableado
 const uint8_t irChannels[IR_mux::N] = {
-    15,
-    14,
     13,
-    12
+    12,
+    11,
+    10
 };
 
 // invertedMask = 0b0000 = ninguno invertido
