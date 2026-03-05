@@ -9,7 +9,7 @@
 
 Drive Robot;
 
-static constexpr float velocity = Constants::PID::kcurrentVelocity;
+static constexpr float velocity = Constants::PID::kcurrentVelocity; 
 
 Mux74HC4067 mux(
     Pins::kMuxSig,
@@ -19,7 +19,7 @@ Mux74HC4067 mux(
     Pins::kMuxS3
 );
 
-const uint8_t irChannels[IR_mux::N] = { 15, 14, 13, 12 };
+const uint8_t irChannels[IR_mux::N] = { 13, 12, 11, 10 };
 
 // invertedMask = 0b0010 -> invierte el sensor índice 1 (normalmente FR)
 IR_mux ir(mux, irChannels, 0b000);
@@ -43,7 +43,7 @@ void updateState(bool FL, bool FR, bool BL, bool BR)
     const bool frontDetected = (FL || FR); 
 
     if (backDetected)
-        currentState = STOP_STATE;
+        currentState = FORWARD;
     else if (leftDetected)
         currentState = MOVE_RIGHT;
     else if (rightDetected)
@@ -58,19 +58,19 @@ void executeState()
 {
     switch (currentState)
     {
-    case MOVE_LEFT:   Robot.left(velocity);     break;
-    case MOVE_RIGHT:  Robot.right(velocity);    break;
-    case BACKWARD:    Robot.backward(velocity); break;
-    case STOP_STATE:  Robot.allStop();          break;
+    case MOVE_LEFT:   Robot.left(velocity); break;    //Serial.println("left");   break;
+    case MOVE_RIGHT:  Robot.right(velocity);  break;  //Serial.println("right");    break;
+    case BACKWARD:    Robot.backward(velocity); break; //Serial.println("backward"); break;
+    case STOP_STATE:  Robot.allStop();     break;     //Serial.println("stop");         break;
     case FORWARD:
-    default:          Robot.forward(velocity);  break;
+    default:          Robot.forward(velocity);  break;//Serial.println("FORWARD");  break;
     }
 }
 
 void setup()
 {
     Serial.begin(115200);
-    while (!Serial) {}
+    delay(1000); 
 
     Robot.begin();
     Robot.holdYaw(true);
@@ -92,5 +92,5 @@ void loop()
     updateState(fl, fr, bl, br);
     executeState();
 
-    delay(50);
+    delay(100);
 }
