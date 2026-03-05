@@ -103,3 +103,10 @@ void IR_mux::debugPrint() const
     }
     Serial.println();
 }
+
+void IR_mux::getArray(bool out[N]) const
+{
+    for (uint8_t i = 0; i < N; i++)
+        out[i] = lineState[i];
+}
+

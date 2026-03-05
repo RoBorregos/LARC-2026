@@ -53,6 +53,7 @@ public:
 
     void debugPrint() const;
     
+    void getArray(bool out[N]) const;
 
 private:
     Mux74HC4067& mux;
