@@ -1,11 +1,17 @@
+// mux.h
 #pragma once
 #include <Arduino.h>
+#include "pins.h"
 
 class Mux74HC4067
 {
 public:
-    Mux74HC4067(uint8_t sig, uint8_t s0, uint8_t s1, uint8_t s2, uint8_t s3)
-        : _sig(sig), _s0(s0), _s1(s1), _s2(s2), _s3(s3) {}
+    Mux74HC4067()
+        : _sig(Pins::kMuxSig),
+          _s0(Pins::kMuxS0),
+          _s1(Pins::kMuxS1),
+          _s2(Pins::kMuxS2),
+          _s3(Pins::kMuxS3) {}
 
     void begin()
     {
@@ -35,6 +41,17 @@ public:
     inline void setSigMode(uint8_t mode) { pinMode(_sig, mode); }
     inline uint8_t sig() const { return _sig; }
 
+    void debugPrint() const
+    {
+        for (uint8_t ch = 0; ch < 16; ch++) {
+            uint16_t v = read(ch);  // just read(), not mux.read()
+            Serial.print(ch);
+            Serial.print(':');
+            Serial.print(v);
+            if (ch < 15) Serial.print('\t');
+        }
+        Serial.println();
+    }
 private:
     uint8_t _sig, _s0, _s1, _s2, _s3;
 };
