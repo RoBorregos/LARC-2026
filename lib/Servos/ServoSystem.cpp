@@ -7,6 +7,7 @@
 
 #include "ServoSystem.hpp"
 
+
 // Constructor
 // Writing 255 as initial value, we make sure that the first movement always executes.
 
@@ -16,11 +17,13 @@ ServoSystem::ServoSystem()
       _curSeparator(255),
       _curBenefitRed(255),
       _curBenefitBlue(255),
+      _curholder(255),
       _tIntakeUpper(0),
       _tIntakeLower(0),
       _tSeparator(0),
       _tBenefitRed(0),
-      _tBenefitBlue(0)
+      _tBenefitBlue(0),
+      _tholder(0)
 {}
 
 // Initialization
@@ -32,6 +35,7 @@ void ServoSystem::begin()
         _separator.attach(Pins::kSeparatorServo);
         _benefitRed.attach(Pins::kRedBenefitServo);
         _benefitBlue.attach(Pins::kBlueBenefitServo);
+        _holder.attach(Pins::kHolderServo);
 
         //All servos move to their default position
 
@@ -40,6 +44,7 @@ void ServoSystem::begin()
     _move(_separator,   Constants::ServoAngles::kSeparatorCenter,   _curSeparator,   _tSeparator);
     _move(_benefitRed,  Constants::ServoAngles::kBenefitRedClosed,  _curBenefitRed,  _tBenefitRed);
     _move(_benefitBlue, Constants::ServoAngles::kBenefitBlueClosed, _curBenefitBlue, _tBenefitBlue);
+    _move(_holder,      Constants::ServoAngles::kHolderHold,       _curholder,      _tholder);
 }
 
 // Intake Superior
@@ -102,6 +107,15 @@ void ServoSystem::benefitBlueClose()
     _move(_benefitBlue, Constants::ServoAngles::kBenefitBlueClosed, _curBenefitBlue, _tBenefitBlue);
 }
 
+void ServoSystem::holderHold()
+{
+    _move(_holder, Constants::ServoAngles::kHolderHold, _curholder, _tholder);
+}
+
+void ServoSystem::holderRelease()
+{
+    _move(_holder, Constants::ServoAngles::kHolderRelease, _curholder, _tholder);
+}
 // Believed individual state per servo (true = moving, false = idle)
 
 bool ServoSystem::intakeUpperBusy() const { return _isMoving(_tIntakeUpper, Constants::ServoAngles::kIntakeUpperMoveMs); }
@@ -109,6 +123,7 @@ bool ServoSystem::intakeLowerBusy() const { return _isMoving(_tIntakeLower, Cons
 bool ServoSystem::separatorBusy()   const { return _isMoving(_tSeparator,   Constants::ServoAngles::kSeparatorMoveMs);   }
 bool ServoSystem::benefitRedBusy()  const { return _isMoving(_tBenefitRed,  Constants::ServoAngles::kBenefitRedMoveMs);  }
 bool ServoSystem::benefitBlueBusy() const { return _isMoving(_tBenefitBlue, Constants::ServoAngles::kBenefitBlueMoveMs); }
+bool ServoSystem::holderBusy()     const { return _isMoving(_tholder,      Constants::ServoAngles::kHolderMoveMs);     }
 
 // Private methods
 

@@ -30,6 +30,7 @@ public:
     bool separatorBusy()   const;
     bool benefitRedBusy()  const;
     bool benefitBlueBusy() const;
+    bool holderBusy()     const;
 
     // Intake Superior
     void intakeUpperHome();
@@ -52,12 +53,17 @@ public:
     void benefitBlueOpen();
     void benefitBlueClose();
 
+    // Holder
+    void holderHold();
+    void holderRelease();
+
 private:
     Servo _intakeUpper;
     Servo _intakeLower;
     Servo _separator;
     Servo _benefitRed;
     Servo _benefitBlue;
+    Servo _holder;
 
     // Current angle per servo to avoid overwriting
     uint8_t _curIntakeUpper;
@@ -65,6 +71,7 @@ private:
     uint8_t _curSeparator;
     uint8_t _curBenefitRed;
     uint8_t _curBenefitBlue;
+    uint8_t _curholder;
 
     // Timestamp of the last movement per servo
     uint32_t _tIntakeUpper;
@@ -72,6 +79,7 @@ private:
     uint32_t _tSeparator;
     uint32_t _tBenefitRed;
     uint32_t _tBenefitBlue;
+    uint32_t _tholder;
 
     void _move(Servo& srv, uint8_t angle, uint8_t& current, uint32_t& timestamp);
     bool _isMoving(uint32_t timestamp, uint32_t moveTimeMs) const;
