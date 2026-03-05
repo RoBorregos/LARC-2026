@@ -1,0 +1,96 @@
+#include <Arduino.h>
+#include "pins.h"
+#include "constants.h"
+#include <math.h>
+
+#include "IRmux/IRmux.hpp"
+#include "MUX/mux.h"
+#include "subsystem/Drive/Drive.hpp"
+
+Drive Robot;
+
+static constexpr float velocity = Constants::PID::kcurrentVelocity;
+
+Mux74HC4067 mux(
+    Pins::kMuxSig,
+    Pins::kMuxS0,
+    Pins::kMuxS1,
+    Pins::kMuxS2,
+    Pins::kMuxS3
+);
+
+const uint8_t irChannels[IR_mux::N] = { 15, 14, 13, 12 };
+
+// invertedMask = 0b0010 -> invierte el sensor índice 1 (normalmente FR)
+IR_mux ir(mux, irChannels, 0b000);
+
+enum RobotState
+{
+    FORWARD,
+    BACKWARD,
+    MOVE_LEFT,
+    MOVE_RIGHT,
+    STOP_STATE
+};
+
+RobotState currentState = FORWARD;
+
+void updateState(bool FL, bool FR, bool BL, bool BR)
+{
+    const bool backDetected  = (BL || BR); 
+    const bool leftDetected  = (FL || BL); 
+    const bool rightDetected = (FR || BR); 
+    const bool frontDetected = (FL || FR); 
+
+    if (backDetected)
+        currentState = STOP_STATE;
+    else if (leftDetected)
+        currentState = MOVE_RIGHT;
+    else if (rightDetected)
+        currentState = MOVE_LEFT;
+    else if (frontDetected)
+        currentState = BACKWARD;   
+    else
+        currentState = FORWARD;
+}
+
+void executeState()
+{
+    switch (currentState)
+    {
+    case MOVE_LEFT:   Robot.left(velocity);     break;
+    case MOVE_RIGHT:  Robot.right(velocity);    break;
+    case BACKWARD:    Robot.backward(velocity); break;
+    case STOP_STATE:  Robot.allStop();          break;
+    case FORWARD:
+    default:          Robot.forward(velocity);  break;
+    }
+}
+
+void setup()
+{
+    Serial.begin(115200);
+    while (!Serial) {}
+
+    Robot.begin();
+    Robot.holdYaw(true);
+    Robot.setTargetYaw(Robot.getYaw());
+
+    ir.begin();
+    Serial.println(F("IR_mux listo."));
+}
+
+void loop()
+{
+    ir.update();
+    ir.debugPrint();
+    bool fl = ir.getState(IR_mux::FL);
+    bool fr = ir.getState(IR_mux::FR);
+    bool bl = ir.getState(IR_mux::BL);
+    bool br = ir.getState(IR_mux::BR);
+
+    updateState(fl, fr, bl, br);
+    executeState();
+
+    delay(50);
+}
