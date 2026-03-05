@@ -39,12 +39,37 @@ namespace Constants
     namespace PID
     {
         static constexpr float kKp = 1.5; // 4.8f;  2.5f
-        static constexpr float kKi = 0.0f; //0.002f
-        static constexpr float kKd = 0.0f;  //0.06f;   
+        static constexpr float kKi = 0.002f; //0.002f
+        static constexpr float kKd = 0.06f;  //0.06f;   
         static constexpr float kOmegaMax = 0.25f;
         static constexpr float kcurrentVelocity = 0.42f; //Velocity according to PID
 
     } // namespace PID
+
+
+    // =========================================================================================== Probicional 
+      namespace IRCalibration
+    {
+        // Umbrales analógicos por sensor (0..1023).
+        // Si raw >= umbral = línea detectada (antes de aplicar inversión).
+
+        // PLACEHOLDERS
+        static constexpr uint16_t kThreshFL = 300; // Front-Left -> calibracion arriba de 512 es blanco (0) abajo es negro (1) 
+        static constexpr uint16_t kThreshFR = 200; // Front-Right
+        static constexpr uint16_t kThreshBL = 200; // Back-Left
+        static constexpr uint16_t kThreshBR = 300; // Back-Right
+    } // n
+
+
+      namespace UltrasonicConstants
+    {
+        static constexpr uint32_t kPingPeriodMs  = 50;    // ms entre pings
+        static constexpr uint32_t kTrigHighUs    = 10;    // µs que el trigger está en HIGH
+        static constexpr uint32_t kEchoTimeoutUs = 25000; // µs (~4 m máx)
+    } // namespace UltrasonicConstants
+
+
+
 } // namespace Constants
 
 #endif
