@@ -71,6 +71,7 @@ namespace Pins
         {31, 34}, // BACK LEFt {TRIG, ECHO}
     };
 
+
     // ======== Line Sensors ========
 
     static constexpr uint8_t kLineSensorFL = 28;
@@ -102,6 +103,13 @@ namespace Pins
     const uint8_t kLed1 = 6;
     const uint8_t kLed2 = 10;
 
+     // ======== 74HC4067 Multiplexer ========
+    // NOTE: Valores TEMPORALES. Confirmar con el equipo antes de soldar.
+    static constexpr uint8_t kMuxSig = 24; // SIG → pin analógico
+    static constexpr uint8_t kMuxS0  = 27;
+    static constexpr uint8_t kMuxS1  = 21;
+    static constexpr uint8_t kMuxS2  = 0;
+    static constexpr uint8_t kMuxS3  = 25;
 }
 
 #endif
