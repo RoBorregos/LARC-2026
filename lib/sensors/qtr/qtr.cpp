@@ -54,6 +54,28 @@ void QTR::setCalibration(const uint16_t* minVals, const uint16_t* maxVals)
     ensureCalValid();
 }
 
+void QTR::calibrate(uint32_t durationMs)
+{
+    uint16_t cMin[N], cMax[N];
+
+    // Init min to max possible, max to 0
+    for (uint8_t i = 0; i < N; i++) { cMin[i] = 65535; cMax[i] = 0; }
+
+    uint32_t t0 = millis();
+    while (millis() - t0 < durationMs) {
+        update();
+        // Track min/max raw values seen per sensor
+        for (uint8_t i = 0; i < N; i++) {
+            if (raw[i] < cMin[i]) cMin[i] = raw[i];
+            if (raw[i] > cMax[i]) cMax[i] = raw[i];
+        }
+        delay(5);
+    }
+
+    // Apply captured range as calibration
+    setCalibration(cMin, cMax);
+}
+
 void QTR::useDefaultCalibration(uint8_t profile)
 {
     using namespace Constants::QTRCalibration;
@@ -124,6 +146,41 @@ bool QTR::onLine(uint16_t threshold) const
             maxv = norm[i];
 
     return maxv > threshold;
+}
+
+int QTR::getBinaryPosition() const {
+    // Convert normalized values to 0/1 using threshold
+    uint32_t weightedSum = 0;
+    uint32_t activeCount = 0;
+
+    for (uint8_t i = 0; i < N; i++) {
+        uint8_t binary = (norm[i] > Constants::QTRCalibration::kBinaryThreshold) ? 1 : 0;
+        weightedSum += binary * i * 1000;  // same 0-7000 scale
+        activeCount += binary;
+    }
+
+    if (activeCount == 0) return position; // no sensor active, return last known
+    return (int)(weightedSum / activeCount);
+}
+
+
+void QTR::printCalibration(const char* label) const
+{
+    // Print in constants.h ready format, copy paste directly
+    Serial.print(label); Serial.println(":");
+    Serial.print("min = {");
+    for (uint8_t i = 0; i < N; i++) {
+        Serial.print(calMin[i]);
+        if (i < N - 1) Serial.print(", ");
+    }
+    Serial.println("};");
+
+    Serial.print("max = {");
+    for (uint8_t i = 0; i < N; i++) {
+        Serial.print(calMax[i]);
+        if (i < N - 1) Serial.print(", ");
+    }
+    Serial.println("};");
 }
 
 void QTR::debugPrint() const
