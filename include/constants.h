@@ -38,9 +38,9 @@ namespace Constants
     } // namespace DriveConstants
     namespace PID
     {
-        static constexpr float kKp = 1.5; // 4.8f;  2.5f
+        static constexpr float kKp = 1.1; // 4.8f;  2.5f; 1.5f
         static constexpr float kKi = 0.0f; //0.002f
-        static constexpr float kKd = 0.0f;  //0.06f;   
+        static constexpr float kKd = 0.01f;  //0.06f; 0.0f
         static constexpr float kOmegaMax = 0.25f;
         static constexpr float kcurrentVelocity = 0.42f; //Velocity according to PID
 
@@ -63,16 +63,29 @@ namespace Constants
         };
 
         // PLACEHOLDERS
+
+ 
         constexpr Profile Front = {
-            {800,  800,  800,  800,  800,  800,  800,  800 },
-            {1017, 1017, 1017, 1017, 1017, 1017, 1017, 1017}
+            {980, 960, 960, 960, 960, 960, 960, 960},
+            {1015, 1015, 1015, 1015, 1015, 1015, 1015, 1015}
         };
 
         constexpr Profile Rear = {
             {120,  130,  115,  140,  150,  135,  128,  122 },
             {3100, 3200, 3050, 3300, 3350, 3250, 3150, 3000}
         };
+
+        constexpr uint16_t kBinaryThreshold = 600; // 0-1000 normalized, tune this one value
+
     } // namespace QTRCalibration
+
+    namespace LineFollower 
+    
+    {
+    constexpr int kSetpoint = 3500;   // center of 0-7000 range
+    // change to 4000, 2000, etc. as needed
+    }
+
 
     namespace IRCalibration
     {
