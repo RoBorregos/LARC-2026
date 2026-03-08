@@ -69,11 +69,6 @@ enum class PoolSubState
     STOP,
 };
 
-void setState(LARC_STATE newState)
-{
-    currentStateLARC = newState;
-    clearStartMs = 0;
-}
 
 //Main State Machine :: LARC_STATE
 
@@ -130,7 +125,8 @@ Serial.begin(115200);
         elevator.begin();
 
     //MAIN State machine begin
-    currentStateLARC = LARC_STATE::START;
+    setMainState(LARC_STATE::START);
+    setPoolState(PoolSubState::FORWARD);
 
     Serial.println(F("TEST State Machine << complete rutine >> STARTS... now   "));
 }
@@ -172,25 +168,25 @@ void loop()
 //MAIN::START
         case LARC_STATE::START:
         {
-            if(now-stateStartMs >= kInitialzedStopped){
-            LARC.allStop();
-            elevator.ElevatorPosition(1); //UP
-            elevator.update();
-            }
-
-            LARC.forward(velocity); //goes forward
-
-            if (now - stateStartMs >= kStartIgnoreTimeMs)
+            if (now - stateStartMs < kInitialzedStopped)
             {
-                elevator.ElevatorPosition(0); //STOP
+                LARC.allStop();
+                elevator.ElevatorPosition(1); // UP
+            }
+            else if (now - stateStartMs < (kInitialzedStopped + kStartIgnoreTimeMs))
+            {
+                elevator.ElevatorPosition(0); // STOP
+                LARC.forward(velocity);
+            }
+            else
+            {
                 setMainState(LARC_STATE::POOL);
                 setPoolState(PoolSubState::FORWARD);
             }
-        break;
+            break;
         }
 
 //MAIN::POOL
-
         case LARC_STATE::POOL:
         {
             switch (poolState)
@@ -200,7 +196,7 @@ void loop()
                 {
                     if (obstacleHandled )
                     {
-                        setPoolState(PoolSubState::AVOID_LEFT);
+                        setMainState(LARC_STATE::LOOKFORCORNER);
                     }
                     else if (obstacle)
                     {
@@ -211,13 +207,12 @@ void loop()
                         LARC.forward(velocity);
                     }
                         break;
-                    
-                    default:
-
+                        LARC.forward(velocity);
                 break;
                 }
 
                 case PoolSubState::AVOID_LEFT:
+                {
                     LARC.left(velocity);
 
                     if (!obstacle)
@@ -228,7 +223,7 @@ void loop()
                         if (now - clearStartMs >= kClearDelayMs)
                         {
                             obstacleHandled = true;
-                            setPoolState(PoolSubState::FORWARD);
+                            setMainState(LARC_STATE::LOOKFORCORNER);
                         }
                     }
                     else
@@ -242,10 +237,11 @@ void loop()
                     }
 
                 break;
+                }
 
                 case PoolSubState::AVOID_RIGHT:
                 {
-                LARC.right(velocity);
+                    LARC.right(velocity);
 
                 if (!obstacle)
                 {
@@ -255,7 +251,7 @@ void loop()
                     if (now - clearStartMs >= kClearDelayMs)
                     {
                         obstacleHandled = true;
-                        setPoolState(PoolSubState::FORWARD);
+                        setMainState(LARC_STATE::LOOKFORCORNER);
                     }
                 }
                 else
@@ -265,11 +261,34 @@ void loop()
                 break;
               }  //Ends PoolSubstate Avoidright
 
-                case PoolSubState::STOP:
-                        LARC.allStop();
-                    break;
             }//Ends PoolSubstate
 
         break;
         }
+    case LARC_STATE::LOOKFORCORNER:
+        {
+            LARC.forward(velocity);
+
+            if (frontDetected)
+            {
+                setMainState(LARC_STATE::STOP);
+            }
+            break;
+        }
+
+        case LARC_STATE::LINE_PID:
+        {
+            LARC.allStop();
+            break;
+        }
+
+        case LARC_STATE::STOP:
+        {
+            LARC.allStop();
+            break;
+        }
+
+        default:
+            break;
+    }
 }
