@@ -4,22 +4,15 @@
 #include "constants.h"
 #include <math.h>
 
-#include "IRmux/IRmux.hpp"
-#include "MUX/mux.h"
-#include "Ultrasonics/Ultrasonics.hpp"
+#include "IR_mux/IR_mux.hpp"
+#include "mux.h"
+#include "ultrasonic/ultrasonic.hpp"
 #include "subsystem/Drive/Drive.hpp"
 
 Drive LARC;
+Mux74HC4067 mux;
 
 static constexpr float velocity = Constants::PID::kcurrentVelocity; 
-
-Mux74HC4067 mux(
-    Pins::kMuxSig,
-    Pins::kMuxS0,
-    Pins::kMuxS1,
-    Pins::kMuxS2,
-    Pins::kMuxS3
-);
 
 
 const uint8_t irChannels[IR_mux::N] = { 13, 12, 11, 10 };
