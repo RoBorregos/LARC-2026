@@ -8,8 +8,8 @@
 
 Mux74HC4067 mux;
 QTR qtrFront(0, mux);
-Drive drive;
-PIDController linePID(0.000035f, 0.0f, 0.00000008f, -1.0f, 1.0f);
+Drive LARC;
+PIDController linePID(0.000035f, 0.0f, 0.00000008f, -1.0f, 1.0f); 
 
 static constexpr float kBaseSpeed = 0.45f;// strafing speed
 
@@ -21,11 +21,9 @@ void setup() {
   qtrFront.begin();
   qtrFront.useDefaultCalibration();
 
-  drive.begin();
-  drive.holdYaw(true);
-  drive.setTargetYaw(drive.getYaw());
-  drive.holdYaw(true);
-  drive.setTargetYaw(drive.getYaw());
+  LARC.begin();
+  LARC.holdYaw(true);
+  LARC.setTargetYaw(LARC.getYaw());
 }
 
 void loop() {
@@ -43,8 +41,8 @@ void loop() {
   Serial.print("\tvx:");     Serial.println(vx);
   qtrFront.debugPrint();
 
-  drive.setTranslation(vx, kBaseSpeed); //Change sign of kBaseSpeed to strafe right (+) or left (-)
-  drive.update();
+  LARC.setTranslation(vx, kBaseSpeed); //Change sign of kBaseSpeed to strafe LEFT (+) or RIGHT (-)
+  LARC.update();
 
   delay(10);
 }

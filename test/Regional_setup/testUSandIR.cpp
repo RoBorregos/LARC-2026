@@ -10,7 +10,7 @@
 #include "subsystem/Drive/Drive.hpp"
 #include "ultrasonic/ultrasonic.hpp"
 
-Drive Robot;
+Drive LARC;
 Mux74HC4067 mux;
 
 // Ultrasonics
@@ -50,9 +50,9 @@ void setup()
     Serial.begin(115200);
     delay(1000);
 
-    Robot.begin();
-    Robot.holdYaw(true);
-    Robot.setTargetYaw(Robot.getYaw());
+    LARC.begin();
+    LARC.holdYaw(true);
+    LARC.setTargetYaw(LARC.getYaw());
 
     ir.begin();
 
@@ -66,7 +66,7 @@ void setup()
 
 void loop()
 {
-    Robot.update();
+    LARC.update();
     ir.update();
     us1.update();
     us2.update();
@@ -106,12 +106,12 @@ void loop()
         }
         else
         {
-            Robot.forward(velocity);
+            LARC.forward(velocity);
         }
         break;
 
     case State::SEARCH_LEFT:
-        Robot.left(velocity);
+        LARC.left(velocity);
 
         if (!obstacle)
         {
@@ -137,7 +137,7 @@ void loop()
         break;
 
     case State::SEARCH_RIGHT:
-        Robot.right(velocity);
+        LARC.right(velocity);
 
         if (!obstacle)
         {
@@ -158,7 +158,7 @@ void loop()
 
     case State::STOP_STATE:
     default:
-        Robot.allStop();
+        LARC.allStop();
         break;
     }
 }
