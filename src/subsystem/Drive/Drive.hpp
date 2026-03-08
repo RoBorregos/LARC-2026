@@ -33,7 +33,8 @@ public:
   void forward(float speed);     
   void backward(float speed);    
   void left(float speed);       
-  void right(float speed);       
+  void right(float speed); 
+  void diagonalLeft(float speed);  
   void stop();                   
 
   // ====== Yaw hold ======

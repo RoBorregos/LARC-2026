@@ -100,7 +100,8 @@ void Drive::update() {
 void Drive::forward(float speed)  { vxCmd_ = +speed; vyCmd_ = 0.0f; }
 void Drive::backward(float speed) { vxCmd_ = -speed; vyCmd_ = 0.0f; }
 void Drive::right(float speed)  { vxCmd_ = 0.0f; vyCmd_ = -speed; } 
-void Drive::left(float speed) { vxCmd_ = 0.0f; vyCmd_ = +speed; }   
+void Drive::left(float speed) { vxCmd_ = 0.0f; vyCmd_ = +speed; }
+void Drive::diagonalLeft(float speed) { vxCmd_ = +speed; vyCmd_ = +speed;}   
 void Drive::stop() {
   vxCmd_ = 0.0f;
   vyCmd_ = 0.0f;
