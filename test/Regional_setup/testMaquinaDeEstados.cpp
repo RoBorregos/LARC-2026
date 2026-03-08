@@ -23,10 +23,10 @@ Elevator elevator;
 //========================== VARIABLES ===========================
 
 static constexpr float velocity = 0.45f; //velocidad a 0.30f
-static constexpr float kObstacleDistanceCm = 15.0f;
+static constexpr float kObstacleDistanceCm = 20.0f;
 
 //State Machine
-    // PoolSubstate     
+    // PoolSubstate         
     static bool obstacleHandled = false;
 
 //--------------------ends variables
@@ -206,9 +206,8 @@ void loop()
                     {
                         LARC.forward(velocity);
                     }
-                        break;
-                        LARC.forward(velocity);
-                break;
+                    
+                    break;
                 }
 
                 case PoolSubState::AVOID_LEFT:
