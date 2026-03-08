@@ -8,7 +8,7 @@
 **/
 #include "Elevator.hpp"
 
-Elevator::Elevator() : state(), pin1(Pins::kElevatorINA1), pin2(Pins::kElevatorINA2), pwm(Pins::kElevatorPWM)
+Elevator::Elevator() : state(0), pin1(Pins::kElevatorINA1), pin2(Pins::kElevatorINA2), pwm(Pins::kElevatorPWM)
 {
 
 }
@@ -20,42 +20,31 @@ void Elevator::begin()
     pinMode(pwm, OUTPUT);
 }
 
-void Elevator::update()
-{
-    switch (state)
-    {
-        case STOP:
-            analogWrite(pwm, 0); //elevator stop
-            break;
-        case UP:
-            moveElevator(UP);
-        break;
-        case DOWN:
-            moveElevator(DOWN);
-        break;
-    }
-}
 
-
-void Elevator::ElevatorPosition(int state)
+void Elevator::ElevatorPosition(int state_)
 {
-    state = static_cast<ElevatorState>(state);
+    state = state_;
+    moveElevator(state);
 }
     
 
 void Elevator::moveElevator(int direction)
 {
-    if (direction == UP){
+    if (direction == 1){ //UP
         digitalWrite(pin1, LOW);
         digitalWrite(pin2, HIGH);
         analogWrite(pwm, 180);
-        delay(7000);
+        //delay(7000); se puede omitir por ahora
     }
-    else if(direction == DOWN){
+    else if(direction == 2){ //DOWN
         digitalWrite(pin1, HIGH);
         digitalWrite(pin2, LOW);
         analogWrite(pwm, 180);   // velocidad de 0 a 255
-        delay(7000);
+        //delay(7000); 
+    }
+    else{
+        analogWrite(pwm, 0); //elevator stop
+
     }
 
 

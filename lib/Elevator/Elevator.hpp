@@ -16,20 +16,13 @@ class Elevator
         Elevator();
         void begin();
         void update();
-        void ElevatorPosition(int state);
+        void ElevatorPosition(int state_);
 
     private:
     int state;
     int pin1;
     int pin2;
     int pwm;
-
-    enum ElevatorState
-    {
-        STOP =  0,
-        UP = 1,
-        DOWN = 2,
-    };
     
     void moveElevator(int direction);
 
