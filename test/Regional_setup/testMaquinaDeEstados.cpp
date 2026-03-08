@@ -22,21 +22,21 @@ Elevator elevator;
 
 //========================== VARIABLES ===========================
 
-static constexpr float velocity = 0.45f;
+static constexpr float velocity = 0.45f; //velocidad a 0.30f
 static constexpr float kObstacleDistanceCm = 15.0f;
-static constexpr uint32_t kClearDelayMs = 300;
+
+//State Machine
+    // PoolSubstate     
+    static bool obstacleHandled = false;
+
 //--------------------ends variables
 
-
-Ultrasonic us1(Pins::kDistanceSensors[0][0], Pins::kDistanceSensors[0][1]);
-Ultrasonic us2(Pins::kDistanceSensors[1][0], Pins::kDistanceSensors[1][1]);
-const uint8_t irChannels[IR_mux::N] = { 13, 12, 11, 10 };
 
 //========================== SENSORS ===========================
 
     // IRs
-IR_mux ir(mux, irChannels, 0b0000); 
 const uint8_t irChannels[IR_mux::N] = {13, 12, 11, 10};
+IR_mux ir(mux, irChannels, 0b0000); 
         /*
             *invertedMask = 0b0000 -> invierte el sensor índice 1 (normalmente FR)
             * Bit 0:FL, Bit 1: FR, Bit 2: BL, Bit 3: BR.
@@ -54,21 +54,19 @@ enum LARC_STATE
 {
     START, //Despliegue de elevador y omision de lectura de 
     POOL, //Avanzar {Ultrasonicos (prioridad) + IRs}
-    LOOKFORLINE, // Forward until finds
-
+    LOOKFORCORNER, // Forward until finds a corner to init vision
+    LINE_PID, // vision(on)
     STOP, //Temporal
 
 };
-
-
-    static bool obstacleHandled = false;
 
 enum class PoolSubState
 {
     FORWARD,
     AVOID_LEFT,
     AVOID_RIGHT,
-    WAIT_CLEAR
+    WAIT_CLEAR,
+    STOP,
 };
 
 void setState(LARC_STATE newState)
@@ -111,6 +109,9 @@ void setPoolState(PoolSubState newState)
 
 //--------------------ends machines states
 
+
+
+//~~~~~~~~~~~~~~~~~~~~~~~~ SETUP && LOOP ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 void setup()
 {
 Serial.begin(115200);
@@ -148,6 +149,10 @@ void loop()
     bool FR = ir.getState(IR_mux::FR);
     bool BL = ir.getState(IR_mux::BL);
     bool BR = ir.getState(IR_mux::BR);
+    
+    const bool leftDetected  = (FL || BL);
+    const bool rightDetected = (FR || BR);
+    const bool frontDetected = (FL && FR);
 
     //Ultrasonics
     float d1 = us1.getdistance();
@@ -157,7 +162,7 @@ void loop()
     (us1.isValid() && d1 < kObstacleDistanceCm) ||
     (us2.isValid() && d2 < kObstacleDistanceCm);
 
-    //millis
+    //  millis
     const uint32_t now = millis();
 
 
@@ -166,7 +171,9 @@ void loop()
     {
 //MAIN::START
         case LARC_STATE::START:
+        {
             if(now-stateStartMs >= kInitialzedStopped){
+            LARC.allStop();
             elevator.ElevatorPosition(1); //UP
             elevator.update();
             }
@@ -179,17 +186,90 @@ void loop()
                 setMainState(LARC_STATE::POOL);
                 setPoolState(PoolSubState::FORWARD);
             }
-
-            
-            break;
         break;
+        }
 
 //MAIN::POOL
 
         case LARC_STATE::POOL:
+        {
+            switch (poolState)
+            {
+    // PoolSubstate :: FORWARD
+                case PoolSubState::FORWARD:
+                {
+                    if (obstacleHandled )
+                    {
+                        setPoolState(PoolSubState::AVOID_LEFT);
+                    }
+                    else if (obstacle)
+                    {
+                        setPoolState(PoolSubState::AVOID_LEFT);
+                    }
+                    else
+                    {
+                        LARC.forward(velocity);
+                    }
+                        break;
+                    
+                    default:
+
+                break;
+                }
+
+                case PoolSubState::AVOID_LEFT:
+                    LARC.left(velocity);
+
+                    if (!obstacle)
+                    {
+                        if (clearStartMs == 0)
+                            clearStartMs = now;
+
+                        if (now - clearStartMs >= kClearDelayMs)
+                        {
+                            obstacleHandled = true;
+                            setPoolState(PoolSubState::FORWARD);
+                        }
+                    }
+                    else
+                    {
+                        clearStartMs = 0;
+                    }
+                
+                    if (leftDetected) // LEFT lateral IRs detected
+                    {
+                        setPoolState(PoolSubState::AVOID_RIGHT);
+                    }
+
+                break;
+
+                case PoolSubState::AVOID_RIGHT:
+                {
+                LARC.right(velocity);
+
+                if (!obstacle)
+                {
+                    if (clearStartMs == 0)
+                        clearStartMs = now;
+
+                    if (now - clearStartMs >= kClearDelayMs)
+                    {
+                        obstacleHandled = true;
+                        setPoolState(PoolSubState::FORWARD);
+                    }
+                }
+                else
+                {
+                    clearStartMs = 0;
+                }
+                break;
+              }  //Ends PoolSubstate Avoidright
+
+                case PoolSubState::STOP:
+                        LARC.allStop();
+                    break;
+            }//Ends PoolSubstate
 
         break;
-    }
-
-
+        }
 }
