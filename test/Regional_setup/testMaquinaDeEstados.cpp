@@ -23,10 +23,8 @@ Elevator elevator;
 //========================== VARIABLES ===========================
 
 static constexpr float velocity = 0.45f; //velocidad a 0.30f
-static constexpr float kObstacleDistanceCm = 20.0f;
-
 //State Machine
-    // PoolSubstate         
+    // PoolSubstate     
     static bool obstacleHandled = false;
 
 //--------------------ends variables
@@ -54,9 +52,10 @@ enum LARC_STATE
 {
     START, //Despliegue de elevador y omision de lectura de 
     POOL, //Avanzar {Ultrasonicos (prioridad) + IRs}
-    LOOKFORCORNER, // Forward until finds a corner to init vision
-    LINE_PID, // vision(on)
-    STOP, //Temporal
+    LOOKFORCORNER, // Forward until finds a corner to initialize vision + Line PID
+    STOP_TO_VISION, //on the corner to INITIALIZE vision
+    BEANS, // vision(on) {linePID + vision -> take in beans}
+    STOP, //Temporal  {when rightline detected stop}
 
 };
 
@@ -71,17 +70,21 @@ enum class PoolSubState
 
 
 //Main State Machine :: LARC_STATE
-
 LARC_STATE currentStateLARC = LARC_STATE::START;
-PoolSubState poolState = PoolSubState::FORWARD;
+    //PoolSubState
+    PoolSubState poolState = PoolSubState::FORWARD;
 
 //millis :: LARC_state
     //----- case START
-static constexpr uint32_t kInitialzedStopped = 3000;  //Initialized -> Elevator up
-static constexpr uint32_t kStartIgnoreTimeMs = 1200;  //ignore IRs reads
+static constexpr uint32_t kInitialzedStopped = 9000;  //Initialized -> Elevator up
+static constexpr uint32_t kStartIgnoreTimeMs = 1800;  //ignore IRs reads
 
         //millis :: POOLS_substate
+        static constexpr float kObstacleDistanceCm = 25.0f;
+        uint32_t noObstacleStartMs = 0;
         static constexpr uint32_t kClearDelayMs = 300;
+        static constexpr uint32_t kNoObstacleToCornerMs = 1500; //Transition to mainState :: LookForCorner
+        //--------------------------------------------------
 
 
 // ========================== TIMERS ==========================
@@ -94,6 +97,7 @@ void setMainState(LARC_STATE newState)
     currentStateLARC = newState;
     stateStartMs = millis();
     clearStartMs = 0;
+    noObstacleStartMs = 0;
 }
 
 void setPoolState(PoolSubState newState)
@@ -148,7 +152,10 @@ void loop()
     
     const bool leftDetected  = (FL || BL);
     const bool rightDetected = (FR || BR);
-    const bool frontDetected = (FL && FR);
+    const bool frontDetected = (FL || FR);
+    const bool cornerLEFTDetected = (FL || BL); //puede ser mas robusto para que no se equivoque
+
+
 
     //Ultrasonics
     float d1 = us1.getdistance();
@@ -187,107 +194,118 @@ void loop()
         }
 
 //MAIN::POOL
-        case LARC_STATE::POOL:
+       case LARC_STATE::POOL:
+{
+    switch (poolState)
+    {
+        case PoolSubState::FORWARD:
         {
-            switch (poolState)
+            if (obstacle)
             {
-    // PoolSubstate :: FORWARD
-                case PoolSubState::FORWARD:
-                {
-                    if (obstacleHandled )
-                    {
-                        setMainState(LARC_STATE::LOOKFORCORNER);
-                    }
-                    else if (obstacle)
-                    {
-                        setPoolState(PoolSubState::AVOID_LEFT);
-                    }
-                    else
-                    {
-                        LARC.forward(velocity);
-                    }
-                    
-                    break;
-                }
-
-                case PoolSubState::AVOID_LEFT:
-                {
-                    LARC.left(velocity);
-
-                    if (!obstacle)
-                    {
-                        if (clearStartMs == 0)
-                            clearStartMs = now;
-
-                        if (now - clearStartMs >= kClearDelayMs)
-                        {
-                            obstacleHandled = true;
-                            setMainState(LARC_STATE::LOOKFORCORNER);
-                        }
-                    }
-                    else
-                    {
-                        clearStartMs = 0;
-                    }
-                
-                    if (leftDetected) // LEFT lateral IRs detected
-                    {
-                        setPoolState(PoolSubState::AVOID_RIGHT);
-                    }
-
-                break;
-                }
-
-                case PoolSubState::AVOID_RIGHT:
-                {
-                    LARC.right(velocity);
-
-                if (!obstacle)
-                {
-                    if (clearStartMs == 0)
-                        clearStartMs = now;
-
-                    if (now - clearStartMs >= kClearDelayMs)
-                    {
-                        obstacleHandled = true;
-                        setMainState(LARC_STATE::LOOKFORCORNER);
-                    }
-                }
-                else
-                {
-                    clearStartMs = 0;
-                }
-                break;
-              }  //Ends PoolSubstate Avoidright
-
-            default:
-                break;
-
-            }//Ends PoolSubstate
-
-        break;
-        }
-
-    case LARC_STATE::LOOKFORCORNER:
-        {
-            LARC.forward(velocity);
-
-            if (frontDetected)
+                noObstacleStartMs = 0;
+                setPoolState(PoolSubState::AVOID_LEFT);
+            }
+            else
             {
-                setMainState(LARC_STATE::STOP);
+                LARC.forward(velocity);
+
+                if (noObstacleStartMs == 0)
+                    noObstacleStartMs = now;
+
+                if (now - noObstacleStartMs >= kNoObstacleToCornerMs)
+                {
+                    setMainState(LARC_STATE::LOOKFORCORNER);
+                }
             }
             break;
         }
 
-        case LARC_STATE::LINE_PID:
+        case PoolSubState::AVOID_LEFT:
+        {
+            LARC.left(velocity);
+
+            if (leftDetected)
+            {
+                clearStartMs = 0;
+                setPoolState(PoolSubState::AVOID_RIGHT);
+            }
+            else if (!obstacle)
+            {
+                if (clearStartMs == 0)
+                    clearStartMs = now;
+
+                if (now - clearStartMs >= kClearDelayMs)
+                {
+                    noObstacleStartMs = 0;
+                    setPoolState(PoolSubState::FORWARD);
+                }
+            }
+            else
+            {
+                clearStartMs = 0;
+            }
+
+            break;
+        }
+
+        case PoolSubState::AVOID_RIGHT:
+        {
+            LARC.right(velocity);
+
+            if (!obstacle)
+            {
+                if (clearStartMs == 0)
+                    clearStartMs = now;
+
+                if (now - clearStartMs >= kClearDelayMs)
+                {
+                    noObstacleStartMs = 0;
+                    setPoolState(PoolSubState::FORWARD);
+                }
+            }
+            else
+            {
+                clearStartMs = 0;
+            }
+
+            break;
+        }
+
+        default:
+            break;
+    }
+
+    break;
+}
+
+    case LARC_STATE::LOOKFORCORNER: 
+        {
+    {
+        if (frontDetected)
+        {
+            LARC.left(velocity);
+        }
+         else if(cornerLEFTDetected)
+        { setMainState(LARC_STATE::STOP);}
+
+
+    break;
+}
+        }
+
+        case LARC_STATE::BEANS:
         {
             LARC.allStop();
             break;
         }
 
-        case LARC_STATE::STOP:
+        case LARC_STATE::STOP:  
         {
-            LARC.allStop();
+            LARC.right(velocity); //Provicional
+
+
+            delay(3000); //Provicional
+            setMainState(BEANS);  //Provicional
             break;
         }
 
