@@ -261,10 +261,14 @@ void loop()
                 break;
               }  //Ends PoolSubstate Avoidright
 
+            default:
+                break;
+
             }//Ends PoolSubstate
 
         break;
         }
+
     case LARC_STATE::LOOKFORCORNER:
         {
             LARC.forward(velocity);
