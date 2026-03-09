@@ -13,19 +13,26 @@
 //Drive
 #include "subsystem/Drive/Drive.hpp"
 #include "PIDController.hpp"
+//Servos
+#include "ServoSystem.hpp"
 
 //========================== OBJECTS ===========================
 Drive LARC;
 Mux74HC4067 mux;
+ServoSystem servos;
 Elevator elevator;
+
 //--------------------ends objects
 
 //========================== VARIABLES ===========================
 
-static constexpr float velocity = 0.45f; //velocidad a 0.30f
+static constexpr float velocity = 0.40f; //velocidad a 0.30f
 //State Machine
     // PoolSubstate     
     static bool obstacleHandled = false;
+
+//Last print of servo instructions (to avoid spamming serial)
+static uint32_t lastPrint = 0;
 
 //--------------------ends variables
 
@@ -44,18 +51,30 @@ IR_mux ir(mux, irChannels, 0b0000);
     // Ultrasonics
 Ultrasonic us1(Pins::kDistanceSensors[0][0], Pins::kDistanceSensors[0][1]);
 Ultrasonic us2(Pins::kDistanceSensors[1][0], Pins::kDistanceSensors[1][1]);
+
+    // QTR
+
+QTR qtrFront(0, mux);
+
 //--------------------ends sensors
 
+//============================ LINE PID ===============================
+
+    // PID for line qtrFront
+PIDController linePID(0.000035f, 0.0f, 0.00000008f, -1.0f, 1.0f); 
+
+static constexpr float kBaseSpeed = 0.30f; // Strafing speed for line follower
 
 //========================== STATE MACHINEs ===========================
 enum LARC_STATE
 {
-    START, //Despliegue de elevador y omision de lectura de 
-    POOL, //Avanzar {Ultrasonicos (prioridad) + IRs}
-    LOOKFORCORNER, // Forward until finds a corner to initialize vision + Line PID
+    START,          //Despliegue de elevador y omision de lectura de 
+    POOL,           //Avanzar {Ultrasonicos (prioridad) + IRs}
+    LOOKFORLINE,    // Forward until finds a corner to initialize Line PID
+    LOOKFORCORNER,  // Moves left with line pid until BL detects corner
+    BEANS,        // line PID while strafing right
     STOP_TO_VISION, //on the corner to INITIALIZE vision
-    BEANS, // vision(on) {linePID + vision -> take in beans}
-    STOP, //Temporal  {when rightline detected stop}
+    STOP,           //Temporal  {when rightline detected stop}
 
 };
 
@@ -80,10 +99,10 @@ static constexpr uint32_t kInitialzedStopped = 9000;  //Initialized -> Elevator 
 static constexpr uint32_t kStartIgnoreTimeMs = 1800;  //ignore IRs reads
 
         //millis :: POOLS_substate
-        static constexpr float kObstacleDistanceCm = 25.0f;
+        static constexpr float kObstacleDistanceCm = 20.0f;
         uint32_t noObstacleStartMs = 0;
         static constexpr uint32_t kClearDelayMs = 300;
-        static constexpr uint32_t kNoObstacleToCornerMs = 1500; //Transition to mainState :: LookForCorner
+        static constexpr uint32_t kNoObstacleToCornerMs = 1500; //Transition to mainState :: LOOKFORLINE
         //--------------------------------------------------
 
 
@@ -110,7 +129,7 @@ void setPoolState(PoolSubState newState)
 
 
 
-//~~~~~~~~~~~~~~~~~~~~~~~~ SETUP && LOOP ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//~~~~~~~~ SETUP && LOOP ~~~~~~~~~~~~~
 void setup()
 {
 Serial.begin(115200);
@@ -125,8 +144,13 @@ Serial.begin(115200);
     ir.begin();
     us1.begin();
     us2.begin();
+    qtrFront.begin();
+    qtrFront.useDefaultCalibration();
         //Elevator
-        elevator.begin();
+    elevator.begin();
+
+    //Servos begin
+    servos.begin();
 
     //MAIN State machine begin
     setMainState(LARC_STATE::START);
@@ -142,7 +166,16 @@ void loop()
     ir.update();
     us1.update();
     us2.update();
-    ir.debugPrint();
+    qtrFront.update();
+    
+
+    // Line PID variables
+
+    int linePos = qtrFront.getBinaryPosition();
+    bool  onLine   = qtrFront.onLine();
+    float lineErr  = linePos - Constants::LineFollower::kSetpoint;
+    float lineCorr = linePID.update(linePos, Constants::LineFollower::kSetpoint);
+    float vx       = -lineCorr;
 
     // IRs bools
     bool FL = ir.getState(IR_mux::FL);
@@ -153,7 +186,8 @@ void loop()
     const bool leftDetected  = (FL || BL);
     const bool rightDetected = (FR || BR);
     const bool frontDetected = (FL || FR);
-    const bool cornerLEFTDetected = (FL || BL); //puede ser mas robusto para que no se equivoque
+    const bool cornerLEFTDetected = (BL);
+    const bool cornerRIGHTDetected = (BR);
 
 
 
@@ -175,6 +209,7 @@ void loop()
 //MAIN::START
         case LARC_STATE::START:
         {
+            Serial.println(F("State: START"));
             if (now - stateStartMs < kInitialzedStopped)
             {
                 LARC.allStop();
@@ -190,7 +225,7 @@ void loop()
                 setMainState(LARC_STATE::POOL);
                 setPoolState(PoolSubState::FORWARD);
             }
-            break;
+            break; 
         }
 
 //MAIN::POOL
@@ -200,6 +235,7 @@ void loop()
     {
         case PoolSubState::FORWARD:
         {
+            Serial.println(F("State: POOL - FORWARD"));
             if (obstacle)
             {
                 noObstacleStartMs = 0;
@@ -214,7 +250,7 @@ void loop()
 
                 if (now - noObstacleStartMs >= kNoObstacleToCornerMs)
                 {
-                    setMainState(LARC_STATE::LOOKFORCORNER);
+                    setMainState(LARC_STATE::LOOKFORLINE);
                 }
             }
             break;
@@ -222,6 +258,7 @@ void loop()
 
         case PoolSubState::AVOID_LEFT:
         {
+            Serial.println(F("State: POOL - AVOID_LEFT"));
             LARC.left(velocity);
 
             if (leftDetected)
@@ -250,6 +287,7 @@ void loop()
 
         case PoolSubState::AVOID_RIGHT:
         {
+            Serial.println(F("State: POOL - AVOID_RIGHT"));
             LARC.right(velocity);
 
             if (!obstacle)
@@ -278,34 +316,75 @@ void loop()
     break;
 }
 
-    case LARC_STATE::LOOKFORCORNER: 
+        case LARC_STATE::LOOKFORLINE:
         {
-    {
-        if (frontDetected)
-        {
-            LARC.left(velocity);
+            servos.intakeUpperHome();
+            servos.intakeLowerHome();
+            if (frontDetected)
+            {
+                Serial.println(F("State: LOOKFORLINE - front detected, go find corner"));
+                setMainState(LARC_STATE::LOOKFORCORNER);
+            }
+            else
+            {
+                Serial.println(F("State: LOOKFORLINE - moving forward"));
+                LARC.forward(velocity);
+            }
+            break;
         }
-         else if(cornerLEFTDetected)
-        { setMainState(LARC_STATE::STOP);}
 
+        case LARC_STATE::LOOKFORCORNER:
 
-    break;
-}
+        {
+            Serial.println(F("State: LOOKFORCORNER - moving left"));
+
+            if (cornerLEFTDetected)  // BL detects the corner
+            {
+                Serial.println(F("State: LOOKFORCORNER - corner found, starting BEANS"));
+                LARC.allStop();
+                servos.intakeUpperDeploy();
+                servos.intakeLowerDeploy();
+                delay(600);
+                setMainState(LARC_STATE::BEANS);
+
+            }
+            else
+            {
+                LARC.setTranslation(vx, kBaseSpeed);
+            }
+            break;
         }
 
         case LARC_STATE::BEANS:
         {
-            LARC.allStop();
+            // Stop if boundary sensors detect edge
+            if (cornerRIGHTDetected)
+            {
+                Serial.println(F("State: BEANS - right boundary, stopping"));
+                setMainState(LARC_STATE::STOP);
+                break;
+            }
+
+            if (!onLine)
+            {
+                LARC.stop();
+            }
+            else
+            {
+                // vx = QTR correction, -kBaseSpeed = strafe right
+                Serial.print(F("State: BEANS - on line, vx: ")); Serial.println(vx);
+                LARC.setTranslation(vx, -kBaseSpeed);
+            }
             break;
         }
 
+
+
         case LARC_STATE::STOP:  
         {
-            LARC.right(velocity); //Provicional
-
-
-            delay(3000); //Provicional
-            setMainState(BEANS);  //Provicional
+            LARC.allStop(); //Provicional
+            Serial.println(F("State: STOP"));
+            delay(600);
             break;
         }
 
