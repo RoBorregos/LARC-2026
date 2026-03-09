@@ -38,9 +38,9 @@ namespace Constants
     } // namespace DriveConstants
     namespace PID
     {
-        static constexpr float kKp = 1.1; // 4.8f;  2.5f; 1.5f
+        static constexpr float kKp = 1.15; // 4.8f;  2.5f; 1.5f
         static constexpr float kKi = 0.0f; //0.002f
-        static constexpr float kKd = 0.01f;  //0.06f; 0.0f
+        static constexpr float kKd = 0.0012f;  //0.06f; 0.0f
         static constexpr float kOmegaMax = 0.25f;
         static constexpr float kcurrentVelocity = 0.42f; //Velocity according to PID
 
@@ -102,14 +102,12 @@ namespace Constants
     namespace ServoAngles
     {
         // Intake Superior
-
-        static constexpr uint8_t kIntakeUpperHome   = 0;   // retractado, 
-        static constexpr uint8_t kIntakeUpperDeploy = 80;  // posición de tumble
+        static constexpr uint8_t kIntakeUpperHome   = 30;   // retractado, 
+        static constexpr uint8_t kIntakeUpperDeploy = 85;  // posición de tumble
 
         // Intake Inferior
-
-        static constexpr uint8_t kIntakeLowerHome   = 0;   // retractado
-        static constexpr uint8_t kIntakeLowerDeploy = 80;  // posición de tumble
+        static constexpr uint8_t kIntakeLowerHome   = 30;   // retractado
+        static constexpr uint8_t kIntakeLowerDeploy = 85;  // posición de tumble
 
         // Compuerta Separadora
         // Compuerta que dirige la semilla al canal correcto
