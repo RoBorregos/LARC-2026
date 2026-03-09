@@ -43,6 +43,7 @@ static uint32_t lastPrint = 0;
 const uint8_t irChannels[IR_mux::N] = {13, 12, 11, 10};
 IR_mux ir(mux, irChannels, 0b0000); 
         /*
+        //IRs calibration description:
             *invertedMask = 0b0000 -> invierte el sensor índice 1 (normalmente FR)
             * Bit 0:FL, Bit 1: FR, Bit 2: BL, Bit 3: BR.
             * Ejemplo: 0b0011 invierte FL y FR.
@@ -53,7 +54,6 @@ Ultrasonic us1(Pins::kDistanceSensors[0][0], Pins::kDistanceSensors[0][1]);
 Ultrasonic us2(Pins::kDistanceSensors[1][0], Pins::kDistanceSensors[1][1]);
 
     // QTR
-
 QTR qtrFront(0, mux);
 
 //--------------------ends sensors
