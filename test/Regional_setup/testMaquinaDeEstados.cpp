@@ -8,13 +8,13 @@
 #include "mux.h"
 #include "qtr.hpp"
 #include "ultrasonic/ultrasonic.hpp"
+#include "ServoSystem.hpp"
+
 //Elevator
 #include "Elevator.hpp"
 //Drive
 #include "subsystem/Drive/Drive.hpp"
 #include "PIDController.hpp"
-//Servos
-#include "ServoSystem.hpp"
 
 //========================== OBJECTS ===========================
 Drive LARC;
