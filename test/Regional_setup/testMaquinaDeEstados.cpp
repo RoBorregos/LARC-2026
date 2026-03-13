@@ -129,6 +129,23 @@ void setPoolState(PoolSubState newState)
 
 
 
+// ========== VISION ==============================
+static byte visionLeft  = 0;
+static byte visionRight = 0;
+
+void readVision()
+{
+    if (Serial.available() >= 3) {
+        if (Serial.read() == 0xFF) {
+            visionLeft  = Serial.read();
+            visionRight = Serial.read();
+        }
+    }
+}
+//--------------------ends vision
+
+
+
 //~~~~~~~~ SETUP && LOOP ~~~~~~~~~~~~~
 void setup()
 {
@@ -156,6 +173,11 @@ Serial.begin(115200);
     setMainState(LARC_STATE::START);
     setPoolState(PoolSubState::FORWARD);
 
+    //Vision
+    servos.intakeUpperDeploy();
+    servos.intakeLowerDeploy();
+    delay(600);
+
     Serial.println(F("TEST State Machine << complete rutine >> STARTS... now   "));
 }
 
@@ -167,11 +189,12 @@ void loop()
     us1.update();
     us2.update();
     qtrFront.update();
+    readVision();
     
 
     // Line PID variables
 
-    int linePos = qtrFront.getBinaryPosition();
+    int   linePos = qtrFront.getBinaryPosition();
     bool  onLine   = qtrFront.onLine();
     float lineErr  = linePos - Constants::LineFollower::kSetpoint;
     float lineCorr = linePID.update(linePos, Constants::LineFollower::kSetpoint);
@@ -368,6 +391,12 @@ void loop()
             if (!onLine)
             {
                 LARC.stop();
+                    if (visionLeft)  servos.intakeUpperDeploy();
+                    else servos.intakeUpperHome();
+
+                    if (visionRight) servos.intakeLowerDeploy();
+                    else servos.intakeLowerHome();
+
             }
             else
             {
