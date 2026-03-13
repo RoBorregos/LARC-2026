@@ -30,7 +30,6 @@ public:
 
     // Initializes the pin arrangement on the mux
     // Called once on setup()
-    
     bool begin();
 
     // Loads preset calibration for the 8 sensors,
@@ -49,8 +48,21 @@ public:
     // From 0 to 1000 after normalization
     bool onLine(uint16_t threshold = 200) const;
 
+    // Function that performs calibration routine for 10 seconds
+    void calibrate(uint32_t durationMs = 10000);
+
+    //Prints the calibration values for each sensor
+    // Useful for copying to constants.h.
+    void printCalibration(const char* label) const;
+
+    // Returns the position reading the qtr sensors as binary values
+    // Where each bit represents whether the corresponding sensor is over the threshold or not
+    // Uses already normalized values
+    int getBinaryPosition() const;
+
     // Debug
     const uint16_t* getRaw()  const { return raw;  }
+
     const uint16_t* getNorm() const { return norm; }
 
     void debugPrint() const;
