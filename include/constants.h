@@ -38,13 +38,108 @@ namespace Constants
     } // namespace DriveConstants
     namespace PID
     {
-        static constexpr float kKp = 1.5; // 4.8f;  2.5f
+        static constexpr float kKp = 1.1; // 4.8f;  2.5f; 1.5f
         static constexpr float kKi = 0.0f; //0.002f
-        static constexpr float kKd = 0.0f;  //0.06f;   
+        static constexpr float kKd = 0.0012f;  //0.06f; 0.0f
         static constexpr float kOmegaMax = 0.25f;
         static constexpr float kcurrentVelocity = 0.42f; //Velocity according to PID
 
     } // namespace PID
+     namespace UltrasonicConstants
+    {
+        static constexpr uint32_t kPingPeriodMs  = 50;    // ms entre pings
+        static constexpr uint32_t kTrigHighUs    = 10;    // µs que el trigger está en HIGH
+        static constexpr uint32_t kEchoTimeoutUs = 25000; // µs (~4 m máx)
+    } // namespace UltrasonicConstants
+
+    namespace QTRCalibration
+    {
+        constexpr size_t kNumSensors = 8;
+
+        struct Profile
+        {
+            uint16_t min[kNumSensors];
+            uint16_t max[kNumSensors];
+        };
+
+        // PLACEHOLDERS
+
+ 
+        constexpr Profile Front = {
+            {850, 850, 850, 850, 850, 850, 850, 850},
+            {950, 950, 950, 950, 950, 950, 950, 950}
+        };
+
+        constexpr Profile Rear = {
+            {120,  130,  115,  140,  150,  135,  128,  122 },
+            {3100, 3200, 3050, 3300, 3350, 3250, 3150, 3000}
+        };
+
+        constexpr uint16_t kBinaryThreshold = 600; // 0-1000 normalized, tune this one value
+
+    } // namespace QTRCalibration
+
+    namespace LineFollower 
+    
+    {
+    constexpr int kSetpoint = 3500;   // center of 0-7000 range
+    // change to 4000, 2000, etc. as needed
+    }
+
+
+    namespace IRCalibration
+    {
+        // Umbrales analógicos por sensor (0..1023).
+        // Si raw >= umbral = línea detectada (antes de aplicar inversión).
+
+        // PLACEHOLDERS
+        static constexpr uint16_t kThreshFL = 120; // Front-Left
+        static constexpr uint16_t kThreshFR = 120; // Front-Right
+        static constexpr uint16_t kThreshBL = 120; // Back-Left
+        static constexpr uint16_t kThreshBR = 220; // Back-Right
+    } // namespace IRCalibration
+
+    namespace ServoAngles
+    {
+        // Intake Superior
+        static constexpr uint8_t kIntakeUpperHome   = 50;   // retractado, 
+        static constexpr uint8_t kIntakeUpperDeploy = 87;  // posición de tumble
+
+        // Intake Inferior
+        static constexpr uint8_t kIntakeLowerHome   = 50;   // retractado
+        static constexpr uint8_t kIntakeLowerDeploy = 87;  // posición de tumble
+
+        // Compuerta Separadora
+        // Compuerta que dirige la semilla al canal correcto
+        static constexpr uint8_t kSeparatorCenter = 90;  // neutro/hold
+        static constexpr uint8_t kSeparatorLeft   = 45;  // canal izquierdo
+        static constexpr uint8_t kSeparatorRight  = 135; // canal derecho
+
+        // Servo Beneficiadero Rojo
+        // Permanece cerrado hasta recibir señal
+        static constexpr uint8_t kBenefitRedClosed = 0;   // cerrado
+        static constexpr uint8_t kBenefitRedOpen   = 90;  // abierto
+
+        // Servo Beneficiadero Azul
+        // Permanece cerrado hasta recibir señal
+        static constexpr uint8_t kBenefitBlueClosed = 0;   // cerrado
+        static constexpr uint8_t kBenefitBlueOpen   = 90;  // abierto
+
+        //Servo Holder
+        // Permanece cerrado hasta recibir señal
+        static constexpr uint8_t kHolderHold = 0;   // cerrado
+        static constexpr uint8_t kHolderRelease   = 20;  // abierto
+
+        // Tiempo de movimiento (ms)
+        // Ajustar si queremos que se tarde o que la respuesta sea inmediata a la señal que recibe.
+        static constexpr uint32_t kIntakeUpperMoveMs  = 80;
+        static constexpr uint32_t kIntakeLowerMoveMs  = 80;
+        static constexpr uint32_t kSeparatorMoveMs    = 300;
+        static constexpr uint32_t kBenefitRedMoveMs   = 300;
+        static constexpr uint32_t kBenefitBlueMoveMs  = 300;
+        static constexpr uint32_t kHolderMoveMs       = 300;
+    } // namespace ServoAngles
+
 } // namespace Constants
 
 #endif
