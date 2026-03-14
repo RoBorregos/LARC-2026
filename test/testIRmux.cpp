@@ -54,7 +54,7 @@ void executeState()
     case MOVE_LEFT:   Robot.left(velocity); break;    //Serial.println("left");   break;
     case MOVE_RIGHT:  Robot.right(velocity);  break;  //Serial.println("right");    break;
     case BACKWARD:    Robot.backward(velocity); break; //Serial.println("backward"); break;
-    case STOP_STATE:  Robot.allStop();     break;     //Serial.println("stop");         break;
+    case STOP_STATE:  Robot.brake();     break;     //Serial.println("stop");         break;
     case FORWARD:
     default:          Robot.forward(velocity);  break;//Serial.println("FORWARD");  break;
     }
