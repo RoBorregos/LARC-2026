@@ -46,7 +46,7 @@ public:
   void setManualOmega(float omegaRadS); 
   void clearManualOmega();  //go back to PID
 
-  void allStop(); //brake
+  void brake(); //brake
   
   void testKinematics(float v = 0.45f, uint32_t T = 2000);
 

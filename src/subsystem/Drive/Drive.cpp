@@ -139,7 +139,7 @@ void Drive::clearManualOmega() {
   yawPid_.reset();
 }
 
-void Drive::allStop() {
+void Drive::brake() {
   m1_ul_.stop();
   m2_ur_.stop();
   m3_ll_.stop();
