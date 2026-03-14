@@ -72,7 +72,7 @@ enum LARC_STATE
     POOL,           //Avanzar {Ultrasonicos (prioridad) + IRs}
     LOOKFORLINE,    // Forward until finds a corner to initialize Line PID
     LOOKFORCORNER,  // Moves left with line pid until BL detects corner
-    BEANS,        // line PID while strafing right
+    BEANS,          // line PID while strafing right
     STOP_TO_VISION, //on the corner to INITIALIZE vision
     STOP,           //Temporal  {when rightline detected stop}
 
@@ -235,7 +235,7 @@ void loop()
             Serial.println(F("State: START"));
             if (now - stateStartMs < kInitialzedStopped)
             {
-                LARC.allStop();
+                LARC.brake();
                 elevator.ElevatorPosition(1); // UP
             }
             else if (now - stateStartMs < (kInitialzedStopped + kStartIgnoreTimeMs))
@@ -364,7 +364,7 @@ void loop()
             if (cornerLEFTDetected)  // BL detects the corner
             {
                 Serial.println(F("State: LOOKFORCORNER - corner found, starting BEANS"));
-                LARC.allStop();
+                LARC.brake();
                 servos.intakeUpperDeploy();
                 servos.intakeLowerDeploy();
                 delay(600);
@@ -411,7 +411,7 @@ void loop()
 
         case LARC_STATE::STOP:  
         {
-            LARC.allStop(); //Provicional
+            LARC.brake(); //Provicional
             Serial.println(F("State: STOP"));
             delay(600);
             break;
