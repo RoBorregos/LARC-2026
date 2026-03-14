@@ -158,7 +158,7 @@ void loop()
 
     case State::STOP_STATE:
     default:
-        LARC.allStop();
+        LARC.brake();
         break;
     }
 }
