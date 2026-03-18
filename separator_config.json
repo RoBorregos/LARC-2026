@@ -1,0 +1,22 @@
+{
+  "roi_x1": 760,
+  "roi_y1": 340,
+  "roi_x2": 1160,
+  "roi_y2": 740,
+  "warm_h_lo": 0,
+  "warm_h_hi": 35,
+  "warm_s_min": 80,
+  "warm_v_min": 80,
+  "cool_h_lo": 95,
+  "cool_h_hi": 135,
+  "cool_s_min": 60,
+  "cool_v_min": 40,
+  "black_v_max": 50,
+  "warm_frac": 5,
+  "cool_frac": 5,
+  "morph_k": 5,
+  "morph_iter": 1,
+  "ghost_frames": 10,
+  "area_min": 800,
+  "area_max": 50000
+}
