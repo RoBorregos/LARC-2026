@@ -6,7 +6,12 @@ No windows, no drawing, no UI.
 Pure vision pipeline + Kalman ghost tracker + serial output.
 
 Config loaded from beans_config.json (generate it once with beans_debug.py → S key).
-Serial sends [0xFF, left_hit, right_hit] to Teensy at 115200 baud.
+Serial 
+
+Config  : beans_config.json  (save from beans_debug.py with S)
+Serial  : sends [0xFF, left_hit, right_hit] to Teensy at 115200 baud.
+Output  : FPS + left/right hit counts printed to terminal every second.
+Ctrl+C  : stop
 """
 
 import cv2
@@ -298,4 +303,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-EOF
