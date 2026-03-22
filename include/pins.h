@@ -91,9 +91,6 @@ namespace Pins
     constexpr uint8_t kElevatorINA2 = 8;
     constexpr uint8_t kElevatorPWM = 22;
 
-
-
-
     // ====== LED =====
     //const uint8_t kLed1 = 6; // Esta para el limit switch
     const uint8_t kLed2 = 10;
@@ -128,9 +125,11 @@ namespace Pins
     const uint8_t kHolderServo      = 255;
 
     // ======== Limit Swicth ========
-    const uint8_t kLimitSwitch = 6;
+    const uint8_t kLimitSwitch = 30;
 
-
+    // ======== BT module ======== (you don't need it)
+    constexpr uint8_t kBluetoothRx = 7;
+    constexpr uint8_t kBluetoothTx = 8;
 
 }
 
