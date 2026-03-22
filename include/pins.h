@@ -95,7 +95,7 @@ namespace Pins
 
 
     // ====== LED =====
-    const uint8_t kLed1 = 6;
+    //const uint8_t kLed1 = 6; // Esta para el limit switch
     const uint8_t kLed2 = 10;
 
     // ======== 74HC4067 Multiplexer ========
@@ -119,8 +119,6 @@ namespace Pins
     static constexpr uint8_t kIrChBL = 11;  // Canal mux - sensor Back-Left
     static constexpr uint8_t kIrChBR = 10;  // Canal mux - sensor Back-Right
 
- 
-
     // ======== Intake ========
     const uint8_t kUpperIntakeServo = 3;
     const uint8_t kLowerIntakeServo = 4;
@@ -128,6 +126,11 @@ namespace Pins
     const uint8_t kRedBenefitServo  = 255;
     const uint8_t kBlueBenefitServo  = 255;
     const uint8_t kHolderServo      = 255;
+
+    // ======== Limit Swicth ========
+    const uint8_t kUpperIntakeServo = 6;
+
+
 
 }
 
