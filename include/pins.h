@@ -128,7 +128,7 @@ namespace Pins
     const uint8_t kHolderServo      = 255;
 
     // ======== Limit Swicth ========
-    const uint8_t kUpperIntakeServo = 6;
+    const uint8_t kLimitSwitch = 6;
 
 
 
