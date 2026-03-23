@@ -35,6 +35,7 @@ public:
     float getYaw() const; // in rad
     void runCalibration(); //get a "diagnosis" on screen
     void getAngular();
+    void getAngularPrinted();
     std::tuple<float, float, float> getLinealAcceleration();
 
 private:
