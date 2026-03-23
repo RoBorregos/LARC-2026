@@ -73,25 +73,25 @@ void Drive::update() {
       while (err >  M_PI) err -= 2.0f * M_PI;
       while (err < -M_PI) err += 2.0f * M_PI;
 
-      Serial.print(now);
-      Serial.print("\t");
-      Serial.print("YAW: ");
-      Serial.print(rad2deg(yaw), 2);
-      Serial.print("\t\t");
-      Serial.print("targuet yaw: ");
-      Serial.print(rad2deg(targetYaw_), 2);
-      Serial.print("\t\t");
-      Serial.print("error");
-      Serial.print(rad2deg(err), 2);
-      Serial.print("\t\t");
-      Serial.print("omega");
-      Serial.print(omega, 4);
-      Serial.print("\t");
-      Serial.print("vxCmd");
-      Serial.print(vxCmd_, 2);
-      Serial.print("\t");
-      Serial.print("vyCmd");
-      Serial.println(vyCmd_, 2);
+      //Serial.print(now);
+      //Serial.print("\t");
+      //Serial.print("YAW: ");
+      //Serial.print(rad2deg(yaw), 2);
+      //Serial.print("\t\t");
+      //Serial.print("targuet yaw: ");
+      //Serial.print(rad2deg(targetYaw_), 2);
+      //Serial.print("\t\t");
+      //Serial.print("error");
+      //Serial.print(rad2deg(err), 2);
+      //Serial.print("\t\t");
+      //Serial.print("omega");
+      //Serial.print(omega, 4);
+      //Serial.print("\t");
+      //Serial.print("vxCmd");
+      //Serial.print(vxCmd_, 2);
+      //Serial.print("\t");
+      //Serial.print("vyCmd");
+      //Serial.println(vyCmd_, 2);
     }
   }
 }
