@@ -114,34 +114,22 @@ void loop()
             // Robot is stopped, do nothing
             break;
     }
-/*
-    m1_ul.testForwardBackward();
-    Serial.println("Motor1 UL tested");
-    m2_ur.testForwardBackward();
-    Serial.println("Motor2 UR tested");
-    m3_ll.testForwardBackward(); 
-    Serial.println("Motor3 LL tested");
-    m4_lr.testForwardBackward(); 
-    Serial.println("Motor4 LR tested");*/
+
+
+    Serial.print("Roll: ");  Serial.print(imuBNO.getRoll());
+    Serial.print("  Pitch: "); Serial.print(imuBNO.getPitch());
+    Serial.print("  Yaw: ");  Serial.println(imuBNO.getYaw());
 
 
 
-
-
-    //Serial.print("Roll: ");  Serial.print(imuBNO.getRoll());
-    //Serial.print("  Pitch: "); Serial.print(imuBNO.getPitch());
-    //Serial.print("  Yaw: ");  Serial.println(imuBNO.getYaw());
-
-
-
-    /*Serial.print("qtr1: ");
+    Serial.print("qtr1: ");
     qtr1.debugPrint();
     Serial.println();
     Serial.print("qtr2: ");
     qtr2.debugPrint();
     amux.debugPrint();
-*/
-/*
+
+
     // Intake Superior
     servos.intakeUpperHome();
     Serial.println("Intake upper home");
@@ -162,7 +150,7 @@ void loop()
     Serial.println("Separator right");
         delay(300);*/
 
-    /*// Separator
+    // Separator
     servos.separatorCenter();
         delay(500);
     servos.separatorLeft();
@@ -180,7 +168,7 @@ void loop()
     servos.holderHold();
         delay(500);
     servos.holderRelease();
-        delay(500);*/
+        delay(500);
 
     amux.debugPrint();
 
@@ -202,12 +190,12 @@ void loop()
     Serial.println(" mm");
 
     Serial.println();
-    //mux.scanAll();
-    //delay(1000);
+    mux.scanAll();
+    delay(1000);
 
-    //Serial.print("FL:"); Serial.print(ir.getState(IRLine::FL));
-    //Serial.print(" FR:"); Serial.print(ir.getState(IRLine::FR));
-    //Serial.print(" BL:"); Serial.print(ir.getState(IRLine::BL));
-    //Serial.print(" BR:"); Serial.println(ir.getState(IRLine::BR));
+    Serial.print("FL:"); Serial.print(ir.getState(IRLine::FL));
+    Serial.print(" FR:"); Serial.print(ir.getState(IRLine::FR));
+    Serial.print(" BL:"); Serial.print(ir.getState(IRLine::BL));
+    Serial.print(" BR:"); Serial.println(ir.getState(IRLine::BR));
 
 }
