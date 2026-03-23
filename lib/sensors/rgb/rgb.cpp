@@ -3,7 +3,7 @@
  * @date 2026-01-28
  *
  * @brief TCS34725 RGB Sensor
-*/
+
 
 #include "rgb.hpp"
 
@@ -49,4 +49,4 @@ void RGB::getRaw(uint16_t out[N_CHANNELS]) const
     out[1] = red;
     out[2] = green;
     out[3] = blue;
-}
+}*/

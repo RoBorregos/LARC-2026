@@ -3,7 +3,7 @@
  * @date 2026-01-28
  *
  * @brief TCS34725 RGB sensor (I2C)
- */
+
 
 #ifndef RGB_HPP
 #define RGB_HPP
@@ -39,3 +39,4 @@ private:
 };
 
 #endif // RGB_HPP
+*/
