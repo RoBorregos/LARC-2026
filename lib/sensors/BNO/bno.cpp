@@ -110,4 +110,3 @@ void BNO::getAngular()
     Serial.print(current_pitch, 2);
     Serial.println("°");
 }
-
