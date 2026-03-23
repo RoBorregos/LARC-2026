@@ -2,51 +2,74 @@
  * @file tof.hpp
  * @date 2026-01-28
  *
- * @brief VL53L1X TOF distance sensor (I2C)
-*/
+ * @brief VL53L0X / VL53L1X TOF distance sensor (I2C)
+ *        Millis-based update with last-known good reading.
+ */
 
 #ifndef TOF_HPP
 #define TOF_HPP
 
 #include <Arduino.h>
 #include <Wire.h>
+#include <VL53L0X.h>
 #include <VL53L1X.h>
+#include "TCA9548A.h"
+#include "constants.h"
+
+enum class ToFType : uint8_t {
+    L0X,
+    L1X
+};
 
 class ToF
 {
 public:
-    // Invalid distance if timeout occurs (sensor out of range, etc)
     static constexpr uint16_t INVALID_MM = 0xFFFF;
 
     ToF();
+    ToF(uint8_t muxChannel, TCA9548A& mux, ToFType type = ToFType::L0X);
 
     bool begin();
     void update();
 
-    // Last reading in mm
-    uint16_t getDistanceMm() const { return distanceMm; }
+    uint16_t getDistanceMm()  const { return distanceMm; }
+    bool     isInitialized()  const { return initialized; }
 
-    bool isInitialized() const { return initialized; }
+    /// Set the max useful range (readings beyond this are discarded).
+    /// Default in constants.  Call before or after begin().
+    void setMaxRange(uint16_t mm);
 
-    // Optional: changes the timing budget (time spent on each measurement)
-    
+    /// Set the minimum interval between polls (ms).
+    /// Defaults to kContinuousPeriodMs.  Automatically synced when
+    /// you call setInterMeasurementMs() or startContinuous().
+    void setUpdateInterval(uint16_t ms);
+
     void setTimingBudgetMs(uint16_t ms);
-
-    // Optional: changes the time between measurements
-    // (if you´re on continuous mode)
-    // *** IMPORTANT: Cant be smaller than the timing budget ***
     void setInterMeasurementMs(uint16_t ms);
-
-    // Optional: Starts/stops continuous mode
-    void startContinuous(uint16_t periodMs = 50);
+    void startContinuous(uint16_t periodMs = Constants::ToFConfig::kContinuousPeriodMs);
     void stopContinuous();
 
 private:
-    VL53L1X sensor;
-    bool initialized;
-    bool continuous;
+    VL53L0X  sensorL0X;
+    VL53L1X  sensorL1X;
+    ToFType  type_;
+
+    bool     initialized;
+    bool     continuous;
+    bool     useMux;
 
     uint16_t distanceMm;
+    uint32_t lastUpdateMs_;
+    uint16_t updateIntervalMs_;
+    uint16_t maxRangeMm_;
+
+
+    uint8_t   muxChannel_;
+    TCA9548A* mux_;
+
+    inline void selectIfMux() {
+        if (useMux && mux_) mux_->selectChannel(muxChannel_);
+    }
 };
 
 #endif // TOF_HPP
