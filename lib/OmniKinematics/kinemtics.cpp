@@ -80,4 +80,3 @@ void OmniMotors::MoveXYW(float vx, float vy, float omega)
   setWheelCmd(lower_right_, m4); // setWheelCmd(lower_left_,  m4);
 }
 
-
