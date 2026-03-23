@@ -1,13 +1,15 @@
 #pragma once
 
-/**
+/*
  * @file IR.hpp
  * @date 2026-02-10
  *
- * @brief Decalration of line IR sensors with per-sensor inversion
+ * @brief Line IR sensors with per-sensor inversion, hysteresis, and debounce.
+ *        Direct analog read from Teensy pins.
  */
 
 #include <Arduino.h>
+#include "constants.h"
 
 class IRLine
 {
@@ -22,17 +24,9 @@ public:
         N  = 4
     };
 
-    /**
-     * Sensor Bitmask
-     * Bit 0:FL, Bit 1: FR, Bit 2: BL, Bit 3: BR.
-     * Ejemplo: 0b0011 invierte FL y FR.
-     * By default 0b1111 (all inverted).
-     */
+    //Constructor
     IRLine(uint8_t flPin, uint8_t frPin, uint8_t blPin, uint8_t brPin,
-           uint8_t invertedMask = 0b1111);
-
-    // Alternate constructor with array of pins
-    IRLine(const uint8_t pins_[N], uint8_t invertedMask = 0b1111);
+        uint8_t invertedMask = 0b0000);
 
     // Configs pins and does first reading
     bool begin();
@@ -40,15 +34,32 @@ public:
     // Reads raw values of all sensors
     void update();
 
-    // Returns the logic reading of sensors (after palying inversion)
-    // true = Line
+    // Returns the debounced + hysteresis state (after inversion)
+    // true = Line detected
     // false = No line
     bool getState(Sensor s) const;
 
+    // Fill array with all debounced states
+    void getArray(bool out[N]) const;
+
+    // Debug: prints raw ADC, threshold, hysteresis, and stable states
+    void debugPrint() const;
+
 private:
-    bool    initialized;
-    uint8_t pins[N];
-    bool    rawState[N];
-    bool    lineState[N];
-    uint8_t invertedMask;
+    bool     initialized;
+    uint8_t  pins[N];
+    uint8_t  invertedMask;
+
+    uint16_t rawVal[N];    // ADC raw value (0..1023)
+    bool     lineState[N];   // State after simple threshold
+    bool     hysteresisState[N];  // State after hysteresis
+
+    uint16_t threshold[N];
+    uint16_t threshHigh[N];  // threshold + kHysteresis
+    uint16_t threshLow[N];    // threshold - kHysteresis
+ 
+    // Consensus debounce
+    bool     stableState[N];   // Committed state
+    bool     pendingState[N];  // Candidate state
+    uint8_t  debounceCount[N];
 };
