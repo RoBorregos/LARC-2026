@@ -1,57 +1,58 @@
-#ifndef STATEMACHINE_HPP
-#define STATEMACHINE_HPP
+#ifndef STATEMACHINE_H
+#define STATEMACHINE_H
 
 #include <Arduino.h>
-#include <SoftwareSerial.h>
-#include "instances.h"
-
+#include "constants.h"
 enum class STATES
 {
-  START, // Represents the start of the robot
-  POOL,
-  LOOKFORLINE,
-  LOOKFORCORNER,
-  BEANS,
-  STOP_TO_VISION,
-  STOP
+    START,
+    POOL,
+    LOOKFORLINE,
+    LOOKFORCORNER,
+    BEANS,
+    STOP
+};
+
+enum class PoolSubState
+{
+    FORWARD,
+    AVOID_LEFT,
+    AVOID_RIGHT
 };
 
 class LARCStateMachine
 {
 public:
-  LARCStateMachine();
+    LARCStateMachine();
 
-  void begin();
-  void update();
-
-  void setState(STATES newState);
+    void begin();
+    void update();
 
 private:
-  STATES currentState = STATES::START;
+    STATES currentState = STATES::START;
+    PoolSubState poolState = PoolSubState::FORWARD;
 
-  // Used for general timing within states (i.e after 3 seconds from state start, do X)
-  unsigned long state_start_time = 0;
+    uint32_t state_start_time = 0;
+    uint32_t action_start_time = 0;
+    int action_stage = 0;
 
-  // Used for multi-stage actions within states (i.e start an action triggered by a sensor within a state, and then after some time do another action)
-  unsigned long action_start_time = 0;
-  int action_stage = 0;
+    uint32_t clearStartMs = 0;
+    uint32_t noObstacleStartMs = 0;
 
-  std::vector<int> values = {0, 0};
-  unsigned long last_coffee_value_received = 0;
-  static constexpr unsigned long recive_coffee_values_interval = 800;
+    byte visionLeft = 0;
+    byte visionRight = 0;
 
-  //  --- Switch State  ---
-  void handleStartState();
-  void handlePoolState();
-  void handleLookForLine();
-  void handleLookForCornerState();
-  void handleBEANS();
-  void handleStopToVisionState();
-  void handleStopState();
-  void handleForwardState();
+    void setState(STATES newState);
+    void setPoolState(PoolSubState newState);
+    void startStateTime();
+    void readVision();
 
-  void handleState();       //Siwtch state
-  void startStateTime();    //Millis
+    void handleStartState(uint32_t now);
+    void handlePoolState(uint32_t now, bool obstacle, bool leftDetected);
+    void handleLookForLineState(bool frontDetected);
+    void handleLookForCornerState(uint32_t now, bool cornerLEFTDetected, float vx);
+    void handleBEANS(uint32_t now, bool cornerRIGHTDetected, bool onLine, float vx);
+    void handleStopState();
 };
 
-#endif // STATEMACHINE_HPP
+#endif
