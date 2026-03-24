@@ -3,13 +3,15 @@
 
 #include <Arduino.h>
 #include "constants.h"
+#include "pins.h"
 enum class STATES
 {
     START,
     POOL,
-    LOOKFORLINE,
+    LOOKFORLINE, // Ver si funciona bien en el caso que NO hay albercas
     LOOKFORCORNER,
-    BEANS,
+    BEANS, //Recoje las pelotas y inicializa vision
+    BENEFITS,
     STOP
 };
 
@@ -41,6 +43,12 @@ private:
 
     byte visionLeft = 0;
     byte visionRight = 0;
+
+    const int limitSwitch = Pins::kLimitSwitch;
+    bool lastLimitPressed = false;
+    bool elevatorGoingUpByLimit = false;
+    uint32_t elevatorUpStartMs = 0;
+    
 
     void setState(STATES newState);
     void setPoolState(PoolSubState newState);
