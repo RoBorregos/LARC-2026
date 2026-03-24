@@ -7,14 +7,15 @@
 namespace
 {
     static constexpr float kVelocity = 0.40f;
-    static constexpr float kObstacleDistanceCm = 20.0f;
-    static constexpr float kBaseSpeed = 0.30f;
+    static constexpr float kObstacleDistanceCm = 25.0f;
+    static constexpr float kBaseSpeed = 0.40f;
 
     static constexpr uint32_t kInitializedStoppedMs = 9000;
-    static constexpr uint32_t kStartIgnoreTimeMs    = 1800;
+    static constexpr uint32_t kStartIgnoreTimeMs    = 1800; //Time to ignore IR's at the START point
     static constexpr uint32_t kClearDelayMs         = 300;
     static constexpr uint32_t kNoObstacleToCornerMs = 1500;
     static constexpr uint32_t kCornerDeployWaitMs   = 600;
+
 
     const __FlashStringHelper* mainStateName(STATES state)
     {
@@ -48,7 +49,7 @@ LARCStateMachine::LARCStateMachine()
 
 void LARCStateMachine::begin()
 {
-    currentState = STATES::START;
+    currentState = STATES::START; // siempre en START
     poolState = PoolSubState::FORWARD;
 
     state_start_time = millis();
@@ -60,6 +61,10 @@ void LARCStateMachine::begin()
 
     visionLeft = 0;
     visionRight = 0;
+
+    pinMode(limitSwitch, INPUT_PULLUP);
+    action_stage = 0;
+    action_start_time = 0;
 }
 
 void LARCStateMachine::update()
@@ -84,18 +89,67 @@ void LARCStateMachine::update()
     const bool BL = ir.getState(IR_mux::BL);
     const bool BR = ir.getState(IR_mux::BR);
 
+    //ir.debugPrint();
+
     const bool leftDetected        = (FL || BL);
     const bool frontDetected       = (FL || FR);
     const bool cornerLEFTDetected  = BL;
     const bool cornerRIGHTDetected = BR;
 
+
     const float d1 = us1.getdistance();
     const float d2 = us2.getdistance();
 
-    const bool obstacle =
-        (us1.isValid() && d1 < kObstacleDistanceCm) ||
-        (us2.isValid() && d2 < kObstacleDistanceCm);
+    const bool obstacleLeftNow  = us1.isValid() && d1 < kObstacleDistanceCm;
+    const bool obstacleRightNow = us2.isValid() && d2 < kObstacleDistanceCm;
 
+    static bool obstacleLatched = false;
+    static uint32_t obstacleClearStartMs = 0;
+    static constexpr uint32_t kObstacleReleaseMs = 200;
+
+    if (!obstacleLatched)
+    {
+        if (obstacleLeftNow || obstacleRightNow)
+        {
+            obstacleLatched = true;
+            obstacleClearStartMs = 0;
+        }
+    }
+    else
+    {
+        if (obstacleLeftNow || obstacleRightNow)
+        {
+            obstacleClearStartMs = 0;
+        }
+        else
+        {
+            if (obstacleClearStartMs == 0)
+                obstacleClearStartMs = now;
+
+            if ((now - obstacleClearStartMs) >= kObstacleReleaseMs)
+            {
+                obstacleLatched = false;
+                obstacleClearStartMs = 0;
+            }
+        }
+    }
+
+    const bool obstacle = obstacleLatched;
+
+    Serial.print("US izquierda: ");
+    Serial.print(d1);
+    Serial.print(" valid1: ");
+    Serial.print(us1.isValid());
+
+    Serial.print(" | US derecha: ");
+    Serial.print(d2);
+    Serial.print(" valid2: ");
+    Serial.print(us2.isValid());
+
+    Serial.print(" | obstacle: ");
+    Serial.println(obstacle);
+
+    
     switch (currentState)
     {
         case STATES::START:
@@ -177,22 +231,90 @@ void LARCStateMachine::readVision()
 
 void LARCStateMachine::handleStartState(uint32_t now)
 {
-    const uint32_t elapsed = now - state_start_time;
+    const bool limitPressed = (digitalRead(limitSwitch) == HIGH); // invertido
 
-    if (elapsed < kInitializedStoppedMs)
+    if (limitPressed != lastLimitPressed)
     {
-        LARC.brake();
-        elevator.ElevatorPosition(1);
+        if (limitPressed)
+            Serial.println("LIMIT SWITCH PRESIONADO");
+        else
+            Serial.println("LIMIT SWITCH LIBERADO");
+
+        lastLimitPressed = limitPressed;
     }
-    else if (elapsed < (kInitializedStoppedMs + kStartIgnoreTimeMs))
+
+    switch (action_stage)
     {
-        elevator.ElevatorPosition(0);
-        LARC.forward(kVelocity);
-    }
-    else
-    {
-        setState(STATES::POOL);
-        setPoolState(PoolSubState::FORWARD);
+        case 0:
+            // Baja hasta tocar limit
+            if (!limitPressed)
+            {
+                elevator.ElevatorPosition(2); // bajar
+                LARC.brake();
+            }
+            else
+            {
+                elevator.ElevatorPosition(0);
+                LARC.brake();
+                Serial.println("ELEVADOR ABAJO -> STOP 2000 ms");
+                action_start_time = now;
+                action_stage = 1;
+            }
+            break;
+
+        case 1:
+            // Stop 2000 ms
+            elevator.ElevatorPosition(0);
+            LARC.brake();
+
+            if ((now - action_start_time) >= 2000)
+            {
+                Serial.println("ELEVADOR SUBIENDO 9000 ms");
+                action_start_time = now;
+                action_stage = 2;
+            }
+            break;
+
+        case 2:
+            // Subir 9000 ms
+            elevator.ElevatorPosition(1);
+            LARC.brake();
+
+            if ((now - action_start_time) >= 9000)
+            {
+                elevator.ElevatorPosition(0);
+                LARC.brake();
+                Serial.println("ELEVADOR DETENIDO -> STOP 3000 ms");
+                action_start_time = now;
+                action_stage = 3;
+            }
+            break;
+
+        case 3:
+            // Stop 3000 ms
+            elevator.ElevatorPosition(0);
+            LARC.brake();
+
+            if ((now - action_start_time) >= 3000)
+            {
+                Serial.println("START IGNORANDO IR Y AVANZANDO");
+                action_start_time = now;
+                action_stage = 4;
+            }
+            break;
+
+        case 4:
+            // Avanza recto ignorando IR por unos segundos
+            elevator.ElevatorPosition(0);
+            LARC.forward(kVelocity);
+
+            if ((now - action_start_time) >= kStartIgnoreTimeMs)
+            {
+                setPoolState(PoolSubState::FORWARD);
+                setState(STATES::POOL);
+                Serial.println("START -> POOL");
+            }
+            break;
     }
 }
 
