@@ -1,4 +1,7 @@
+/*
 //MiniMaquina <<Rutina completa>>
+        // Usando Ultrasonicos en vez de ToF
+
 #include <Arduino.h>
 #include <math.h>
 #include "pins.h"
@@ -47,7 +50,7 @@ IR_mux ir(mux, irChannels, 0b0000);
             *invertedMask = 0b0000 -> invierte el sensor índice 1 (normalmente FR)
             * Bit 0:FL, Bit 1: FR, Bit 2: BL, Bit 3: BR.
             * Ejemplo: 0b0011 invierte FL y FR.
-        */
+        
 
     // Ultrasonics
 Ultrasonic us1(Pins::kDistanceSensors[0][0], Pins::kDistanceSensors[0][1]);
@@ -391,11 +394,6 @@ void loop()
             if (!onLine)
             {
                 LARC.stop();
-                    if (visionLeft)  servos.intakeUpperDeploy();
-                    else servos.intakeUpperHome();
-
-                    if (visionRight) servos.intakeLowerDeploy();
-                    else servos.intakeLowerHome();
 
             }
             else
@@ -403,6 +401,11 @@ void loop()
                 // vx = QTR correction, -kBaseSpeed = strafe right
                 Serial.print(F("State: BEANS - on line, vx: ")); Serial.println(vx);
                 LARC.setTranslation(vx, -kBaseSpeed);
+                if (visionLeft)  servos.intakeUpperDeploy();
+                    else servos.intakeUpperHome();
+
+                    if (visionRight) servos.intakeLowerDeploy();
+                    else servos.intakeLowerHome();
             }
             break;
         }
@@ -421,3 +424,5 @@ void loop()
             break;
     }
 }
+
+*/
