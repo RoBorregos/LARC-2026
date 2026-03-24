@@ -95,8 +95,11 @@ namespace Constants
         // PLACEHOLDERS
         static constexpr uint16_t kThreshFL = 112; // Front-Left
         static constexpr uint16_t kThreshFR = 100; // Front-Right
-        static constexpr uint16_t kThreshBL = 70; // Back-Left
+        static constexpr uint16_t kThreshBL = 50; // Back-Left
         static constexpr uint16_t kThreshBR = 112; // Back-Right
+
+        static constexpr uint16_t kHysteresis = 20; // Hysteresis margin (same for all sensors)
+        static constexpr uint16_t kDebounceCount = 3; // Number of consecutive readings to confirm state change
     } // namespace IRCalibration
 
     namespace ServoAngles
