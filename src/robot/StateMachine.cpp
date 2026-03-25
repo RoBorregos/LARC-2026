@@ -15,7 +15,7 @@ namespace
     static constexpr uint32_t kStartIgnoreTimeMs    = 1800; //Time to ignore IR's at the START point
     static constexpr uint32_t kClearDelayMs         = 400; //Tiempo para cambiar nuevamente a Forward
     static constexpr uint32_t kNoObstacleToCornerMs = 1500; //Time without obstacle to go forward and LOOKFORLINE -> tal vez disminuir
-    static constexpr uint32_t kCornerDeployWaitMs   = 600;
+    static constexpr uint32_t kCornerDeployWaitMs   = 1000;
 
     static constexpr uint32_t kMinAvoidTimeMs   = 250;
     static constexpr uint32_t kSideDetectHoldMs = 80;
@@ -56,7 +56,7 @@ LARCStateMachine::LARCStateMachine()
 
 void LARCStateMachine::begin()
 {
-    currentState = STATES::LOOKFORLINE; // siempre en START
+    currentState = STATES::START; // siempre en START
     poolState = PoolSubState::FORWARD;
 
     state_start_time = millis();
@@ -95,12 +95,15 @@ void LARCStateMachine::update()
     const bool BR = ir.getState(IR_mux::BR);
 
     ir.debugPrint();
+    //qtrFront.debugPrint();
 
     const bool leftDetectedPool   = (FL || BL);
     const bool rightDetectedPool  = (FR || BR);
 
     const bool leftDetectedLine   = FL; //Also used for corner
     const bool rightDetectedLine  = FR; 
+    const bool backLeftDetectedLine  = BL;
+    const bool backRightDetectedLine  = BR;
     const bool frontDetectedLine  = (FL || FR);  // Hacer que con el qtr tambien detecte linea
 
 
@@ -174,11 +177,11 @@ void LARCStateMachine::update()
         break;
 
     case STATES::LOOKFORCORNER:
-        handleLookForCornerState(now, leftDetectedLine, vx);
+        handleLookForCornerState(now, backLeftDetectedLine, vx);
         break;
 
     case STATES::BEANS:
-        handleBEANS(now, rightDetectedLine, onLine, vx);
+        handleBEANS(now, backRightDetectedLine, onLine, vx);
         break;
 
     case STATES::BEANSGOBACK:
