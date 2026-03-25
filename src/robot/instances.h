@@ -15,6 +15,8 @@
 //Drive
 #include "subsystem/Drive/Drive.hpp"
 #include "PIDController.hpp"
+// Vision
+#include "Vision.hpp"
 
 extern Drive LARC;
 extern Mux74HC4067 mux;
@@ -27,5 +29,7 @@ extern Ultrasonic us2;
 extern QTR qtrFront;
 
 extern PIDController linePID;
+
+extern Vision vision;
 
 #endif
