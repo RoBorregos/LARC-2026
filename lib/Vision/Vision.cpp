@@ -16,7 +16,9 @@ Vision::Vision(Stream &port)
     , _piReady(false)
     , _beansRunning(false)
     , _benefitsRunning(false)
-    , _errorFlag(false)
+    , _criticalError(false)
+    , _separatorError(false)
+    , _benefitsError(false)
     , _lastError(0)
 {}
 
@@ -24,23 +26,20 @@ Vision::Vision(Stream &port)
 //  begin()
 // ══════════════════════════════════════════════════════════════════════
 void Vision::begin()
-{
     // Reset everything to a clean state.
     // NOTE: We do NOT call _serial.begin() here, the caller handles that
     // since baud rate and port config are projectclevel decisions.
+{
     resetGuards();
-
-    _beanLeft  = 0;
+    _beanLeft  = 0;  
     _beanRight = 0;
-    _warmHit   = 0;
+    _warmHit   = 0;  
     _coolHit   = 0;
     _boxType   = 0;
-
     _piReady         = false;
     _beansRunning    = false;
     _benefitsRunning = false;
-    _errorFlag       = false;
-    _lastError       = 0;
+    clearErrors();
 }
 
 // ══════════════════════════════════════════════════════════════════════
@@ -52,26 +51,12 @@ void Vision::update()
         uint8_t b = _serial.read();
 
         // ── Dispatcher ACKs ──
-        if (b == ACK_READY) {
-            _piReady = true;
-            continue;
-        }
-        if (b == ACK_STARTING) {
-            continue;  // scripts launching, no action needed
-        }
-        if (b == ACK_RUNNING) {
-            _beansRunning = true;
-            continue;
-        }
-        if (b == ACK_BENEFITS) {
-            _benefitsRunning = true;
-            continue;
-        }
-        if (b == ACK_STOPPED) {
-            _beansRunning    = false;
-            _benefitsRunning = false;
-            continue;
-        }
+        if (b == ACK_READY)    { _piReady = true;          continue; }
+        if (b == ACK_STARTING) {                            continue; }
+        if (b == ACK_RUNNING)  { _beansRunning = true;     continue; }
+        if (b == ACK_BENEFITS) { _benefitsRunning = true;  continue; }
+        if (b == ACK_STOPPED)  { _beansRunning = false;
+                                 _benefitsRunning = false;  continue; }
 
         // ── Bean vision: [0xFF, left, right] ──
         if (b == HEADER_BEANS) {
@@ -102,14 +87,38 @@ void Vision::update()
         // ── Errors: [0xE0-0xEF, errorCode] ──
         if (b >= ERROR_MIN && b <= ERROR_MAX) {
             _lastError = b;
-            _errorFlag = true;
             if (_serial.available()) _serial.read();  // consume error code byte
-            _beansRunning    = false;
-            _benefitsRunning = false;
+
+            //  ERROR CLASSIFICATION:
+            //
+            //  0xE1 (separator died)  → NOT critical. Beans keeps running.
+            //                           Separator servo just stays centered.
+            //
+            //  0xE4 (benefits died)   → NOT critical. Robot keeps moving.
+            //                           Benefit servo just stays centered.
+            //
+            //  0xE0 (raspi_visao died) → CRITICAL. No bean detection.
+            //  0xE2 (both died)        → CRITICAL. raspi_visao is gone.
+            //  Anything else           → CRITICAL. Unknown = be safe.
+
+            if (b == ERR_SEPARATOR) {
+                _separatorError = true;
+                // Do NOT touch _beansRunning — raspi_visao is still alive
+            }
+            else if (b == ERR_BENEFITS) {
+                _benefitsError   = true;
+                _benefitsRunning = false;
+            }
+            else {
+                // raspi_visao died, or both died, or unknown → CRITICAL
+                _criticalError   = true;
+                _beansRunning    = false;
+                _benefitsRunning = false;
+            }
             continue;
         }
 
-        // Unknown byte = ignore (for now)
+        // Unknown byte — ignore
     }
 }
 
@@ -146,8 +155,16 @@ void Vision::requestStatus()
 }
 
 // ══════════════════════════════════════════════════════════════════════
-//  resetGuards() — allows re sending commands
+//  Error handling
 // ══════════════════════════════════════════════════════════════════════
+void Vision::clearErrors()
+{
+    _criticalError  = false;
+    _separatorError = false;
+    _benefitsError  = false;
+    _lastError      = 0;
+}
+
 void Vision::resetGuards()
 {
     _beansSent    = false;
