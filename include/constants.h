@@ -39,7 +39,7 @@ namespace Constants
     namespace PID
     {
         static constexpr float kKp = 1.15; // 4.8f;  2.5f; 1.5f
-        static constexpr float kKi = 0.0f; //0.002f
+        static constexpr float kKi = 0.002f; //0.002f
         static constexpr float kKd = 0.0012f;  //0.06f; 0.0f
         static constexpr float kOmegaMax = 0.25f;
         static constexpr float kcurrentVelocity = 0.42f; //Velocity according to PID
@@ -82,7 +82,7 @@ namespace Constants
     namespace LineFollower 
     
     {
-    constexpr int kSetpoint = 3500;   // center of 0-7000 range
+    constexpr int kSetpoint = 3000;   // center of 0-7000 range
     // change to 4000, 2000, etc. as needed
     }
 
@@ -93,12 +93,12 @@ namespace Constants
         // Si raw >= umbral = línea detectada (antes de aplicar inversión).
 
         // PLACEHOLDERS
-        static constexpr uint16_t kThreshFL = 112; // Front-Left
-        static constexpr uint16_t kThreshFR = 100; // Front-Right
+        static constexpr uint16_t kThreshFL = 700; // Front-Left
+        static constexpr uint16_t kThreshFR = 300; // Front-Right
         static constexpr uint16_t kThreshBL = 50; // Back-Left
         static constexpr uint16_t kThreshBR = 112; // Back-Right
 
-        static constexpr uint16_t kHysteresis = 20; // Hysteresis margin (same for all sensors)
+        static constexpr uint16_t kHysteresis = 5; // Hysteresis margin (same for all sensors)
         static constexpr uint16_t kDebounceCount = 3; // Number of consecutive readings to confirm state change
     } // namespace IRCalibration
 
