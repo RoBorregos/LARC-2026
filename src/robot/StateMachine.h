@@ -8,13 +8,13 @@ enum class STATES
 {
     START,
     POOL,
-    LOOKFORLINE,        // Ver si funciona bien en el caso que NO hay albercas (add qtr for front line detection)
+    LOOKFORLINE, // Ver si funciona bien en el caso que NO hay albercas (add qtr for front line detection)
     LOOKFORCORNER,
-    BEANS,              // BEANS(left to right) :: Recoje las pelotas y inicializa vision + Sorter (vision)
-    BEANSGOBACK,        // BEANS(right to left) :: Elevator goes down :: Recoje las pelotas y inicializa vision (stop when corner detected) + Sorter (vision) + 
-    POOLSGOBACK,        // Avoid Pools but using the back US
-    BENEFITS,           // Rear Vision + liberating cacaos
-    STOP                // FINISH ALL TASKS      :D          !!!
+    BEANS,       // BEANS(left to right) :: Recoje las pelotas y inicializa vision + Sorter (vision)
+    BEANSGOBACK, // BEANS(right to left) :: Elevator goes down :: Recoje las pelotas y inicializa vision (stop when corner detected) + Sorter (vision) +
+    POOLSGOBACK, // Avoid Pools but using the back US
+    BENEFITS,    // Rear Vision + liberating cacaos
+    STOP         // FINISH ALL TASKS      :D          !!!
 };
 
 enum class PoolSubState
@@ -46,16 +46,16 @@ private:
     byte visionLeft = 0;
     byte visionRight = 0;
 
-    //ELEVATOR
+    // ELEVATOR
     const int limitSwitch = Pins::kLimitSwitch;
     bool lastLimitPressed = false;
     bool elevatorGoingUpByLimit = false;
     uint32_t elevatorUpStartMs = 0;
 
-    //IRs to change of left or right
+    // IRs to change of left or right
     uint32_t poolStateStartMs = 0;
     uint32_t sideDetectStartMs = 0;
-    
+
     // Set states
     void setState(STATES newState);
     void setPoolState(PoolSubState newState);
@@ -63,20 +63,20 @@ private:
     void readVision();
 
     // Cases
-//First part
-    void handleStartState(uint32_t now); // START
-//Second part (AVOID)
-    void handlePoolState(uint32_t now, bool obstacle, bool leftDetected, bool rightDetected); //POOLS
+    // First part
+    void handleStartState(uint32_t now);                                                                  // START
+                                                                                                          // Second part (AVOID)
+    void handlePoolState(uint32_t now, bool obstacle, bool leftDetected, bool rightDetected);             // POOLS
     void handleLookForLineState(uint32_t now, bool frontDetected, bool leftDetected, bool rightDetected); // LOOKFORLINE(no obstacle detected | obstacle no longer detected)
-    void handleLookForCornerState(uint32_t now, bool cornerLEFTDetected, float vx); //LOOKFORCORNER (to start vision)
-//Third part (RECOLECT)
+    void handleLookForCornerState(uint32_t now, bool cornerLEFTDetected, float vx);                       // LOOKFORCORNER (to start vision)
+    // Third part (RECOLECT)
     void handleBEANS(uint32_t now, bool cornerRIGHTDetected, bool onLine, float vx); // BEANS state (recolection + sorting)
     void handleBEANSGoBackState(uint32_t now, bool cornerRIGHTDetected, bool onLine, float vx);
-//Fourth part (GO BACK)
+    // Fourth part (GO BACK)
     void handlePOOLSGoBackState(uint32_t now, bool obstacle, bool leftDetected, bool rightDetected);
     void handleBenefits(uint32_t now, bool cornerLEFTDetected, float vx);
-        //The End ♡
-        void handleStopState(); // END of tasks :D !!!
+    // The End ♡
+    void handleStopState(); // END of tasks :D !!!
 };
 
 #endif
