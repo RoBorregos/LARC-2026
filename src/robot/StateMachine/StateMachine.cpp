@@ -37,6 +37,10 @@ namespace
             return F(""); // F("BEANSGOBACK");
         case STATES::POOLSGOBACK:
             return F(""); // F("POOLSGOBACK");
+        case STATES::LOOKFORLINEBACKWARDS:
+        return F(""); // F("LOOKFORLINEBACKWARDS");
+        case STATES::BENEFITSSTARTCORNER:
+            return F(""); // F("BENEFITSSTARTCORNER");
         case STATES::BENEFITS:
             return F(""); // F("BENEFITS");
         case STATES::STOP:
@@ -119,6 +123,7 @@ void LARCStateMachine::update()
     const bool backLeftDetectedLine = BL;
     const bool backRightDetectedLine = BR;
     const bool frontDetectedLine = (FL || FR); // Hacer que con el qtr tambien detecte linea
+    const bool backDetected = (BL || BR);
     const bool leftDetectedPool = (FL || BL);
     const bool rightDetectedPool = (FR || BR);
 
@@ -206,10 +211,18 @@ void LARCStateMachine::update()
         handlePOOLSGoBackState(now, obstacle, leftDetectedPool, rightDetectedPool);
         break;
 
-    case STATES::BENEFITS:
-        handleBenefits(now, frontLeftDetectedLine, vx);
-        break;
+    case STATES::LOOKFORLINEBACKWARDS:
+        handleLookForLineBackWards(now, backDetected, backLeftDetectedLine, backRightDetectedLine);
+    break;
 
+    case STATES::BENEFITSSTARTCORNER:
+        handleBenefitsStartCorner(now, frontLeftDetectedLine, vx, onLine);
+    break;
+
+    case STATES::BENEFITS:
+        handleBenefits(now, backLeftDetectedLine, vx, onLine);
+        break;
+    
     case STATES::STOP:
         handleStopState();
         break;
@@ -752,7 +765,7 @@ void LARCStateMachine::handlePOOLSGoBackState(uint32_t now, bool rearObstacle, b
 
             if ((now - noObstacleStartMs) >= kNoObstacleToCornerMs)
             {
-                setState(STATES::BENEFITS);
+                setState(STATES::LOOKFORLINEBACKWARDS);
             }
         }
         break;
@@ -844,38 +857,140 @@ void LARCStateMachine::handlePOOLSGoBackState(uint32_t now, bool rearObstacle, b
     }
 }
 
-void LARCStateMachine::handleBenefits(uint32_t now, bool cornerLEFTDetected, float vx)
-{
+void LARCStateMachine::handleLookForLineBackWards(uint32_t now, bool backDetected, bool backLeftDetected, bool backRightDetected){
+    
+    servos.intakeUpperDeploy();
+    servos.intakeLowerDeploy();
 
     switch (action_stage)
     {
     case 0:
     {
-        if (cornerLEFTDetected)
+        if (backDetected)
+        {
+            setState(STATES::BENEFITSSTARTCORNER);
+            return;
+        }
+
+        if (backLeftDetected && !backRightDetected)
+        {
+            action_stage = 1;
+            action_start_time = now;
+            return;
+        }
+
+        if (backRightDetected && !backLeftDetected)
+        {
+            action_stage = 2;
+            action_start_time = now;
+            return;
+        }
+
+        LARC.backward(kBaseSpeed);
+        break;
+    }
+
+    case 1:
+    {
+        if (backDetected)
+        {
+            setState(STATES::BENEFITSSTARTCORNER);
+            return;
+        }
+
+        LARC.right(kVelocity);
+
+        if ((now - action_start_time) >= 500)
+        {
+            action_stage = 0;
+        }
+        break;
+    }
+
+    case 2:
+    {
+        if (backDetected)
+        {
+            setState(STATES::BENEFITSSTARTCORNER);
+            return;
+        }
+
+        LARC.left(kVelocity);
+
+        if ((now - action_start_time) >= 500)
+        {
+            action_stage = 0;
+        }
+        break;
+    }
+    }
+}
+
+
+void LARCStateMachine::handleBenefitsStartCorner(uint32_t now, bool cornerLeftDetected, float vx, bool onLine){
+switch (action_stage)
+    {
+    case 0:
+    {
+        if (cornerLeftDetected)
         {
             LARC.brake();
             action_start_time = now;
             action_stage = 1;
+            return;
         }
-        else
-        {
-            LARC.setTranslation(vx, kBaseSpeed);
 
-            // Aqui iria la logica de rear vision
-            // readRearVision();
-            // sorter / align / etc.
+        if (!onLine)
+        {
+            LARC.left(kBaseSpeed); // <- Provicionial LARC.stop();    
+            return;
         }
+
+        LARC.setTranslation(vx, 0.40f);
+
         break;
     }
 
     case 1:
     {
         LARC.brake();
+        if ((now - action_start_time) >= 1000)
+        {
+            setState(STATES::BENEFITS);
+        }
+        break;
+    }
+    }
+
+}
+
+void LARCStateMachine::handleBenefits(uint32_t now, bool cornerRIGHTDetected, float vx, bool online)
+{
+
+    switch (action_stage)
+    {
+    case 0:
+    {
+        if (!cornerRIGHTDetected)
+        {
+            action_stage = 1;
+        }
+        else
+        {
+            LARC.brake();
+            action_start_time = now;
+            action_stage = 2;
+        }
+        break;
+    }
+
+    case 1:
+    {
+        LARC.setTranslation(vx, -0.40f);
 
         // Here goes the rutine 
-        if ((now - action_start_time) >= 1500)
+        if (cornerRIGHTDetected)
         {
-            action_start_time = now;
             action_stage = 2;
         }
         break;
@@ -885,7 +1000,7 @@ void LARCStateMachine::handleBenefits(uint32_t now, bool cornerLEFTDetected, flo
     {
         LARC.brake();
 
-        if ((now - action_start_time) >= 500)
+        if ((now - action_start_time) >= 1000)
         {
             setState(STATES::STOP);
         }

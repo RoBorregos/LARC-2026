@@ -13,8 +13,10 @@ enum class STATES
     BEANS,       // BEANS(left to right) :: Recoje las pelotas y inicializa vision + Sorter (vision)
     BEANSGOBACK, // BEANS(right to left) :: Elevator goes down :: Recoje las pelotas y inicializa vision (stop when corner detected) + Sorter (vision) +
     POOLSGOBACK, // Avoid Pools but using the back US
+    LOOKFORLINEBACKWARDS, // Look for the backwards line
+    BENEFITSSTARTCORNER, // Look for left corner
     BENEFITS,    // Rear Vision + liberating cacaos
-    STOP         // FINISH ALL TASKS      :D          !!!
+    STOP         // FINISH ALL TASKS      :D          !!! Ends in right corner
 };
 
 enum class PoolSubState
@@ -74,7 +76,10 @@ private:
     void handleBEANSGoBackState(uint32_t now, bool cornerRIGHTDetected, bool onLine, float vx);
     // Fourth part (GO BACK)
     void handlePOOLSGoBackState(uint32_t now, bool obstacle, bool leftDetected, bool rightDetected);
-    void handleBenefits(uint32_t now, bool cornerLEFTDetected, float vx);
+    void handleLookForLineBackWards(uint32_t now, bool backDetected, bool backLeftDetected, bool backRightDetected);
+    void handleBenefitsStartCorner(uint32_t now, bool cornerLeftDetected, float vx, bool onLine);
+    void handleBenefits(uint32_t now, bool cornerRightDetected, float vx, bool onLine);
+
     // The End ♡
     void handleStopState(); // END of tasks :D !!!
 };
