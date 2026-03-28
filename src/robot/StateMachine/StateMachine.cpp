@@ -7,9 +7,9 @@
 
 namespace
 {
-    static constexpr float kVelocity = 0.45f;
-    static constexpr float kObstacleDistanceCm = 25.0f;
-    static constexpr float kBaseSpeed = 0.45f;
+    static constexpr float kVelocity = 0.40f;
+    static constexpr float kObstacleDistanceCm = 30.0f;
+    static constexpr float kBaseSpeed = Constants::PID::kcurrentVelocity;
 
     static constexpr uint32_t kInitializedStoppedMs = 9000;
     static constexpr uint32_t kStartIgnoreTimeMs = 1800;    // Time to ignore IR's at the START point
@@ -103,18 +103,19 @@ void LARCStateMachine::update()
     const uint32_t now = millis();
     startStateTime();
 
-    const int linePos = qtrFront.getBinaryPosition();
+    const int linePos = qtrFront.getBinaryPosition();//getPosition();//getBinaryPosition();
     const bool onLine = qtrFront.onLine();
     const float lineCorr = linePID.update(linePos, Constants::LineFollower::kSetpoint);
     const float vx = -lineCorr;
+    
 
     const bool FL = ir.getState(IR_mux::FL);
     const bool FR = ir.getState(IR_mux::FR);
     const bool BL = ir.getState(IR_mux::BL);
     const bool BR = ir.getState(IR_mux::BR);
 
-    // ir.debugPrint();
-    //qtrFront.debugPrint();
+    //ir.debugPrint();
+    qtrFront.debugPrint();
 
 
 
@@ -166,7 +167,7 @@ void LARCStateMachine::update()
         }
     }
 
-    
+    /*
     Serial.print("US izquierda: ");
     Serial.print(d1);
     Serial.print(" valid1: ");
@@ -179,7 +180,7 @@ void LARCStateMachine::update()
 
     Serial.print(" | obstacle: ");
     Serial.println(obstacle);
-    
+    */
 
     switch (currentState)
     {
@@ -248,7 +249,6 @@ void LARCStateMachine::setState(STATES newState)
 
     vision.resetGuards();
 
-    // Serial.print(F("Main state -> "));
     Serial.println(mainStateName(currentState));
 }
 
@@ -506,8 +506,6 @@ void LARCStateMachine::handleLookForLineState(uint32_t now, bool frontDetected, 
 {
     vision.startBeans();
 
-    // Serial.println("LOOKFORLINE State");
-
     servos.intakeUpperHome();
     servos.intakeLowerHome();
 
@@ -538,7 +536,7 @@ void LARCStateMachine::handleLookForLineState(uint32_t now, bool frontDetected, 
             return;
         }
 
-        LARC.setTranslation(kVelocity, 0.08);
+        LARC.forward(kBaseSpeed); //LARC.setTranslation(kVelocity, 0.08);
         break;
     }
 
@@ -597,7 +595,7 @@ void LARCStateMachine::handleLookForCornerState(uint32_t now, bool cornerLEFTDet
         }
         else
         {
-            LARC.setTranslation(vx, 0.45f);
+            LARC.setTranslation(vx, 0.38f);
         }
     }
     else if (action_stage == 1)
@@ -638,11 +636,13 @@ void LARCStateMachine::handleBEANS(uint32_t now, bool cornerRIGHTDetected, bool 
 
         if (!onLine)
         {
-            LARC.stop();
+            LARC.backward(kBaseSpeed);
+
             return;
         }
 
-        LARC.setTranslation(vx, -0.37f);                 
+        LARC.setTranslation(vx, -0.38f);
+                 
 
 
         if (vision.beanBottom())
@@ -715,7 +715,7 @@ void LARCStateMachine::handleBEANSGoBackState(uint32_t now, bool cornerLEFTDetec
             return;
         }
 
-        LARC.setTranslation(vx, 0.45f);
+        LARC.setTranslation(vx, 0.40f); //0.45f
 
         if (visionLeft)
             servos.intakeUpperDeploy();
@@ -815,7 +815,7 @@ void LARCStateMachine::handlePOOLSGoBackState(uint32_t now, bool rearObstacle, b
 
     case PoolSubState::AVOID_RIGHT:
     {
-        LARC.right(kVelocity);
+        LARC.right(0.50f);
 
         const bool canChangeSide = (now - poolStateStartMs) >= kMinAvoidTimeMs;
 
