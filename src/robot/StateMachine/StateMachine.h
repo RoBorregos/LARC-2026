@@ -10,13 +10,13 @@ enum class STATES
     POOL,
     LOOKFORLINE, // Ver si funciona bien en el caso que NO hay albercas (add qtr for front line detection)
     LOOKFORCORNER,
-    BEANS,       // BEANS(left to right) :: Recoje las pelotas y inicializa vision + Sorter (vision)
-    BEANSGOBACK, // BEANS(right to left) :: Elevator goes down :: Recoje las pelotas y inicializa vision (stop when corner detected) + Sorter (vision) +
-    POOLSGOBACK, // Avoid Pools but using the back US
+    BEANS,                // BEANS(left to right) :: Recoje las pelotas y inicializa vision + Sorter (vision)
+    BEANSGOBACK,          // BEANS(right to left) :: Elevator goes down :: Recoje las pelotas y inicializa vision (stop when corner detected) + Sorter (vision) +
+    POOLSGOBACK,          // Avoid Pools but using the back US
     LOOKFORLINEBACKWARDS, // Look for the backwards line
-    BENEFITSSTARTCORNER, // Look for left corner
-    BENEFITS,    // Rear Vision + liberating cacaos
-    STOP         // FINISH ALL TASKS      :D          !!! Ends in right corner
+    BENEFITSSTARTCORNER,  // Look for left corner
+    BENEFITS,             // Rear Vision + liberating cacaos
+    STOP                  // FINISH ALL TASKS      :D          !!! Ends in right corner
 };
 
 enum class PoolSubState

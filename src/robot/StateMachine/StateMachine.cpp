@@ -19,6 +19,74 @@ namespace
 
     static constexpr uint32_t kMinAvoidTimeMs = 250;
     static constexpr uint32_t kSideDetectHoldMs = 80;
+    static constexpr uint16_t kTofTargetMm = 120;   // distancia deseada al árbol
+    static constexpr uint16_t kTofHardStopMm = 105; // stop de seguridad
+    static constexpr float kTofMinSpeed = 0.10f;
+    static constexpr float kTofMaxSpeed = 0.35f;
+
+    static constexpr float kDistKp = 0.0012f;
+    static constexpr float kDistKi = 0.0f;
+    static constexpr float kDistKd = 0.00015f;
+
+    static float distIntegral = 0.0f;
+    static float distPrevError = 0.0f;
+    static uint32_t distPrevMs = 0;
+
+    static float clampf(float x, float lo, float hi)
+    {
+        if (x < lo)
+            return lo;
+        if (x > hi)
+            return hi;
+        return x;
+    }
+
+    static void resetDistancePID()
+    {
+        distIntegral = 0.0f;
+        distPrevError = 0.0f;
+        distPrevMs = 0;
+    }
+
+    static float computeDistanceSpeed(uint32_t now, uint16_t distanceMm, float maxSpeed)
+    {
+        if (distanceMm == ToF::INVALID_MM)
+        {
+            resetDistancePID();
+            return maxSpeed;
+        }
+
+        if (distanceMm <= kTofHardStopMm)
+        {
+            resetDistancePID();
+            return 0.0f;
+        }
+
+        float dt = (distPrevMs == 0) ? 0.01f : (now - distPrevMs) * 0.001f;
+        distPrevMs = now;
+
+        if (dt <= 0.0f)
+            dt = 0.01f;
+
+        // error positivo cuando todavía estás lejos
+        float error = (float)distanceMm - (float)kTofTargetMm;
+
+        distIntegral += error * dt;
+        distIntegral = clampf(distIntegral, -150.0f, 150.0f);
+
+        float derivative = (error - distPrevError) / dt;
+        distPrevError = error;
+
+        float u = kDistKp * error + kDistKi * distIntegral + kDistKd * derivative;
+
+        u = clampf(u, 0.0f, maxSpeed);
+
+        if (u > 0.0f && u < kTofMinSpeed)
+            u = kTofMinSpeed;
+
+        return u;
+    }
+
     const __FlashStringHelper *mainStateName(STATES state)
     {
         switch (state)
@@ -38,7 +106,7 @@ namespace
         case STATES::POOLSGOBACK:
             return F(""); // F("POOLSGOBACK");
         case STATES::LOOKFORLINEBACKWARDS:
-        return F(""); // F("LOOKFORLINEBACKWARDS");
+            return F(""); // F("LOOKFORLINEBACKWARDS");
         case STATES::BENEFITSSTARTCORNER:
             return F(""); // F("BENEFITSSTARTCORNER");
         case STATES::BENEFITS:
@@ -89,6 +157,16 @@ void LARCStateMachine::begin()
 
     vision.begin();
     vision.requestStatus();
+
+    // ToF
+    tofLeft.begin();
+    tofRight.begin();
+
+    tofLeft.setMaxRange(500);
+    tofRight.setMaxRange(500);
+
+    tofLeft.setUpdateInterval(30);
+    tofRight.setUpdateInterval(30);
 }
 
 void LARCStateMachine::update()
@@ -99,25 +177,26 @@ void LARCStateMachine::update()
     us2.update();
     qtrFront.update();
     vision.update(); // Vision
+    tofLeft.update();
+    tofRight.update();
 
     const uint32_t now = millis();
     startStateTime();
 
-    const int linePos = qtrFront.getBinaryPosition();//getPosition();//getBinaryPosition();
+    const int linePos = qtrFront.getBinaryPosition(); // getPosition();//getBinaryPosition();
     const bool onLine = qtrFront.onLine();
     const float lineCorr = linePID.update(linePos, Constants::LineFollower::kSetpoint);
     const float vx = -lineCorr;
-    
 
     const bool FL = ir.getState(IR_mux::FL);
     const bool FR = ir.getState(IR_mux::FR);
     const bool BL = ir.getState(IR_mux::BL);
     const bool BR = ir.getState(IR_mux::BR);
 
-    //ir.debugPrint();
-    qtrFront.debugPrint();
-
-
+    // ir.debugPrint();
+    // qtrFront.debugPrint();
+    Serial.print("linePos: ");
+    Serial.println(linePos); // To know the value for the center of the qtr
 
     const bool frontLeftDetectedLine = FL; // Also used for corner
     const bool frontRightDetectedLine = FR;
@@ -214,16 +293,16 @@ void LARCStateMachine::update()
 
     case STATES::LOOKFORLINEBACKWARDS:
         handleLookForLineBackWards(now, backDetected, backLeftDetectedLine, backRightDetectedLine);
-    break;
+        break;
 
     case STATES::BENEFITSSTARTCORNER:
         handleBenefitsStartCorner(now, frontLeftDetectedLine, vx, onLine);
-    break;
+        break;
 
     case STATES::BENEFITS:
         handleBenefits(now, backLeftDetectedLine, vx, onLine);
         break;
-    
+
     case STATES::STOP:
         handleStopState();
         break;
@@ -310,7 +389,7 @@ void LARCStateMachine::handleStartState(uint32_t now)
     switch (action_stage)
     {
     case 0:
-        // Baja hasta tocar limit
+        // Goes down until the limit switch is pressed out
         if (!limitPressed)
         {
             elevator.ElevatorPosition(2); // bajar
@@ -340,7 +419,7 @@ void LARCStateMachine::handleStartState(uint32_t now)
         break;
 
     case 2:
-        // Subir 9000 ms
+        // Goes up 9000 ms
         elevator.ElevatorPosition(1);
         LARC.brake();
 
@@ -368,7 +447,7 @@ void LARCStateMachine::handleStartState(uint32_t now)
         break;
 
     case 4:
-        // Avanza recto ignorando IR por unos segundos
+        // Goes forward ignoring IR's
         elevator.ElevatorPosition(0);
         LARC.forward(kVelocity);
 
@@ -502,6 +581,9 @@ void LARCStateMachine::handlePoolState(uint32_t now, bool obstacle, bool leftDet
     }
 }
 
+// qtr
+uint32_t lineDetectStartMs = 0;
+
 void LARCStateMachine::handleLookForLineState(uint32_t now, bool frontDetected, bool leftDetected, bool rightDetected)
 {
     vision.startBeans();
@@ -509,72 +591,51 @@ void LARCStateMachine::handleLookForLineState(uint32_t now, bool frontDetected, 
     servos.intakeUpperHome();
     servos.intakeLowerHome();
 
-    switch (action_stage)
+    static constexpr uint16_t kApproachThreshold = 450;
+    static constexpr uint16_t kConfirmThreshold = 650;
+    static constexpr float kLookFastSpeed = 0.35f;
+    static constexpr float kLookSlowSpeed = 0.33f;
+    static constexpr uint32_t kLineHoldMs = 80;
+
+    const uint16_t *n = qtrFront.getNorm();
+
+    bool lineApproaching = false;
+    for (uint8_t i = 0; i < QTR::N; i++)
     {
-    case 0:
-    {
-        if (frontDetected)
+        if (n[i] > kApproachThreshold)
         {
-            // Serial.println("LOOKFORLINE: front detected -> LOOKFORCORNER");
+            lineApproaching = true;
+            break;
+        }
+    }
+
+    // sensores centrales: ajusta si quieres 2,3,4,5 o solo 3,4
+    bool lineCentered =
+        (n[2] > kConfirmThreshold) ||
+        (n[3] > kConfirmThreshold) ||
+        (n[4] > kConfirmThreshold) ||
+        (n[5] > kConfirmThreshold);
+
+    if (lineApproaching)
+        LARC.forward(kLookSlowSpeed);
+    else
+        LARC.forward(kLookFastSpeed);
+
+    if (lineCentered)
+    {
+        if (lineDetectStartMs == 0)
+            lineDetectStartMs = now;
+
+        if ((now - lineDetectStartMs) >= kLineHoldMs)
+        {
+            LARC.brake();
             setState(STATES::LOOKFORCORNER);
             return;
         }
-
-        if (leftDetected && !rightDetected)
-        {
-            // Serial.println("LOOKFORLINE: izquierda detectada -> corrige derecha");
-            action_stage = 1;
-            action_start_time = now;
-            return;
-        }
-
-        if (rightDetected && !leftDetected)
-        {
-            // Serial.println("LOOKFORLINE: derecha detectada -> corrige izquierda");
-            action_stage = 2;
-            action_start_time = now;
-            return;
-        }
-
-        LARC.forward(kBaseSpeed); //LARC.setTranslation(kVelocity, 0.08);
-        break;
     }
-
-    case 1:
+    else
     {
-        if (frontDetected)
-        {
-            // Serial.println("LOOKFORLINE: front detected while correcting right -> LOOKFORCORNER");
-            setState(STATES::LOOKFORCORNER);
-            return;
-        }
-
-        LARC.right(kVelocity);
-
-        if ((now - action_start_time) >= 500)
-        {
-            action_stage = 0;
-        }
-        break;
-    }
-
-    case 2:
-    {
-        if (frontDetected)
-        {
-            // Serial.println("LOOKFORLINE: front detected while correcting left -> LOOKFORCORNER");
-            setState(STATES::LOOKFORCORNER);
-            return;
-        }
-
-        LARC.left(kVelocity);
-
-        if ((now - action_start_time) >= 500)
-        {
-            action_stage = 0;
-        }
-        break;
-    }
+        lineDetectStartMs = 0;
     }
 }
 
@@ -595,7 +656,7 @@ void LARCStateMachine::handleLookForCornerState(uint32_t now, bool cornerLEFTDet
         }
         else
         {
-            LARC.setTranslation(vx, 0.38f);
+            LARC.setTranslation(vx, 0.37f);
         }
     }
     else if (action_stage == 1)
@@ -612,12 +673,15 @@ void LARCStateMachine::handleLookForCornerState(uint32_t now, bool cornerLEFTDet
 
 void LARCStateMachine::handleBEANS(uint32_t now, bool cornerRIGHTDetected, bool onLine, float vx)
 {
+    static constexpr uint32_t kLostLineTimeoutMs = 1200;
+
     vision.startBeans();
 
     if (vision.hasCriticalError())
     {
         vision.stop();
         setState(STATES::STOP);
+        return;
     }
 
     switch (action_stage)
@@ -636,14 +700,23 @@ void LARCStateMachine::handleBEANS(uint32_t now, bool cornerRIGHTDetected, bool 
 
         if (!onLine)
         {
+            if (action_start_time == 0)
+                action_start_time = now;
+
             LARC.backward(kBaseSpeed);
+
+            if ((now - action_start_time) >= kLostLineTimeoutMs)
+            {
+                vision.stop();
+                setState(STATES::POOL); // cambia aqui al estado que quieras para avoid pools
+            }
 
             return;
         }
 
-        LARC.setTranslation(vx, -0.38f);
-                 
+        action_start_time = 0;
 
+        LARC.setTranslation(vx, -0.36f);
 
         if (vision.beanBottom())
             servos.intakeUpperDeploy();
@@ -655,10 +728,6 @@ void LARCStateMachine::handleBEANS(uint32_t now, bool cornerRIGHTDetected, bool 
         else
             servos.intakeLowerHome();
 
-        // Here goes the sorter logic
-        //
-        //
-
         break;
     }
 
@@ -667,6 +736,7 @@ void LARCStateMachine::handleBEANS(uint32_t now, bool cornerRIGHTDetected, bool 
         LARC.brake();
         if ((now - action_start_time) >= 1000)
         {
+            action_start_time = 0;
             setState(STATES::BEANSGOBACK);
         }
         break;
@@ -715,7 +785,7 @@ void LARCStateMachine::handleBEANSGoBackState(uint32_t now, bool cornerLEFTDetec
             return;
         }
 
-        LARC.setTranslation(vx, 0.40f); //0.45f
+        LARC.setTranslation(vx, 0.40f); // 0.45f
 
         if (visionLeft)
             servos.intakeUpperDeploy();
@@ -746,6 +816,7 @@ void LARCStateMachine::handleBEANSGoBackState(uint32_t now, bool cornerLEFTDetec
 
 void LARCStateMachine::handlePOOLSGoBackState(uint32_t now, bool rearObstacle, bool leftDetected, bool rightDetected)
 {
+    static constexpr float kBackAvoidSpeed = 0.18f;
 
     switch (poolState)
     {
@@ -773,7 +844,10 @@ void LARCStateMachine::handlePOOLSGoBackState(uint32_t now, bool rearObstacle, b
 
     case PoolSubState::AVOID_LEFT:
     {
-        LARC.left(kVelocity);
+        if (rearObstacle)
+            LARC.setTranslation(-kBackAvoidSpeed, +kVelocity);
+        else
+            LARC.left(kVelocity);
 
         const bool canChangeSide = (now - poolStateStartMs) >= kMinAvoidTimeMs;
 
@@ -815,7 +889,10 @@ void LARCStateMachine::handlePOOLSGoBackState(uint32_t now, bool rearObstacle, b
 
     case PoolSubState::AVOID_RIGHT:
     {
-        LARC.right(0.50f);
+        if (rearObstacle)
+            LARC.setTranslation(-kBackAvoidSpeed, -0.50f);
+        else
+            LARC.right(0.50f);
 
         const bool canChangeSide = (now - poolStateStartMs) >= kMinAvoidTimeMs;
 
@@ -857,8 +934,9 @@ void LARCStateMachine::handlePOOLSGoBackState(uint32_t now, bool rearObstacle, b
     }
 }
 
-void LARCStateMachine::handleLookForLineBackWards(uint32_t now, bool backDetected, bool backLeftDetected, bool backRightDetected){
-    
+void LARCStateMachine::handleLookForLineBackWards(uint32_t now, bool backDetected, bool backLeftDetected, bool backRightDetected)
+{
+
     servos.intakeUpperDeploy();
     servos.intakeLowerDeploy();
 
@@ -926,9 +1004,9 @@ void LARCStateMachine::handleLookForLineBackWards(uint32_t now, bool backDetecte
     }
 }
 
-
-void LARCStateMachine::handleBenefitsStartCorner(uint32_t now, bool cornerLeftDetected, float vx, bool onLine){
-switch (action_stage)
+void LARCStateMachine::handleBenefitsStartCorner(uint32_t now, bool cornerLeftDetected, float vx, bool onLine)
+{
+    switch (action_stage)
     {
     case 0:
     {
@@ -942,7 +1020,7 @@ switch (action_stage)
 
         if (!onLine)
         {
-            LARC.left(kBaseSpeed); // <- Provicionial LARC.stop();    
+            LARC.left(kBaseSpeed); // <- Provicionial LARC.stop();
             return;
         }
 
@@ -961,7 +1039,6 @@ switch (action_stage)
         break;
     }
     }
-
 }
 
 void LARCStateMachine::handleBenefits(uint32_t now, bool cornerRIGHTDetected, float vx, bool online)
@@ -988,7 +1065,7 @@ void LARCStateMachine::handleBenefits(uint32_t now, bool cornerRIGHTDetected, fl
     {
         LARC.setTranslation(vx, -0.40f);
 
-        // Here goes the rutine 
+        // Here goes the rutine
         if (cornerRIGHTDetected)
         {
             action_stage = 2;
