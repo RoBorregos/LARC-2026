@@ -10,6 +10,7 @@
 #include "qtr.hpp"
 #include "ultrasonic/ultrasonic.hpp"
 #include "ServoSystem.hpp"
+#include "tof/tof.hpp"
 //Elevator
 #include "Elevator.hpp"
 //Drive
@@ -17,6 +18,7 @@
 #include "PIDController.hpp"
 // Vision
 #include "Vision.hpp"
+
 
 extern Drive LARC;
 extern Mux74HC4067 mux;
@@ -31,5 +33,8 @@ extern QTR qtrFront;
 extern PIDController linePID;
 
 extern Vision vision;
+
+extern ToF tofLeft;
+extern ToF tofRight;
 
 #endif

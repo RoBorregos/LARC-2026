@@ -16,3 +16,6 @@ QTR qtrFront(0, mux);
 PIDController linePID(0.000035f, 0.0f, 0.00000008f, -1.0f, 1.0f);
 
 Vision vision(Serial);
+
+ToF tofLeft;
+ToF tofRight;
