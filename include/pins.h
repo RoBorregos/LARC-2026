@@ -29,14 +29,14 @@ namespace Pins
     };
 
     constexpr uint8_t kEncoders[8]{
-        40, // ENC1B
-        39, // ENC1A
-        15, // ENC2A
-        14, // ENC2B
-        41, // ENC3A
-        13, // ENC3B
-        17, // ENC4A
-        16  // ENC4B
+        40, // ENC1B  0
+        39, // ENC1A  1
+        15, // ENC2A  2
+        14, // ENC2B  3
+        41, // ENC3A  4
+        13, // ENC3B  5
+        17, // ENC4A  6
+        16  // ENC4B  7
     };
 
     // =======Line Sensor=======
