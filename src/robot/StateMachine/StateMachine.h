@@ -58,6 +58,11 @@ private:
     uint32_t poolStateStartMs = 0;
     uint32_t sideDetectStartMs = 0;
 
+    // lateral correction for LOOKFORLINE
+    bool     lfCorrecting        = false;
+    int8_t   lfCorrectionDir     = 0;
+    uint32_t lfCorrectionStartMs = 0;
+
     // Set states
     void setState(STATES newState);
     void setPoolState(PoolSubState newState);
@@ -66,10 +71,10 @@ private:
 
     // Cases
     // First part
-    void handleStartState(uint32_t now);                                                                  // START
+    void handleStartState(uint32_t now, bool backDetected);                                                                  // START
                                                                                                           // Second part (AVOID)
     void handlePoolState(uint32_t now, bool obstacle, bool leftDetected, bool rightDetected);             // POOLS
-    void handleLookForLineState(uint32_t now, bool frontDetected, bool leftDetected, bool rightDetected); // LOOKFORLINE(no obstacle detected | obstacle no longer detected)
+    void handleLookForLineState(uint32_t now, bool frontDetected, bool leftDetected, bool rightDetected, bool onLine); // LOOKFORLINE(no obstacle detected | obstacle no longer detected)
     void handleLookForCornerState(uint32_t now, bool cornerLEFTDetected, float vx);                       // LOOKFORCORNER (to start vision)
     // Third part (RECOLECT)
     void handleBEANS(uint32_t now, bool cornerRIGHTDetected, bool onLine, float vx); // BEANS state (recolection + sorting)
