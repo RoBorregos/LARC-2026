@@ -29,14 +29,14 @@ namespace Pins
     };
 
     constexpr uint8_t kEncoders[8]{
-        40, // ENC1B
-        39, // ENC1A
-        15, // ENC2A
-        14, // ENC2B
-        41, // ENC3A
-        13, // ENC3B
-        17, // ENC4A
-        16  // ENC4B
+        40, // ENC1B  0
+        39, // ENC1A  1
+        15, // ENC2A  2
+        14, // ENC2B  3
+        41, // ENC3A  4
+        13, // ENC3B  5
+        17, // ENC4A  6
+        16  // ENC4B  7
     };
 
     // =======Line Sensor=======
@@ -91,23 +91,45 @@ namespace Pins
     constexpr uint8_t kElevatorINA2 = 8;
     constexpr uint8_t kElevatorPWM = 22;
 
-    // ======== Intake ========
-
-    const uint8_t kUpperIntakeServo = 37;
-    const uint8_t kLowerIntakeServo = 60;
-    const uint8_t kRampIntakeServo = 43;
-
-    // ======== Servos ========
-    const uint8_t kDropperServo1 = 21; // nuevo
-    const uint8_t kDropperServo2 = 31;
-    const uint8_t kDropperServo3 = 41;
-    const uint8_t kDropperServo4 = 35;
-    const uint8_t kDropperServo5 = 10;
-    const uint8_t kDropperServo6 = 9;
-
     // ====== LED =====
-    const uint8_t kLed1 = 6;
+    //const uint8_t kLed1 = 6; // Esta para el limit switch
     const uint8_t kLed2 = 10;
+
+    // ======== 74HC4067 Multiplexer ========
+    // NOTE: Valores TEMPORALES. Confirmar con el equipo antes de soldar.
+    static constexpr uint8_t kMuxSig = 24; // SIG → pin analógico
+    static constexpr uint8_t kMuxS0  = 27;
+    static constexpr uint8_t kMuxS1  = 21;
+    static constexpr uint8_t kMuxS2  = 0;
+    static constexpr uint8_t kMuxS3  = 25;
+
+    // ======== QTR – Canales en el mux ========
+    // Primer canal del arreglo frontal (C0..C7)
+    static constexpr uint8_t kQtrFrontFirstCh = 0;
+    // Primer canal del arreglo trasero (C8..C15)
+    static constexpr uint8_t kQtrRearFirstCh  = 8;
+
+    // ======== IR Line – Canales en el mux ========
+    // ← Modificar estos valores para reasignar los canales físicos del mux
+    static constexpr uint8_t kIrChFL = 13;  // Canal mux - sensor Front-Left
+    static constexpr uint8_t kIrChFR = 12;  // Canal mux - sensor Front-Right
+    static constexpr uint8_t kIrChBL = 11;  // Canal mux - sensor Back-Left
+    static constexpr uint8_t kIrChBR = 10;  // Canal mux - sensor Back-Right
+
+    // ======== Intake ========
+    const uint8_t kUpperIntakeServo = 3;
+    const uint8_t kLowerIntakeServo = 4;
+    const uint8_t kSeparatorServo   = 255;
+    const uint8_t kRedBenefitServo  = 255;
+    const uint8_t kBlueBenefitServo  = 255;
+    const uint8_t kHolderServo      = 255;
+
+    // ======== Limit Swicth ========
+    const uint8_t kLimitSwitch = 30;
+
+    // ======== BT module ======== (you don't need it)
+    constexpr uint8_t kBluetoothRx = 7;
+    constexpr uint8_t kBluetoothTx = 8;
 
 }
 

@@ -73,25 +73,25 @@ void Drive::update() {
       while (err >  M_PI) err -= 2.0f * M_PI;
       while (err < -M_PI) err += 2.0f * M_PI;
 
-      Serial.print(now);
-      Serial.print("\t");
-      Serial.print("YAW: ");
-      Serial.print(rad2deg(yaw), 2);
-      Serial.print("\t\t");
-      Serial.print("targuet yaw: ");
-      Serial.print(rad2deg(targetYaw_), 2);
-      Serial.print("\t\t");
-      Serial.print("error");
-      Serial.print(rad2deg(err), 2);
-      Serial.print("\t\t");
-      Serial.print("omega");
-      Serial.print(omega, 4);
-      Serial.print("\t");
-      Serial.print("vxCmd");
-      Serial.print(vxCmd_, 2);
-      Serial.print("\t");
-      Serial.print("vyCmd");
-      Serial.println(vyCmd_, 2);
+      //Serial.print(now);
+      //Serial.print("\t");
+      //Serial.print("YAW: ");
+      //Serial.print(rad2deg(yaw), 2);
+      //Serial.print("\t\t");
+      //Serial.print("targuet yaw: ");
+      //Serial.print(rad2deg(targetYaw_), 2);
+      //Serial.print("\t\t");
+      //Serial.print("error");
+      //Serial.print(rad2deg(err), 2);
+      //Serial.print("\t\t");
+      //Serial.print("omega");
+      //Serial.print(omega, 4);
+      //Serial.print("\t");
+      //Serial.print("vxCmd");
+      //Serial.print(vxCmd_, 2);
+      //Serial.print("\t");
+      //Serial.print("vyCmd");
+      //Serial.println(vyCmd_, 2);
     }
   }
 }
@@ -100,7 +100,8 @@ void Drive::update() {
 void Drive::forward(float speed)  { vxCmd_ = +speed; vyCmd_ = 0.0f; }
 void Drive::backward(float speed) { vxCmd_ = -speed; vyCmd_ = 0.0f; }
 void Drive::right(float speed)  { vxCmd_ = 0.0f; vyCmd_ = -speed; } 
-void Drive::left(float speed) { vxCmd_ = 0.0f; vyCmd_ = +speed; }   
+void Drive::left(float speed) { vxCmd_ = 0.0f; vyCmd_ = +speed; }
+void Drive::diagonalLeft(float speed) { vxCmd_ = +speed; vyCmd_ = +speed;}   
 void Drive::stop() {
   vxCmd_ = 0.0f;
   vyCmd_ = 0.0f;
@@ -138,7 +139,7 @@ void Drive::clearManualOmega() {
   yawPid_.reset();
 }
 
-void Drive::allStop() {
+void Drive::brake() {
   m1_ul_.stop();
   m2_ur_.stop();
   m3_ll_.stop();

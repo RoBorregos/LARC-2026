@@ -33,7 +33,8 @@ public:
   void forward(float speed);     
   void backward(float speed);    
   void left(float speed);       
-  void right(float speed);       
+  void right(float speed); 
+  void diagonalLeft(float speed);  
   void stop();                   
 
   // ====== Yaw hold ======
@@ -45,7 +46,7 @@ public:
   void setManualOmega(float omegaRadS); 
   void clearManualOmega();  //go back to PID
 
-  void allStop(); //brake
+  void brake(); //brake
   
   void testKinematics(float v = 0.45f, uint32_t T = 2000);
 

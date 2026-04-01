@@ -98,6 +98,16 @@ void BNO::getAngular()
     float current_yaw = getYaw();
     float current_roll = getRoll();
     float current_pitch = getPitch();
+}
+
+void BNO::getAngularPrinted()
+{
+    //Get on screen Yaw, Roll and Pitch values:
+    update();
+
+    float current_yaw = getYaw();
+    float current_roll = getRoll();
+    float current_pitch = getPitch();
 
     Serial.println("CURRENT ORIENTATION:");
     Serial.print("  Yaw (Z-axis):   ");
@@ -110,4 +120,3 @@ void BNO::getAngular()
     Serial.print(current_pitch, 2);
     Serial.println("°");
 }
-
