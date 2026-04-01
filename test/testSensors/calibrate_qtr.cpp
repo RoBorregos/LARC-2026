@@ -2,13 +2,11 @@
 #include "pins.h"
 #include "qtr.hpp"
 #include "mux.h"
-
+#include "robot/instances/instances.h"
 //This code is to be used to calibrate each qtr sensor for 10 seconds
 // The idea is to paste the values on constants.h and avoid calibrating every run
 
-Mux74HC4067 mux;
-
-QTR qtrFront(0, mux); //Where the array starts and the mux being used
+ //Where the array starts and the mux being used
 
 void setup() {
     Serial.begin(115200);
