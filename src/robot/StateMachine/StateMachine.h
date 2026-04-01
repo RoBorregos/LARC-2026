@@ -62,6 +62,8 @@ private:
     bool     lfCorrecting        = false;
     int8_t   lfCorrectionDir     = 0;
     uint32_t lfCorrectionStartMs = 0;
+    uint32_t lfLeftHoldMs        = 0;  
+    uint32_t lfRightHoldMs       = 0;  
 
     // Set states
     void setState(STATES newState);

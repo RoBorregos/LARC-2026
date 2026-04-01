@@ -746,58 +746,92 @@ void LARCStateMachine::handleLookForLineState(uint32_t now,
     static constexpr float    kUsMinSpeed      = 0.28f;
     static constexpr float    kCorrectionSpeed = 0.38f;
     static constexpr uint32_t kCorrectionMs    = 450;
+    static constexpr uint32_t kLateralHoldMs   = 40; // ms continuos para confirmar línea lateral
 
     static uint32_t lastPrintMs = 0;
     static constexpr uint32_t kPrintEveryMs = 100;
 
-    // --  1st priority : frontal line (destino) ---------------
+    // ── Prioridad 1: línea frontal (destino) ─────────────────────────────
     if (frontDetected && onLine)
     {
-        lfCorrecting = false;
+        lfCorrecting  = false;
+        lfLeftHoldMs  = 0;
+        lfRightHoldMs = 0;
         Serial.println("[LOOKFORLINE] FRONT DETECTED -> LOOKFORCORNER");
         LARC.brake();
         setState(STATES::LOOKFORCORNER);
         return;
     }
 
-    // -- 2nd:  lateral correction en curso -----------
-    if (lfCorrecting)
+    // ── Prioridad 2: corrección lateral en curso ──────────────────────────
+if (lfCorrecting)
+{
+    if ((now - lfCorrectionStartMs) < kCorrectionMs)
     {
-        if ((now - lfCorrectionStartMs) < kCorrectionMs)
-        {
-            if (lfCorrectionDir < 0)
-                LARC.left(kCorrectionSpeed);
-            else
-                LARC.right(kCorrectionSpeed);
-            return;
-        }
-        lfCorrecting = false;
-    }
+        // Rampa: arranca en 40% de la velocidad y llega al 100% en 150ms
+        static constexpr uint32_t kRampMs    = 150;
+        static constexpr float    kMinScale  = 0.40f;
 
-    // -- 3 priority: detectar lateral --------
+        float t     = float(now - lfCorrectionStartMs) / float(kRampMs);
+        if (t > 1.0f) t = 1.0f;
+
+        float scale = kMinScale + (1.0f - kMinScale) * t;
+        float spd   = kCorrectionSpeed * scale;
+
+        if (lfCorrectionDir < 0)
+            LARC.left(spd);
+        else
+            LARC.right(spd);
+        return;
+    }
+    // Corrección terminada
+    lfCorrecting  = false;
+    lfLeftHoldMs  = 0;
+    lfRightHoldMs = 0;
+}
+
+    // ── Prioridad 3: acumular detección lateral con debounce ──────────────
     const bool onlyRight = rightDetected && !leftDetected;
     const bool onlyLeft  = leftDetected  && !rightDetected;
 
     if (onlyRight)
     {
+        if (lfRightHoldMs == 0) lfRightHoldMs = now;
+        lfLeftHoldMs = 0;
+    }
+    else if (onlyLeft)
+    {
+        if (lfLeftHoldMs == 0) lfLeftHoldMs = now;
+        lfRightHoldMs = 0;
+    }
+    else
+    {
+        lfLeftHoldMs  = 0;
+        lfRightHoldMs = 0;
+    }
+
+    if (onlyRight && (now - lfRightHoldMs) >= kLateralHoldMs)
+    {
         Serial.println("[LOOKFORLINE] LINEA DERECHA -> corrigiendo IZQUIERDA");
         lfCorrecting        = true;
         lfCorrectionDir     = -1;
         lfCorrectionStartMs = now;
-        LARC.left(kCorrectionSpeed);
+        lfRightHoldMs       = 0;
+        // LARC.left(kCorrectionSpeed);
         return;
     }
-    else if (onlyLeft)
+    else if (onlyLeft && (now - lfLeftHoldMs) >= kLateralHoldMs)
     {
         Serial.println("[LOOKFORLINE] LINEA IZQUIERDA -> corrigiendo DERECHA");
         lfCorrecting        = true;
         lfCorrectionDir     = +1;
         lfCorrectionStartMs = now;
-        LARC.right(kCorrectionSpeed);
+        lfLeftHoldMs        = 0;
+        // LARC.right(kCorrectionSpeed);
         return;
     }
 
-    // ---- Rampa con ultrasonido -----------
+    // ── Avance normal con rampa por ultrasonido ───────────────────────────
     const float d1 = us1.getdistance();
     const float d2 = us2.getdistance();
 
