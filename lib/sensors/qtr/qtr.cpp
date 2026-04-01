@@ -148,19 +148,19 @@ bool QTR::onLine(uint16_t threshold) const
     return maxv > threshold;
 }
 
-int QTR::getBinaryPosition() const {
-    // Convert normalized values to 0/1 using threshold
+int QTR::getBinaryPosition() const { //Hubo cambio de funcion
     uint32_t weightedSum = 0;
-    uint32_t activeCount = 0;
+    uint32_t totalWeight = 0;
 
     for (uint8_t i = 0; i < N; i++) {
-        uint8_t binary = (norm[i] > Constants::QTRCalibration::kBinaryThreshold) ? 1 : 0;
-        weightedSum += binary * i * 1000;  // same 0-7000 scale
-        activeCount += binary;
+        if (norm[i] > Constants::QTRCalibration::kBinaryThreshold) {
+            weightedSum += (uint32_t)norm[i] * i * 1000;
+            totalWeight += norm[i];
+        }
     }
 
-    if (activeCount == 0) return position; // no sensor active, return last known
-    return (int)(weightedSum / activeCount);
+    if (totalWeight == 0) return position;
+    return (int)(weightedSum / totalWeight);
 }
 
 
