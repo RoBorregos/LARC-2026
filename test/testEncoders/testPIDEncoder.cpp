@@ -1,5 +1,7 @@
 // FUNCIONA ( se agrega el filtro para el encoder)
 
+//Codigo para plotear el y calibrar el PID
+
 #include <Arduino.h>
 #include "pins.h"
 

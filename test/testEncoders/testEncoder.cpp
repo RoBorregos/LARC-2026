@@ -1,3 +1,5 @@
+// Code 1 obten las revoluciones
+
 #include <Arduino.h>
 #include "pins.h"
 

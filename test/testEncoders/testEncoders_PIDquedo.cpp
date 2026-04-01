@@ -1,3 +1,5 @@
+// Penultimo code o test para los Encoders
+//Use this code to calibrate
 // Funciona (4:50 am)
 // FINAL que manda velocidad al motor
 #include <Arduino.h>
