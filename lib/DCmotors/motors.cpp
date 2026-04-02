@@ -131,18 +131,29 @@ int DCMotor::getEncoderCount()
     return (encoder_ != nullptr) ? (int)encoder_->read() : 0;
 }
 
+void DCMotor::resetEncoder() {
+    if (encoder_ != nullptr)
+        encoder_->write(0);
+}
 
-double DCMotor::getPRotation()
-{
-    return (encoder_ != nullptr) ? (double)encoder_->read() / rotation_factor : 0.0;
+float DCMotor::getDistanceMeters() {
+    // Distancia acumulada desde el último resetEncoder()
+    if (encoder_ == nullptr) return 0.0f;
+    return (float)(encoder_->read()) * diameter * M_PI / ppr_;
+}
+
+void DCMotor::setPPR(float ppr) {
+    ppr_ = ppr;
+}
+
+double DCMotor::getPRotation() {
+    return (encoder_ != nullptr) ? (double)encoder_->read() / ppr_ : 0.0;
 }
 
 
-float DCMotor::getPMeters()
-{
-    return (encoder_ != nullptr) ? (float)(encoder_->read() * diameter * M_PI / rotation_factor) : 0.0f;
+float DCMotor::getPMeters() {
+    return (encoder_ != nullptr) ? (float)(encoder_->read() * diameter * M_PI / ppr_) : 0.0f;
 }
-
 
 
 void DCMotor::testForwardBackward(){

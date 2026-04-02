@@ -47,6 +47,9 @@ class DCMotor
         int getEncoderCount();
         double getPRotation(); // Position Rotation
         float getPMeters(); // Position Meters
+        void  resetEncoder();
+        float getDistanceMeters();   // alias limpio para Drive
+        void  setPPR(float ppr);     // para configurar por motor
 
         void testForwardBackward();
 
@@ -64,7 +67,7 @@ class DCMotor
         
         Encoder* encoder_ = nullptr;
     
-        int rotation_factor = 473;
+        float ppr_ = 473.0f;  // pulsos por revolución (configurable por motor)
 
 
 };
