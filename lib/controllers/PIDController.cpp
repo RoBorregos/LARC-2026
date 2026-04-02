@@ -85,7 +85,13 @@ void PIDController::reset()
     pid_->SetMode(AUTOMATIC);
 }
 
-
+void PIDController::resetToMeasurement(float measurement, float setpoint) {
+    lastMeasurement_ = (double)measurement;
+    lastSetpoint_    = (double)setpoint;
+    output_          = 0.0;
+    pid_->SetMode(MANUAL);
+    pid_->SetMode(AUTOMATIC);
+}
 
 //          ========== "Getters and Setters" ==========
 void PIDController::setGains(float kp, float ki, float kd)

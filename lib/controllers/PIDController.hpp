@@ -17,6 +17,8 @@ class PIDController {
 
         void reset();
 
+        void resetToMeasurement(float measurement, float setpoint);
+
         void setGains(float kp, float ki, float kd);
 
         void setOutputLimits(float min, float max);
