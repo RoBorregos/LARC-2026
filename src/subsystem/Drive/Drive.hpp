@@ -83,6 +83,9 @@ public:
     float getM3Meters() const { return const_cast<Drive*>(this)->m3_ll_.getDistanceMeters(); }
     float getM4Meters() const { return const_cast<Drive*>(this)->m4_lr_.getDistanceMeters(); }
 
+    void beginNoBNO();
+    void updateNoBNO();
+
 private:
     // ── Helpers ───────────────────────────────────────
     static float rad2deg(float r);

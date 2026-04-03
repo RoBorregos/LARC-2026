@@ -310,3 +310,45 @@ void Drive::testKinematics(float v, uint32_t T) {
     Serial.println("Diag--");   omni_.MoveXYW(-v,-v, 0); delay(T);
     Serial.println("Stop");     omni_.Stop(); delay(1200);
 }
+
+
+void Drive::beginNoBNO() {
+    Serial.begin(115200);
+    delay(500);
+
+    analogWriteResolution(8);
+
+    m1_ul_.begin();
+    m2_ur_.begin();
+    m3_ll_.begin();
+    m4_lr_.begin();
+
+    m1_ul_.setPPR(475.0f);
+    m2_ur_.setPPR(482.0f);
+    m3_ll_.setPPR(495.0f);
+    m4_lr_.setPPR(475.0f);
+
+    vxCmd_ = 0.0f;
+    vyCmd_ = 0.0f;
+
+    resetOdometry();
+}
+
+void Drive::updateNoBNO() {
+    const uint32_t now = millis();
+    if (now - lastControl_ < kControlMs) return;
+    lastControl_ = now;
+
+    updateOdometry();
+
+    omni_.MoveXYW(vxCmd_, vyCmd_, 0.0f);
+
+    if (now - lastPrint_ >= kPrintMs) {
+        lastPrint_ = now;
+
+        Serial.print("odoX: ");
+        Serial.print(odoX_, 4);
+        Serial.print("  odoY: ");
+        Serial.println(odoY_, 4);
+    }
+}
