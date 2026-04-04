@@ -32,7 +32,7 @@ float Kp = 3.4f;
 float Ki = 2.2f;
 float Kd = 0.001f;
 
-float setpoint   = 40.0f;
+float setpoint   = 45.0f;
 float integral   = 0.0f;
 float last_error = 0.0f;
 
