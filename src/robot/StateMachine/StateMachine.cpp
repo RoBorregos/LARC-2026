@@ -204,8 +204,8 @@ void LARCStateMachine::update()
     const bool BL = ir.getState(IR_mux::BL);
     const bool BR = ir.getState(IR_mux::BR);
 
-    //ir.debugPrint();
-    qtrFront.debugPrint();
+    ir.debugPrint();
+    //qtrFront.debugPrint();
     //Serial.print("linePos: ");
     //Serial.println(linePos); // To know the value for the center of the qtr
 
@@ -1089,6 +1089,77 @@ void LARCStateMachine::handleBEANS(uint32_t now, bool cornerRIGHTDetected, bool 
     }
     }
 }
+
+void LARCStateMachine::handleBEANSGoBackState(uint32_t now, bool cornerLEFTDetected, bool onLine, float vx)
+{
+
+    const bool limitPressed = (digitalRead(limitSwitch) == HIGH);
+
+    switch (action_stage)
+    {
+    case 0:
+    {
+        // Bajar elevador hasta tocar limit
+        if (!limitPressed)
+        {
+            elevator.ElevatorPosition(0); //Bajar (2)
+            LARC.brake();
+            return;
+        }
+
+        elevator.ElevatorPosition(0);
+        action_stage = 1;
+        action_start_time = now;
+        return;
+    }
+
+    case 1:
+    {
+        if (cornerLEFTDetected)
+        {
+            LARC.brake();
+            servos.intakeUpperHome();
+            servos.intakeLowerHome();
+            action_start_time = now;
+            action_stage = 2;
+            return;
+        }
+
+        if (!onLine)
+        {
+            LARC.stop();
+            return;
+        }
+
+        LARC.setTranslation(vx, 0.40f); // 0.45f
+
+        if (visionLeft)
+            servos.intakeUpperDeploy();
+        else
+            servos.intakeUpperHome();
+
+        if (visionRight)
+            servos.intakeLowerDeploy();
+        else
+            servos.intakeLowerHome();
+
+        break;
+    }
+
+    case 2:
+    {
+        LARC.brake();
+
+        if ((now - action_start_time) >= 300)
+        {
+            setPoolState(PoolSubState::FORWARD);
+            setState(STATES::POOLSGOBACK);
+        }
+        break;
+    }
+    }
+}
+
 
 
 void LARCStateMachine::handlePOOLSGoBackState(uint32_t now, bool rearObstacle, bool leftDetected, bool rightDetected)
