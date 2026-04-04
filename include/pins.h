@@ -111,10 +111,10 @@ namespace Pins
 
     // ======== IR Line – Canales en el mux ========
     // ← Modificar estos valores para reasignar los canales físicos del mux
-    static constexpr uint8_t kIrChFL = 13;  // Canal mux - sensor Front-Left
-    static constexpr uint8_t kIrChFR = 12;  // Canal mux - sensor Front-Right
-    static constexpr uint8_t kIrChBL = 11;  // Canal mux - sensor Back-Left
-    static constexpr uint8_t kIrChBR = 10;  // Canal mux - sensor Back-Right
+    static constexpr uint8_t kIrChFL = 11;  // Canal mux - sensor Front-Left
+    static constexpr uint8_t kIrChFR = 9;  // Canal mux - sensor Front-Right
+    static constexpr uint8_t kIrChBL = 13;  // Canal mux - sensor Back-Left
+    static constexpr uint8_t kIrChBR = 15;  // Canal mux - sensor Back-Right
 
     // ======== Intake ========
     const uint8_t kUpperIntakeServo = 3;
