@@ -202,7 +202,7 @@ void LARCStateMachine::update()
     const bool BR = ir.getState(IR_mux::BR);
 
     //ir.debugPrint();
-    qtrFront.debugPrint();
+    //qtrFront.debugPrint();
     //Serial.print("linePos: ");
     //Serial.println(linePos); // To know the value for the center of the qtr
 
@@ -406,7 +406,7 @@ void LARCStateMachine::handleStartState(uint32_t now, bool backDetected)
         // Goes down until the limit switch is pressed out
         if (!limitPressed)
         {
-            elevator.ElevatorPosition(2); // bajar
+            elevator.ElevatorPosition(0); // bajar (2)
             LARC.brake();
         }
         else
@@ -434,7 +434,7 @@ void LARCStateMachine::handleStartState(uint32_t now, bool backDetected)
 
     case 2:
         // Goes up 9000 ms
-        elevator.ElevatorPosition(1);
+        elevator.ElevatorPosition(0); //subir (1)
         LARC.brake();
 
         if ((now - action_start_time) >= 9000)
@@ -1084,7 +1084,7 @@ void LARCStateMachine::handleBEANSGoBackState(uint32_t now, bool cornerLEFTDetec
         // Bajar elevador hasta tocar limit
         if (!limitPressed)
         {
-            elevator.ElevatorPosition(2);
+            elevator.ElevatorPosition(0); //Bajar (2)
             LARC.brake();
             return;
         }
