@@ -28,11 +28,11 @@ volatile bool          got_pulse   = false;
 const float PPR = 486.0f;
 const float Ts  = 0.05f;   // 50ms — más estable que 10ms
 
-float Kp = 1.4f;
-float Ki = 0.2f;
-float Kd = 0.0012f;
+float Kp = 1.3f;
+float Ki = 1.0f;
+float Kd = 0.0035f;
 
-float setpoint   = 40.0f;
+float setpoint   = 45.0f;
 float integral   = 0.0f;
 float last_error = 0.0f;
 
