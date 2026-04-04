@@ -7,7 +7,7 @@
 
 namespace
 {
-    static constexpr float kVelocity = 0.40f;
+    static constexpr float kVelocity = 0.48f;
     static constexpr float kObstacleDistanceCm = 25.0f;
     static constexpr float kBaseSpeed = Constants::PID::kcurrentVelocity;
 
@@ -201,7 +201,7 @@ void LARCStateMachine::update()
     const bool BL = ir.getState(IR_mux::BL);
     const bool BR = ir.getState(IR_mux::BR);
 
-    //ir.debugPrint();
+    ir.debugPrint();
     //qtrFront.debugPrint();
     //Serial.print("linePos: ");
     //Serial.println(linePos); // To know the value for the center of the qtr
@@ -481,7 +481,7 @@ void LARCStateMachine::handleStartState(uint32_t now, bool backDetected)
         lastRampMs = now;
 
 
-        float speed = 0.45f;
+        float speed = 0.48f;
         float targetSpeed = speed;   // la velocidad que ya calculaste
         float rate = (targetSpeed > currentSpeed) ? kAccelPerSec : kBrakePerSec;
         float maxStep = rate * dt;
@@ -538,7 +538,7 @@ void LARCStateMachine::handlePoolState(uint32_t now, bool obstacle, bool leftDet
     static int8_t   lineCorrectionDir      = 0;   // -1 = left, +1 = right
 
     static constexpr uint32_t kLineCorrectionMs    = 120;
-    static constexpr float    kLineCorrectionSpeed = 0.40f;
+    static constexpr float    kLineCorrectionSpeed = 0.48f;
 
     if (lineCorrectionActive)
     {
@@ -586,7 +586,7 @@ void LARCStateMachine::handlePoolState(uint32_t now, bool obstacle, bool leftDet
             break;
         }
 
-        LARC.setTranslation(0.40, 0.08);
+        LARC.setTranslation(0.48f, 0.08);
         //  LARC.forward(kVelocity);
 
         /*
@@ -607,7 +607,7 @@ void LARCStateMachine::handlePoolState(uint32_t now, bool obstacle, bool leftDet
         lastRampMs = now;
 
 
-        float speed = 0.40f;
+        float speed = 0.48f;
         float targetSpeed = speed;   // la velocidad que ya calculaste
         float rate = (targetSpeed > currentSpeed) ? kAccelPerSec : kBrakePerSec;
         float maxStep = rate * dt;
@@ -641,7 +641,7 @@ void LARCStateMachine::handlePoolState(uint32_t now, bool obstacle, bool leftDet
 
     case PoolSubState::AVOID_LEFT:
     {
-        LARC.left(0.45f);
+        LARC.left(0.48f);
 
         const bool canChangeSide = (now - poolStateStartMs) >= kMinAvoidTimeMs;
 
@@ -739,7 +739,7 @@ void LARCStateMachine::handleLookForLineState(uint32_t now,
     servos.intakeUpperHome();
     servos.intakeLowerHome();
 
-    static constexpr float    kLookFastSpeed   = 0.40f;
+    static constexpr float    kLookFastSpeed   = 0.48f;
     static constexpr float    kLookSlowSpeed   = 0.34f;
     static constexpr float    kUsSlowStartCm   = 30.0f;
     static constexpr float    kUsHardStopCm    = 7.0f;
@@ -770,7 +770,7 @@ if (lfCorrecting)
     {
         // Rampa: arranca en 40% de la velocidad y llega al 100% en 150ms
         static constexpr uint32_t kRampMs    = 150;
-        static constexpr float    kMinScale  = 0.40f;
+        static constexpr float    kMinScale  = 0.48f;
 
         float t     = float(now - lfCorrectionStartMs) / float(kRampMs);
         if (t > 1.0f) t = 1.0f;
@@ -906,7 +906,7 @@ void LARCStateMachine::handleLookForCornerState(uint32_t now, bool cornerLEFTDet
     static constexpr uint32_t kCornerStopMs      = 1200;
     static constexpr uint32_t kSoftStartMs       = 500;
 
-    static constexpr float kCornerSearchVy = 0.40f;
+    static constexpr float kCornerSearchVy = 0.48f;
     static constexpr float kSoftVy         = 0.27f;
 
     static constexpr float kEntryMinScale   = 0.55f;
@@ -1113,7 +1113,7 @@ void LARCStateMachine::handleBEANSGoBackState(uint32_t now, bool cornerLEFTDetec
             return;
         }
 
-        LARC.setTranslation(vx, 0.40f); // 0.45f
+        LARC.setTranslation(vx, 0.48f); // 0.45f
 
         if (visionLeft)
             servos.intakeUpperDeploy();
@@ -1171,7 +1171,7 @@ case PoolSubState::FORWARD:
 
 case PoolSubState::AVOID_LEFT:
 {
-    LARC.left(0.40f);
+    LARC.left(0.48f);
 
     const bool canChangeSide = (now - poolStateStartMs) >= kMinAvoidTimeMs;
 
@@ -1213,7 +1213,7 @@ case PoolSubState::AVOID_LEFT:
 
 case PoolSubState::AVOID_RIGHT:
 {
-    LARC.right(0.40f);
+    LARC.right(0.48f);
 
     const bool canChangeSide = (now - poolStateStartMs) >= kMinAvoidTimeMs;
 
@@ -1345,7 +1345,7 @@ void LARCStateMachine::handleBenefitsStartCorner(uint32_t now, bool cornerLeftDe
             return;
         }
 
-        LARC.setTranslation(vx, 0.40f);
+        LARC.setTranslation(vx, 0.48f);
 
         break;
     }
@@ -1384,7 +1384,7 @@ void LARCStateMachine::handleBenefits(uint32_t now, bool cornerRIGHTDetected, fl
 
     case 1:
     {
-        LARC.setTranslation(vx, -0.40f);
+        LARC.setTranslation(vx, -0.48f);
 
         // Here goes the rutine
         if (cornerRIGHTDetected)
