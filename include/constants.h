@@ -106,41 +106,33 @@ namespace Constants
     namespace ServoAngles
     {
         // Intake Superior
-        static constexpr uint8_t kIntakeUpperHome   = 30;   // retractado, 
-        static constexpr uint8_t kIntakeUpperDeploy = 85;  // posición de tumble
+        static constexpr uint8_t kIntakeUpperHome   = 30;   // upright, 
+        static constexpr uint8_t kIntakeUpperDeploy = 85;  // deployed
 
         // Intake Inferior
         static constexpr uint8_t kIntakeLowerHome   = 30;   // retractado
         static constexpr uint8_t kIntakeLowerDeploy = 85;  // posición de tumble
 
-        // Compuerta Separadora
-        // Compuerta que dirige la semilla al canal correcto
-        static constexpr uint8_t kSeparatorCenter = 90;  // neutro/hold
-        static constexpr uint8_t kSeparatorLeft   = 45;  // canal izquierdo
-        static constexpr uint8_t kSeparatorRight  = 135; // canal derecho
+        // Separator
+        static constexpr uint8_t kSeparatorCenter = 90;  // neutral/hold
+        static constexpr uint8_t kSeparatorLeft   = 45;  // left channel
+        static constexpr uint8_t kSeparatorRight  = 135; // right channel
 
-        // Servo Beneficiadero Rojo
-        // Permanece cerrado hasta recibir señal
-        static constexpr uint8_t kBenefitRedClosed = 0;   // cerrado
-        static constexpr uint8_t kBenefitRedOpen   = 90;  // abierto
-
-        // Servo Beneficiadero Azul
-        // Permanece cerrado hasta recibir señal
-        static constexpr uint8_t kBenefitBlueClosed = 0;   // cerrado
-        static constexpr uint8_t kBenefitBlueOpen   = 90;  // abierto
+        // Benefits
+        static constexpr uint8_t kBenefitRed    = 0;    // right side
+        static constexpr uint8_t kBenefitCenter = 90;   // neutral
+        static constexpr uint8_t kBenefitBlue   = 180;  // left side
 
         //Servo Holder
-        // Permanece cerrado hasta recibir señal
-        static constexpr uint8_t kHolderHold = 0;   // cerrado
-        static constexpr uint8_t kHolderRelease   = 20;  // abierto
+        static constexpr uint8_t kHolderHold = 0;   // closed
+        static constexpr uint8_t kHolderRelease   = 20;  // open
 
-        // Tiempo de movimiento (ms)
-        // Ajustar si queremos que se tarde o que la respuesta sea inmediata a la señal que recibe.
+        // Movement time (ms)
+        // Adjust accordingly if we want to delay or have an immediate response to the signal received.
         static constexpr uint32_t kIntakeUpperMoveMs  = 300;
         static constexpr uint32_t kIntakeLowerMoveMs  = 300;
         static constexpr uint32_t kSeparatorMoveMs    = 300;
-        static constexpr uint32_t kBenefitRedMoveMs   = 300;
-        static constexpr uint32_t kBenefitBlueMoveMs  = 300;
+        static constexpr uint32_t kBenefitMoveMs      = 300;
         static constexpr uint32_t kHolderMoveMs       = 300;
     } // namespace ServoAngles
      namespace ToFConfig
