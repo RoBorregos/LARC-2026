@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """
-separator_visao_headless.py — Headless ball sorter, no serial, FPS test
-========================================================================
-Config  : separator_config.json  (save from separator_visao.py with S)
-Serial  : DISABLED (for now)
-Output  : FPS + warm/cool hit counts printed to terminal every second
+separator_visao.py — Headless ball sorter (dispatcher mode)
+============================================================
+Camera  : /dev/video3  (RealSense RGB via V4L2)
+Config  : separator_config.json
+Serial  : NONE — prints VISION:FD:WW:CC lines for dispatcher to forward
+Output  : FPS + warm/cool hits to terminal, VISION tags to stdout
 Ctrl+C  : stop
 """
 
@@ -16,9 +17,9 @@ import sys, json, os, time
 #  CONSTANTS
 # ══════════════════════════════════════════════════════════════════════
 CONFIG_FILE = "separator_config.json"
-CAM_PORT    = 2
-FRAME_W     = 1920
-FRAME_H     = 1080
+CAM_PORT    = 9
+FRAME_W     = 1280
+FRAME_H     = 720
 
 DEFAULT_CFG = dict(
     roi_x1=760, roi_y1=340, roi_x2=1160, roi_y2=740,
@@ -138,8 +139,8 @@ def main():
     actual_w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     actual_h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     print(f"[Camera] /dev/video{CAM_PORT}  {actual_w}x{actual_h}")
-    print("[Serial] DISABLED")
-    print("[Running] Ctrl+C to stop\n")
+    print("[Mode] Dispatcher (VISION tags via stdout)")
+    print("[Running] Ctrl+C to stop")
 
     frame_count = 0
     hit_counts  = {'warm': 0, 'cool': 0}
@@ -152,7 +153,6 @@ def main():
             if not ret or frame is None:
                 continue
 
-            # Clamp ROI to actual frame
             x1 = max(0, min(cfg['roi_x1'], actual_w - 2))
             y1 = max(0, min(cfg['roi_y1'], actual_h - 2))
             x2 = max(x1+2, min(cfg['roi_x2'], actual_w))
@@ -167,13 +167,18 @@ def main():
             if warm_hit: hit_counts['warm'] += 1
             if cool_hit: hit_counts['cool'] += 1
 
+            # Output vision data for dispatcher to forward
+            # Format: VISION:FD:WW:CC (hex bytes)
+            # 0xFD = separator sync byte, WW = warm, CC = cool
+            print(f"VISION:FD:{int(warm_hit):02X}:{int(cool_hit):02X}", flush=True)
+
             frame_count += 1
             now = time.time()
             if now - t_last >= 1.0:
                 fps = frame_count / (now - t0)
                 w_str = "WARM" if warm_hit else "    "
                 c_str = "COOL" if cool_hit else "    "
-                print(f"[FPS] {fps:5.1f}  |  {w_str}  {c_str}  |  warm hits: {hit_counts['warm']:4d}  cool hits: {hit_counts['cool']:4d}")
+                print(f"[FPS] {fps:5.1f}  |  {w_str}  {c_str}  |  warm: {hit_counts['warm']:4d}  cool: {hit_counts['cool']:4d}")
                 t_last = now
 
     except KeyboardInterrupt:
