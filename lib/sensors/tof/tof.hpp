@@ -26,8 +26,8 @@ class ToF
 public:
     static constexpr uint16_t INVALID_MM = 0xFFFF;
 
-    ToF();
-    ToF(uint8_t muxChannel, TCA9548A& mux, ToFType type = ToFType::L0X);
+    ToF(ToFType type);
+    ToF(uint8_t muxChannel, TCA9548A& mux, ToFType type);
 
     bool begin();
     void update();

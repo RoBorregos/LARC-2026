@@ -8,8 +8,8 @@
 
 #include "tof.hpp"
 
-ToF::ToF()
-    : type_(ToFType::L0X),
+ToF::ToF(ToFType type)
+    : type_(type),
       initialized(false), continuous(false),
       useMux(false),
       distanceMm(INVALID_MM),
