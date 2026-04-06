@@ -15,14 +15,12 @@ ServoSystem::ServoSystem()
     : _curIntakeUpper(255),
       _curIntakeLower(255),
       _curSeparator(255),
-      _curBenefitRed(255),
-      _curBenefitBlue(255),
+      _curBenefit(255),
       _curholder(255),
       _tIntakeUpper(0),
       _tIntakeLower(0),
       _tSeparator(0),
-      _tBenefitRed(0),
-      _tBenefitBlue(0),
+      _tBenefit(0),
       _tholder(0)
 {}
 
@@ -33,8 +31,7 @@ void ServoSystem::begin()
         _intakeUpper.attach(Pins::kUpperIntakeServo);
         _intakeLower.attach(Pins::kLowerIntakeServo);
         _separator.attach(Pins::kSeparatorServo);
-        _benefitRed.attach(Pins::kRedBenefitServo);
-        _benefitBlue.attach(Pins::kBlueBenefitServo);
+        _benefit.attach(Pins::kBenefitServo);
         _holder.attach(Pins::kHolderServo);
 
         //All servos move to their default position
@@ -42,8 +39,7 @@ void ServoSystem::begin()
     _move(_intakeUpper, Constants::ServoAngles::kIntakeUpperHome,   _curIntakeUpper, _tIntakeUpper);
     _move(_intakeLower, Constants::ServoAngles::kIntakeLowerHome,   _curIntakeLower, _tIntakeLower);
     _move(_separator,   Constants::ServoAngles::kSeparatorCenter,   _curSeparator,   _tSeparator);
-    _move(_benefitRed,  Constants::ServoAngles::kBenefitRedClosed,  _curBenefitRed,  _tBenefitRed);
-    _move(_benefitBlue, Constants::ServoAngles::kBenefitBlueClosed, _curBenefitBlue, _tBenefitBlue);
+    _move(_benefit, Constants::ServoAngles::kBenefitCenter, _curBenefit, _tBenefit);
     _move(_holder,      Constants::ServoAngles::kHolderHold,       _curholder,      _tholder);
 }
 
@@ -85,27 +81,22 @@ void ServoSystem::separatorRight()
     _move(_separator, Constants::ServoAngles::kSeparatorRight, _curSeparator, _tSeparator);
 }
 
-// Red benefit
+// Benefits
 
-void ServoSystem::benefitRedOpen()
+void ServoSystem::benefitRed()
 {
-    _move(_benefitRed, Constants::ServoAngles::kBenefitRedOpen, _curBenefitRed, _tBenefitRed);
+    _move(_benefit, Constants::ServoAngles::kBenefitRed, _curBenefit, _tBenefit);
 }
-void ServoSystem::benefitRedClose()
+void ServoSystem::benefitBlue()
 {
-    _move(_benefitRed, Constants::ServoAngles::kBenefitRedClosed, _curBenefitRed, _tBenefitRed);
+    _move(_benefit, Constants::ServoAngles::kBenefitBlue, _curBenefit, _tBenefit);
+}
+void ServoSystem::benefitCenter()
+{
+    _move(_benefit, Constants::ServoAngles::kBenefitCenter, _curBenefit, _tBenefit);
 }
 
-// Blue benefit
-
-void ServoSystem::benefitBlueOpen()
-{
-    _move(_benefitBlue, Constants::ServoAngles::kBenefitBlueOpen, _curBenefitBlue, _tBenefitBlue);
-}
-void ServoSystem::benefitBlueClose()
-{
-    _move(_benefitBlue, Constants::ServoAngles::kBenefitBlueClosed, _curBenefitBlue, _tBenefitBlue);
-}
+//Holder
 
 void ServoSystem::holderHold()
 {
@@ -121,8 +112,7 @@ void ServoSystem::holderRelease()
 bool ServoSystem::intakeUpperBusy() const { return _isMoving(_tIntakeUpper, Constants::ServoAngles::kIntakeUpperMoveMs); }
 bool ServoSystem::intakeLowerBusy() const { return _isMoving(_tIntakeLower, Constants::ServoAngles::kIntakeLowerMoveMs); }
 bool ServoSystem::separatorBusy()   const { return _isMoving(_tSeparator,   Constants::ServoAngles::kSeparatorMoveMs);   }
-bool ServoSystem::benefitRedBusy()  const { return _isMoving(_tBenefitRed,  Constants::ServoAngles::kBenefitRedMoveMs);  }
-bool ServoSystem::benefitBlueBusy() const { return _isMoving(_tBenefitBlue, Constants::ServoAngles::kBenefitBlueMoveMs); }
+bool ServoSystem::benefitBusy() const { return _isMoving(_tBenefit, Constants::ServoAngles::kBenefitMoveMs); }
 bool ServoSystem::holderBusy()     const { return _isMoving(_tholder,      Constants::ServoAngles::kHolderMoveMs);     }
 
 // Private methods
