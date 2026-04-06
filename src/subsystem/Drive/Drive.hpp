@@ -86,6 +86,12 @@ public:
     void beginNoBNO();
     void updateNoBNO();
 
+    // En Drive.hpp — sección public:
+    void moveMotorUL(int pwm) { m1_ul_.move(pwm); }
+    void moveMotorUR(int pwm) { m2_ur_.move(pwm); }
+    void moveMotorLL(int pwm) { m3_ll_.move(pwm); }
+    void moveMotorLR(int pwm) { m4_lr_.move(pwm); }
+
 private:
     // ── Helpers ───────────────────────────────────────
     static float rad2deg(float r);
