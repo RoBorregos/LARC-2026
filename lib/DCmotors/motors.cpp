@@ -136,8 +136,7 @@ void DCMotor::resetEncoder() {
         encoder_->write(0);
 }
 
-float DCMotor::getDistanceMeters() {
-    // Distancia acumulada desde el último resetEncoder()
+float DCMotor::getDistanceMeters() const {
     if (encoder_ == nullptr) return 0.0f;
     return (float)(encoder_->read()) * diameter * M_PI / ppr_;
 }

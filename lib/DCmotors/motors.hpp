@@ -37,7 +37,10 @@ class DCMotor
         DCMotor(int in1, int in2, int pwm, bool invert, 
             int encoder_pin1, int encoder_pin2);
         
-        ~DCMotor();    
+        ~DCMotor();
+
+        DCMotor(const DCMotor&)            = delete;
+        DCMotor& operator=(const DCMotor&) = delete;
 
         void begin();
         void move(int speed, Direction direction);
@@ -48,7 +51,7 @@ class DCMotor
         double getPRotation(); // Position Rotation
         float getPMeters(); // Position Meters
         void  resetEncoder();
-        float getDistanceMeters();   // alias limpio para Drive
+        float getDistanceMeters() const;   
         void  setPPR(float ppr);     // para configurar por motor
 
         void testForwardBackward();
