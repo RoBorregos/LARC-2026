@@ -9,8 +9,8 @@
 #include "kinematics.hpp"
 #include "PIDController.hpp"
 #include "qtr.hpp"
+#include "OdometryEKF.hpp"
 
-// Constants
 static constexpr float diameter = Constants::DriveConstants::kWheelDiameter;
 
 static constexpr uint8_t UL_ENC_A = Pins::kEncoders[1];
@@ -27,7 +27,7 @@ public:
     Drive();
 
     void begin();
-    void update();  // llamar siempre en loop()
+    void update();
 
     // ── Movimiento básico ──────────────────────────────
     void forward(float speed);
@@ -39,45 +39,38 @@ public:
     void brake();
     void setTranslation(float vx, float vy);
 
-    // ── Movimiento autónomo con distancia ─────────────
-    // Avanza/retrocede dist metros a speed [0..1], bloqueante NO (usa update())
+    // ── Movimiento autónomo ────────────────────────────
     void driveDistance(float meters, float speed);
-    // Strafe lateral dist metros a speed [0..1]
     void strafeDistance(float meters, float speed);
-    // Gira a ángulo absoluto en grados (0=norte, +CCW), timeout en ms
     void turnTo(float targetDeg, uint32_t timeoutMs = 3000);
-    // True mientras ejecuta driveDistance / strafeDistance / turnTo
     bool isBusy() const { return busy_; }
 
     // ── Yaw hold ──────────────────────────────────────
-    void holdYaw(bool enable);
-    void setTargetYaw(float yawRad);
+    void  holdYaw(bool enable);
+    void  setTargetYaw(float yawRad);
     float getYaw() const;
 
-    // ── Omega manual (sin PID) ────────────────────────
+    // ── Omega manual ──────────────────────────────────
     void setManualOmega(float omegaRadS);
     void clearManualOmega();
 
-    // ── QTR – seguimiento de línea ────────────────────
-    // Llama una vez en setup() después de begin()
+    // ── QTR ───────────────────────────────────────────
     void attachQTR(QTR& qtr);
-    // Empieza a recorrer el frente de los árboles lateralmente
     void followLine(float vySpeed);
     void stopLineFollow();
     bool isFollowingLine() const { return lineFollowEnabled_; }
 
     // ── Odometría ─────────────────────────────────────
     void  resetOdometry();
-    float getOdoX() const { return odoX_; }
-    float getOdoY() const { return odoY_; }
+    float getOdoX() const { return ekf_.getX(); }
+    float getOdoY() const { return ekf_.getY(); }
 
-    // ── Test ──────────────────────────────────────────
+    // ── Test / debug ──────────────────────────────────
     void testKinematics(float v = 0.45f, uint32_t T = 2000);
 
     float getVxCmd() const { return vxCmd_; }
     float getVyCmd() const { return vyCmd_; }
 
-    //Encoders debug
     float getM1Meters() const { return const_cast<Drive*>(this)->m1_ul_.getDistanceMeters(); }
     float getM2Meters() const { return const_cast<Drive*>(this)->m2_ur_.getDistanceMeters(); }
     float getM3Meters() const { return const_cast<Drive*>(this)->m3_ll_.getDistanceMeters(); }
@@ -86,25 +79,25 @@ public:
     void beginNoBNO();
     void updateNoBNO();
 
-    // En Drive.hpp — sección public:
     void moveMotorUL(int pwm) { m1_ul_.move(pwm); }
     void moveMotorUR(int pwm) { m2_ur_.move(pwm); }
     void moveMotorLL(int pwm) { m3_ll_.move(pwm); }
     void moveMotorLR(int pwm) { m4_lr_.move(pwm); }
 
+    void setRPMs(float ul, float ur, float ll, float lr);
+
 private:
-    // ── Helpers ───────────────────────────────────────
     static float rad2deg(float r);
     static float deg2rad(float d);
     static float clampf(float x, float lo, float hi);
-    static float wrapAngle(float a);   // normaliza a [-π, π]
+    static float wrapAngle(float a);
 
     void updateOdometry();
     void updateBusy(uint32_t now);
 
     // ── Hardware ──────────────────────────────────────
-    BNO      bno_;
-    DCMotor  m1_ul_, m2_ur_, m3_ll_, m4_lr_;
+    BNO        bno_;
+    DCMotor    m1_ul_, m2_ur_, m3_ll_, m4_lr_;
     OmniMotors omni_;
 
     // ── Yaw PID ───────────────────────────────────────
@@ -114,26 +107,29 @@ private:
     static constexpr float kOmegaMax = Constants::PID::kOmegaMax;
 
     PIDController yawPid_;
-    float targetYaw_         = 0.0f;
-    bool  yawHoldEnabled_    = true;
-    bool  manualOmegaEnabled_= false;
-    float manualOmega_       = 0.0f;
+    float targetYaw_          = 0.0f;
+    bool  yawHoldEnabled_     = true;
+    bool  manualOmegaEnabled_ = false;
+    float manualOmega_        = 0.0f;
 
     // ── Comandos de velocidad ─────────────────────────
     float vxCmd_ = 0.0f;
     float vyCmd_ = 0.0f;
 
-    // ── Movimiento autónomo (driveDistance / turnTo) ──
-    bool     busy_          = false;
-    float    distTarget_    = 0.0f;   // metros; -1 = modo giro
-    float    busyVx_        = 0.0f;
-    float    busyVy_        = 0.0f;
-    uint32_t busyStart_     = 0;
-    uint32_t busyTimeout_   = 5000;
+    // ── Movimiento autónomo ────────────────────────────
+    bool     busy_        = false;
+    float    distTarget_  = 0.0f;
+    float    busyVx_      = 0.0f;
+    float    busyVy_      = 0.0f;
+    uint32_t busyStart_   = 0;
+    uint32_t busyTimeout_ = 5000;
 
-    // ── Odometría ─────────────────────────────────────
-    float odoX_ = 0.0f;
-    float odoY_ = 0.0f;
+    // ── Odometría EKF ─────────────────────────────────
+    OdometryEKF ekf_;
+    float prevD1_ = 0.0f;
+    float prevD2_ = 0.0f;
+    float prevD3_ = 0.0f;
+    float prevD4_ = 0.0f;
 
     // ── QTR / line follow ─────────────────────────────
     QTR*          qtrFront_          = nullptr;
@@ -151,9 +147,9 @@ private:
     uint32_t lastControl_ = 0;
     uint32_t lastPrint_   = 0;
 
-    // Update and reset Odometry
-    float prevD1_ = 0.0f;
-    float prevD2_ = 0.0f;
-    float prevD3_ = 0.0f;
-    float prevD4_ = 0.0f; 
+    float rpmSetUL_ = 0.0f;
+    float rpmSetUR_ = 0.0f;
+    float rpmSetLL_ = 0.0f;
+    float rpmSetLR_ = 0.0f;
+    bool  rpmModeEnabled_ = false;
 };

@@ -31,20 +31,17 @@ void Drive::begin() {
     yawPid_.setAngleWrapping(true);
     yawPid_.reset();
 
+    m1_ul_.setPPR(475.0f);
+    m2_ur_.setPPR(482.0f);
+    m3_ll_.setPPR(495.0f);
+    m4_lr_.setPPR(475.0f);
+
     targetYaw_      = bno_.getYaw();
     yawHoldEnabled_ = true;
-    vxCmd_ = 0.0f;
-    vyCmd_ = 0.0f;
+    vxCmd_          = 0.0f;
+    vyCmd_          = 0.0f;
 
-    m1_ul_.setPPR(475.0f);  // kEncoders[0,1] — UR calibration
-    m2_ur_.setPPR(482.0f);  // kEncoders[2,3] — UL calibration  
-    m3_ll_.setPPR(495.0f);  // kEncoders[4,5] — LL calibration
-    m4_lr_.setPPR(475.0f);  // kEncoders[6,7] — espejo de UR
-
-    targetYaw_ = bno_.getYaw();
-    yawHoldEnabled_ = true;
-    vxCmd_ = 0.0f;
-    vyCmd_ = 0.0f;
+    resetOdometry();
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -61,7 +58,7 @@ void Drive::update() {
     // 1) Lógica busy (driveDistance / strafeDistance / turnTo)
     updateBusy(now);
 
-    // 2) QTR line follow — solo toca vxCmd_, deja vyCmd_ intacto
+    // 2) QTR line follow
     if (lineFollowEnabled_ && qtrFront_) {
         qtrFront_->update();
 
@@ -73,30 +70,85 @@ void Drive::update() {
             if (fabsf(error) > kLineDeadband) {
                 correction = linePid_.update(pos, kLineCenter);
             } else {
-                linePid_.reset();  // evita integral acumulada en zona muerta
+                linePid_.reset();
             }
             vxCmd_ = correction;
         }
-        // Si no hay línea: conserva último vxCmd_ (sin cambio brusco)
     }
 
-    // 3) Yaw PID — siempre activo si está habilitado
+    // 3) Yaw PID
     const float yaw = bno_.getYaw();
     float omega = 0.0f;
     if      (manualOmegaEnabled_) omega = manualOmega_;
     else if (yawHoldEnabled_)     omega = yawPid_.update(yaw, targetYaw_);
     omega = clampf(omega, -kOmegaMax, +kOmegaMax);
 
+    // 4) Mover motores
+    if (rpmModeEnabled_) {
+    m1_ul_.move((int)(fabsf(rpmSetUL_ + omega) / 60.0f * 255.0f),
+                rpmSetUL_ + omega >= 0 ? DCMotor::Direction::FORWARD
+                                        : DCMotor::Direction::BACKWARD);
+    m2_ur_.move((int)(fabsf(rpmSetUR_ - omega) / 60.0f * 255.0f),
+                rpmSetUR_ - omega >= 0 ? DCMotor::Direction::FORWARD
+                                        : DCMotor::Direction::BACKWARD);
+    m3_ll_.move((int)(fabsf(rpmSetLL_ + omega) / 60.0f * 255.0f),
+                rpmSetLL_ + omega >= 0 ? DCMotor::Direction::FORWARD
+                                        : DCMotor::Direction::BACKWARD);
+    m4_lr_.move((int)(fabsf(rpmSetLR_ - omega) / 60.0f * 255.0f),
+                rpmSetLR_ - omega >= 0 ? DCMotor::Direction::FORWARD
+                                        : DCMotor::Direction::BACKWARD);
+    } else {
     omni_.MoveXYW(vxCmd_, vyCmd_, -omega);
+    }
 
     // 4) Debug 10 Hz
     if (now - lastPrint_ >= kPrintMs) {
         lastPrint_ = now;
         // Descomenta para depurar:
-        // float err = wrapAngle(targetYaw_ - yaw);
-        // Serial.printf("yaw=%.1f target=%.1f err=%.1f omega=%.3f vx=%.2f vy=%.2f\n",
-        //     rad2deg(yaw), rad2deg(targetYaw_), rad2deg(err), omega, vxCmd_, vyCmd_);
+        // Serial.printf("x:%.3f y:%.3f dist:%.3f yaw:%.1f\n",
+        //     ekf_.getX(), ekf_.getY(), ekf_.getDist(), rad2deg(yaw));
     }
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  updateOdometry — deltas de encoder → EKF
+// ─────────────────────────────────────────────────────────────────
+void Drive::updateOdometry() {
+    const float d1 = m1_ul_.getDistanceMeters();
+    const float d2 = m2_ur_.getDistanceMeters();
+    const float d3 = m3_ll_.getDistanceMeters();
+    const float d4 = m4_lr_.getDistanceMeters();
+
+    const float dd1 = d1 - prevD1_;
+    const float dd2 = d2 - prevD2_;
+    const float dd3 = d3 - prevD3_;
+    const float dd4 = d4 - prevD4_;
+
+    prevD1_ = d1; prevD2_ = d2;
+    prevD3_ = d3; prevD4_ = d4;
+
+    // Delta distancia → RPM equivalente para el EKF
+    const float dt   = kControlMs / 1000.0f;
+    const float circ = M_PI * diameter;  // circunferencia = π × diámetro
+
+    const float rpmUL = (dd1 / circ) * 60.0f / dt;
+    const float rpmUR = (dd2 / circ) * 60.0f / dt;
+    const float rpmLL = (dd3 / circ) * 60.0f / dt;
+    const float rpmLR = (dd4 / circ) * 60.0f / dt;
+
+    ekf_.step(dt, rpmUL, rpmUR, rpmLL, rpmLR, bno_.getYaw());
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  resetOdometry
+// ─────────────────────────────────────────────────────────────────
+void Drive::resetOdometry() {
+    ekf_.resetPose();
+    prevD1_ = prevD2_ = prevD3_ = prevD4_ = 0.0f;
+    m1_ul_.resetEncoder();
+    m2_ur_.resetEncoder();
+    m3_ll_.resetEncoder();
+    m4_lr_.resetEncoder();
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -108,61 +160,25 @@ void Drive::updateBusy(uint32_t now) {
     bool done = false;
 
     if (distTarget_ < 0.0f) {
-        // ── Modo giro: espera error de yaw < 2°
+        // Modo giro: espera error de yaw < 2°
         const float err = fabsf(yawPid_.getError());
         if (err < deg2rad(2.0f) || (now - busyStart_) > busyTimeout_)
             done = true;
-
     } else {
-        // ── Modo distancia: usa odometría
-        const float traveled = sqrtf(odoX_ * odoX_ + odoY_ * odoY_);
+        // Modo distancia: usa EKF
+        const float traveled = ekf_.getDist();
         if (traveled >= distTarget_ || (now - busyStart_) > busyTimeout_)
             done = true;
     }
 
     if (done) {
-        busy_  = false;
+        busy_ = false;
         stop();
     }
 }
 
 // ─────────────────────────────────────────────────────────────────
-//  updateOdometry
-// ─────────────────────────────────────────────────────────────────
-void Drive::updateOdometry() {
-    const float d1 = m1_ul_.getDistanceMeters();
-    const float d2 = m2_ur_.getDistanceMeters();
-    const float d3 = m3_ll_.getDistanceMeters();
-    const float d4 = m4_lr_.getDistanceMeters();
-
-    // Delta desde la última lectura
-    const float dd1 = d1 - prevD1_;
-    const float dd2 = d2 - prevD2_;
-    const float dd3 = d3 - prevD3_;
-    const float dd4 = d4 - prevD4_;
-
-    prevD1_ = d1;
-    prevD2_ = d2;
-    prevD3_ = d3;
-    prevD4_ = d4;
-
-    constexpr float k = 0.7071f * 0.25f;
-    odoX_ += k * (-dd1 + dd2 + dd3 - dd4);
-    odoY_ += k * ( dd1 + dd2 - dd3 - dd4);
-}
-
-void Drive::resetOdometry() {
-    odoX_ = 0.0f;
-    odoY_ = 0.0f;
-    prevD1_ = prevD2_ = prevD3_ = prevD4_ = 0.0f;
-    m1_ul_.resetEncoder();
-    m2_ur_.resetEncoder();
-    m3_ll_.resetEncoder();
-    m4_lr_.resetEncoder();
-}
-
-// ─────────────────────────────────────────────────────────────────
-//  driveDistance  — avanza dist metros, no bloquea el loop
+//  driveDistance
 // ─────────────────────────────────────────────────────────────────
 void Drive::driveDistance(float meters, float speed) {
     resetOdometry();
@@ -171,16 +187,15 @@ void Drive::driveDistance(float meters, float speed) {
     busyVy_      = 0.0f;
     busy_        = true;
     busyStart_   = millis();
-    // Timeout = 2.5× el tiempo esperado
     busyTimeout_ = (uint32_t)(fabsf(meters) / speed * 1000.0f * 2.5f);
 
     vxCmd_ = busyVx_;
     vyCmd_ = 0.0f;
-    holdYaw(true);   // BNO mantiene recto durante el avance
+    holdYaw(true);
 }
 
 // ─────────────────────────────────────────────────────────────────
-//  strafeDistance  — movimiento lateral dist metros
+//  strafeDistance
 // ─────────────────────────────────────────────────────────────────
 void Drive::strafeDistance(float meters, float speed) {
     resetOdometry();
@@ -197,12 +212,12 @@ void Drive::strafeDistance(float meters, float speed) {
 }
 
 // ─────────────────────────────────────────────────────────────────
-//  turnTo  — gira a ángulo absoluto en grados
+//  turnTo
 // ─────────────────────────────────────────────────────────────────
 void Drive::turnTo(float targetDeg, uint32_t timeoutMs) {
-    stop();                                  // detiene traslación
-    setTargetYaw(deg2rad(targetDeg));        // nuevo setpoint yaw
-    distTarget_  = -1.0f;                   // flag: modo giro
+    stop();
+    setTargetYaw(deg2rad(targetDeg));
+    distTarget_  = -1.0f;
     busy_        = true;
     busyStart_   = millis();
     busyTimeout_ = timeoutMs;
@@ -210,7 +225,7 @@ void Drive::turnTo(float targetDeg, uint32_t timeoutMs) {
 }
 
 // ─────────────────────────────────────────────────────────────────
-//  QTR – seguimiento de línea
+//  QTR
 // ─────────────────────────────────────────────────────────────────
 void Drive::attachQTR(QTR& qtr) {
     qtrFront_ = &qtr;
@@ -224,7 +239,7 @@ void Drive::followLine(float vySpeed) {
     vyCmd_             = vySpeed;
     vxCmd_             = 0.0f;
     linePid_.reset();
-    holdYaw(true);   // BNO mantiene orientación durante el recorrido
+    holdYaw(true);
 }
 
 void Drive::stopLineFollow() {
@@ -236,12 +251,13 @@ void Drive::stopLineFollow() {
 // ─────────────────────────────────────────────────────────────────
 //  Movimiento básico
 // ─────────────────────────────────────────────────────────────────
-void Drive::forward(float speed)      { vxCmd_ = +speed; vyCmd_ = 0.0f; }
-void Drive::backward(float speed)     { vxCmd_ = -speed; vyCmd_ = 0.0f; }
+void Drive::forward(float speed)      { vxCmd_ = +speed; vyCmd_ = 0.0f;  }
+void Drive::backward(float speed)     { vxCmd_ = -speed; vyCmd_ = 0.0f;  }
 void Drive::right(float speed)        { vxCmd_ = 0.0f;   vyCmd_ = -speed; }
 void Drive::left(float speed)         { vxCmd_ = 0.0f;   vyCmd_ = +speed; }
 void Drive::diagonalLeft(float speed) { vxCmd_ = +speed; vyCmd_ = +speed; }
-void Drive::stop()                    { vxCmd_ = 0.0f;   vyCmd_ = 0.0f;   }
+void Drive::stop()                    { vxCmd_ = 0.0f;   vyCmd_ = 0.0f;  
+                                        rpmModeEnabled_ = false; }
 void Drive::setTranslation(float vx, float vy) { vxCmd_ = vx; vyCmd_ = vy; }
 
 void Drive::brake() {
@@ -255,7 +271,6 @@ void Drive::holdYaw(bool enable) {
     yawHoldEnabled_ = enable;
     if (enable) {
         targetYaw_ = bno_.getYaw();
-        // resetToMeasurement evita spike de integral al reiniciar
         yawPid_.resetToMeasurement(targetYaw_, targetYaw_);
     }
 }
@@ -286,8 +301,8 @@ void Drive::clearManualOmega() {
 // ─────────────────────────────────────────────────────────────────
 //  Helpers
 // ─────────────────────────────────────────────────────────────────
-float Drive::rad2deg(float r)               { return r * (180.0f / M_PI); }
-float Drive::deg2rad(float d)               { return d * (M_PI / 180.0f); }
+float Drive::rad2deg(float r) { return r * (180.0f / M_PI); }
+float Drive::deg2rad(float d) { return d * (M_PI / 180.0f); }
 float Drive::clampf(float x, float lo, float hi) {
     return x < lo ? lo : x > hi ? hi : x;
 }
@@ -302,26 +317,24 @@ float Drive::wrapAngle(float a) {
 // ─────────────────────────────────────────────────────────────────
 void Drive::testKinematics(float v, uint32_t T) {
     holdYaw(false);
-    Serial.println("Forward");  omni_.MoveXYW(+v, 0, 0); delay(T);
-    Serial.println("Backward"); omni_.MoveXYW(-v, 0, 0); delay(T);
-    Serial.println("Right");    omni_.MoveXYW(0, +v, 0); delay(T);
-    Serial.println("Left");     omni_.MoveXYW(0, -v, 0); delay(T);
-    Serial.println("Diag++");   omni_.MoveXYW(+v,+v, 0); delay(T);
-    Serial.println("Diag--");   omni_.MoveXYW(-v,-v, 0); delay(T);
-    Serial.println("Stop");     omni_.Stop(); delay(1200);
+    Serial.println("Forward");  omni_.MoveXYW(+v,  0,  0); delay(T);
+    Serial.println("Backward"); omni_.MoveXYW(-v,  0,  0); delay(T);
+    Serial.println("Right");    omni_.MoveXYW( 0, +v,  0); delay(T);
+    Serial.println("Left");     omni_.MoveXYW( 0, -v,  0); delay(T);
+    Serial.println("Diag++");   omni_.MoveXYW(+v, +v,  0); delay(T);
+    Serial.println("Diag--");   omni_.MoveXYW(-v, -v,  0); delay(T);
+    Serial.println("Stop");     omni_.Stop();                delay(1200);
 }
 
-
+// ─────────────────────────────────────────────────────────────────
+//  beginNoBNO / updateNoBNO
+// ─────────────────────────────────────────────────────────────────
 void Drive::beginNoBNO() {
     Serial.begin(115200);
     delay(500);
 
     analogWriteResolution(8);
-
-    m1_ul_.begin();
-    m2_ur_.begin();
-    m3_ll_.begin();
-    m4_lr_.begin();
+    m1_ul_.begin(); m2_ur_.begin(); m3_ll_.begin(); m4_lr_.begin();
 
     m1_ul_.setPPR(475.0f);
     m2_ur_.setPPR(482.0f);
@@ -339,16 +352,37 @@ void Drive::updateNoBNO() {
     if (now - lastControl_ < kControlMs) return;
     lastControl_ = now;
 
-    updateOdometry();
+    // Odometría simple sin EKF
+    const float d1 = m1_ul_.getDistanceMeters();
+    const float d2 = m2_ur_.getDistanceMeters();
+    const float d3 = m3_ll_.getDistanceMeters();
+    const float d4 = m4_lr_.getDistanceMeters();
+
+    const float dd1 = d1 - prevD1_;
+    const float dd2 = d2 - prevD2_;
+    const float dd3 = d3 - prevD3_;
+    const float dd4 = d4 - prevD4_;
+
+    prevD1_ = d1; prevD2_ = d2;
+    prevD3_ = d3; prevD4_ = d4;
+
+    constexpr float k = 0.7071f * 0.25f;
+    const float odoX = k * (-dd1 + dd2 + dd3 - dd4);
+    const float odoY = k * ( dd1 + dd2 - dd3 - dd4);
 
     omni_.MoveXYW(vxCmd_, vyCmd_, 0.0f);
 
     if (now - lastPrint_ >= kPrintMs) {
         lastPrint_ = now;
-
-        Serial.print("odoX: ");
-        Serial.print(odoX_, 4);
-        Serial.print("  odoY: ");
-        Serial.println(odoY_, 4);
+        Serial.print("odoX: "); Serial.print(odoX, 4);
+        Serial.print("  odoY: "); Serial.println(odoY, 4);
     }
+}
+
+void Drive::setRPMs(float ul, float ur, float ll, float lr) {
+    rpmSetUL_ = ul;
+    rpmSetUR_ = ur;
+    rpmSetLL_ = ll;
+    rpmSetLR_ = lr;
+    rpmModeEnabled_ = true;
 }
