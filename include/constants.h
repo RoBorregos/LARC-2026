@@ -38,7 +38,7 @@ namespace Constants
     } // namespace DriveConstants
     namespace PID
     {
-        static constexpr float kKp = 1.1; // 4.8f;  2.5f; 1.5f
+        static constexpr float kKp = 1.15; // 4.8f;  2.5f; 1.5f
         static constexpr float kKi = 0.0f; //0.002f
         static constexpr float kKd = 0.0012f;  //0.06f; 0.0f
         static constexpr float kOmegaMax = 0.25f;
@@ -66,8 +66,8 @@ namespace Constants
 
  
         constexpr Profile Front = {
-            {850, 850, 850, 850, 850, 850, 850, 850},
-            {950, 950, 950, 950, 950, 950, 950, 950}
+            {980, 960, 960, 960, 960, 960, 960, 960},
+            {1015, 1015, 1015, 1015, 1015, 1015, 1015, 1015}
         };
 
         constexpr Profile Rear = {
@@ -93,53 +93,57 @@ namespace Constants
         // Si raw >= umbral = línea detectada (antes de aplicar inversión).
 
         // PLACEHOLDERS
-        static constexpr uint16_t kThreshFL = 120; // Front-Left
-        static constexpr uint16_t kThreshFR = 120; // Front-Right
-        static constexpr uint16_t kThreshBL = 120; // Back-Left
-        static constexpr uint16_t kThreshBR = 220; // Back-Right
+        static constexpr uint16_t kThreshFL = 112; // Front-Left
+        static constexpr uint16_t kThreshFR = 100; // Front-Right
+        static constexpr uint16_t kThreshBL = 100; // Back-Left
+        static constexpr uint16_t kThreshBR = 112; // Back-Right
+
+        static constexpr uint16_t kHysteresis = 20; // Hysteresis margin (same for all sensors)
+        static constexpr uint16_t kDebounceCount = 3; // Number of consecutive readings to confirm state change
+
     } // namespace IRCalibration
 
     namespace ServoAngles
     {
         // Intake Superior
-        static constexpr uint8_t kIntakeUpperHome   = 50;   // retractado, 
-        static constexpr uint8_t kIntakeUpperDeploy = 87;  // posición de tumble
+        static constexpr uint8_t kIntakeUpperHome   = 30;   // upright, 
+        static constexpr uint8_t kIntakeUpperDeploy = 85;  // deployed
 
         // Intake Inferior
-        static constexpr uint8_t kIntakeLowerHome   = 50;   // retractado
-        static constexpr uint8_t kIntakeLowerDeploy = 87;  // posición de tumble
+        static constexpr uint8_t kIntakeLowerHome   = 30;   // retractado
+        static constexpr uint8_t kIntakeLowerDeploy = 85;  // posición de tumble
 
-        // Compuerta Separadora
-        // Compuerta que dirige la semilla al canal correcto
-        static constexpr uint8_t kSeparatorCenter = 90;  // neutro/hold
-        static constexpr uint8_t kSeparatorLeft   = 45;  // canal izquierdo
-        static constexpr uint8_t kSeparatorRight  = 135; // canal derecho
+        // Separator
+        static constexpr uint8_t kSeparatorCenter = 90;  // neutral/hold
+        static constexpr uint8_t kSeparatorLeft   = 45;  // left channel
+        static constexpr uint8_t kSeparatorRight  = 135; // right channel
 
-        // Servo Beneficiadero Rojo
-        // Permanece cerrado hasta recibir señal
-        static constexpr uint8_t kBenefitRedClosed = 0;   // cerrado
-        static constexpr uint8_t kBenefitRedOpen   = 90;  // abierto
-
-        // Servo Beneficiadero Azul
-        // Permanece cerrado hasta recibir señal
-        static constexpr uint8_t kBenefitBlueClosed = 0;   // cerrado
-        static constexpr uint8_t kBenefitBlueOpen   = 90;  // abierto
+        // Benefits
+        static constexpr uint8_t kBenefitRed    = 0;    // right side
+        static constexpr uint8_t kBenefitCenter = 90;   // neutral
+        static constexpr uint8_t kBenefitBlue   = 180;  // left side
 
         //Servo Holder
-        // Permanece cerrado hasta recibir señal
-        static constexpr uint8_t kHolderHold = 0;   // cerrado
-        static constexpr uint8_t kHolderRelease   = 20;  // abierto
+        static constexpr uint8_t kHolderHold = 0;   // closed
+        static constexpr uint8_t kHolderRelease   = 20;  // open
 
-        // Tiempo de movimiento (ms)
-        // Ajustar si queremos que se tarde o que la respuesta sea inmediata a la señal que recibe.
-        static constexpr uint32_t kIntakeUpperMoveMs  = 80;
-        static constexpr uint32_t kIntakeLowerMoveMs  = 80;
+        // Movement time (ms)
+        // Adjust accordingly if we want to delay or have an immediate response to the signal received.
+        static constexpr uint32_t kIntakeUpperMoveMs  = 300;
+        static constexpr uint32_t kIntakeLowerMoveMs  = 300;
         static constexpr uint32_t kSeparatorMoveMs    = 300;
-        static constexpr uint32_t kBenefitRedMoveMs   = 300;
-        static constexpr uint32_t kBenefitBlueMoveMs  = 300;
+        static constexpr uint32_t kBenefitMoveMs      = 300;
         static constexpr uint32_t kHolderMoveMs       = 300;
     } // namespace ServoAngles
+     namespace ToFConfig
+    {
+        static constexpr uint16_t kTimeoutMs          = 100;
+        static constexpr uint32_t kTimingBudgetUs     = 20000;
+        static constexpr uint16_t kContinuousPeriodMs = 20;
+        static constexpr uint16_t kMuxSettleDelayMs   = 10;
+    } // namespace ToFConfig
 
 } // namespace Constants
+   
 
 #endif
