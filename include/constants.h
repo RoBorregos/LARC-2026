@@ -114,9 +114,9 @@ namespace Constants
         static constexpr uint8_t kIntakeLowerDeploy = 85;  // posición de tumble
 
         // Separator
-        static constexpr uint8_t kSeparatorCenter = 90;  // neutral/hold
-        static constexpr uint8_t kSeparatorLeft   = 45;  // left channel
-        static constexpr uint8_t kSeparatorRight  = 135; // right channel
+        static constexpr uint8_t kSeparatorCenter = 70;  // neutral/hold
+        static constexpr uint8_t kSeparatorLeft   = 100;  // left channel
+        static constexpr uint8_t kSeparatorRight  = 120; // right channel
 
         // Benefits
         static constexpr uint8_t kBenefitRed    = 0;    // right side
@@ -124,8 +124,8 @@ namespace Constants
         static constexpr uint8_t kBenefitBlue   = 180;  // left side
 
         //Servo Holder
-        static constexpr uint8_t kHolderHold = 0;   // closed
-        static constexpr uint8_t kHolderRelease   = 20;  // open
+        static constexpr uint8_t kHolderHold = 70;   // closed
+        static constexpr uint8_t kHolderRelease   = 50;  // open
 
         // Movement time (ms)
         // Adjust accordingly if we want to delay or have an immediate response to the signal received.
