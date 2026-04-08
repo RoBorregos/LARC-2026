@@ -48,22 +48,34 @@ void OmniMotors::setWheelCmd(DCMotor& m, float cmd) {
 
 }
 
+
 void OmniMotors::MoveXYW(float vx, float vy, float omega)
 {
-    // Limita omega para que siempre tenga efecto real
-    // aunque vx/vy estén al máximo
-    constexpr float kOmegaShare = 0.3f;
-    omega = constrain(omega, -kOmegaShare, +kOmegaShare);
+  
+  float m1 = vx * cosf(M1_ANGLE * DEG2RAD)
+           + vy * sinf(M1_ANGLE * DEG2RAD) 
+            + omega;
 
-    float m1 = vx * cosf(M1_ANGLE * DEG2RAD) + vy * sinf(M1_ANGLE * DEG2RAD) + omega;
-    float m2 = vx * cosf(M2_ANGLE * DEG2RAD) + vy * sinf(M2_ANGLE * DEG2RAD) + omega;
-    float m3 = vx * cosf(M3_ANGLE * DEG2RAD) + vy * sinf(M3_ANGLE * DEG2RAD) + omega;
-    float m4 = vx * cosf(M4_ANGLE * DEG2RAD) + vy * sinf(M4_ANGLE * DEG2RAD) + omega;
+           
+  float m2 = vx * cosf(M2_ANGLE * DEG2RAD)
+           + vy * sinf(M2_ANGLE * DEG2RAD)
+           + omega;
 
-    normalize4(m1, m2, m3, m4);
 
-    setWheelCmd(upper_left_,  m1);
-    setWheelCmd(upper_right_, m2);
-    setWheelCmd(lower_left_,  m3);
-    setWheelCmd(lower_right_, m4);
+  float m3 = vx * cosf(M3_ANGLE * DEG2RAD)
+           + vy * sinf(M3_ANGLE * DEG2RAD)
+           + omega;
+
+
+  float m4 = vx * cosf(M4_ANGLE * DEG2RAD)
+           + vy * sinf(M4_ANGLE * DEG2RAD)
+           + omega;
+
+
+  normalize4(m1, m2, m3, m4);
+
+  setWheelCmd(upper_left_,  m1);
+  setWheelCmd(upper_right_, m2);
+  setWheelCmd(lower_left_,  m3); // setWheelCmd(lower_right_, m3);
+  setWheelCmd(lower_right_, m4); // setWheelCmd(lower_left_,  m4);
 }
