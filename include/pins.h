@@ -124,8 +124,8 @@ namespace Pins
     const uint8_t kUpperIntakeServo = 3;
     const uint8_t kLowerIntakeServo = 4;
     const uint8_t kSeparatorServo   = 6;
-    const uint8_t kBenefitServo     = 7;
-    const uint8_t kHolderServo      = 23;
+    const uint8_t kBenefitServo     = 255;
+    const uint8_t kHolderServo      = 30;
 
 }
 
