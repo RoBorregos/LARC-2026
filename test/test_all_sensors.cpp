@@ -1,201 +1,251 @@
+// ══════════════════════════════════════════════════════════════════════
+//  FULL HARDWARE TEST — comment/uncomment sections with /* */ as needed
+// ══════════════════════════════════════════════════════════════════════
+
 #include <Arduino.h>
 #include <Wire.h>
+
+#include "constants.h"
+#include "pins.h"
+#include "mux.h"
+
+#include "subsystem/Drive/Drive.hpp"
+#include "ServoSystem.hpp"
+#include "Elevator.hpp"
 #include "TCA9548A.h"
 #include "tof.hpp"
-#include "IR.hpp"
 #include "qtr.hpp"
-#include "mux.h"
-#include "ServoSystem.hpp"
-#include "bno.hpp"
-#include "constants.h"
-#include "motors.hpp"
-#include <math.h>
-#include "PIDController.hpp"
-#include "subsystem/Drive/Drive.hpp"
+#include "IR_mux.hpp"
 
+// ══════════════════════════════════════════════════════════════════════
+//  INSTANCES
+// ══════════════════════════════════════════════════════════════════════
+
+// ── Drive (motors + BNO + encoders) ──
 Drive LARC;
 
-static constexpr float velocity = 0.40f; //velocidad a 0.30f
-
-uint32_t stateStartMs = 0;
-uint32_t clearStartMs = 0;
-
-IRLine ir(15, 14, 23, 41, 0b0000);
-
-TCA9548A mux(0x70, Wire);
-ToF tof1(5, mux, ToFType::L0X);
-ToF tof2(0, mux, ToFType::L1X);
-ToF tof3(1, mux, ToFType::L0X);
-ToF tof4(3, mux, ToFType::L0X);
-
-BNO imuBNO;
-
-Mux74HC4067 amux;
+// ── Servos ──
 ServoSystem servos;
-QTR qtr1(0, amux);
-QTR qtr2(8, amux);
 
-void setup() {
+// ── Elevator ──
+Elevator elevator;
+
+// ── I2C Mux + ToF ──
+TCA9548A i2cMux;
+ToF tof1(Pins::kToFchFR, i2cMux, ToFType::L0X);  // channel 0
+ToF tof2(Pins::kToFchFL, i2cMux, ToFType::L0X);  // channel 1
+ToF tof3(2, i2cMux, ToFType::L0X);  // channel 2
+ToF tof4(3, i2cMux, ToFType::L0X);  // channel 3
+
+// ── Analog Mux 1 (QTR) ──
+Mux74HC4067 mux1;                          // Sig = pin 24
+QTR qtrFront(Pins::kQtrFrontFirstCh, mux1); // C0..C7
+QTR qtrRear(Pins::kQtrRearFirstCh, mux1);   // C8..C15
+
+// ── Analog Mux 2 (IR) ──
+Mux74HC4067 mux2(Pins::kMuxSig2);          // Sig = pin 20, shared S0-S3
+const uint8_t irChannels[IR_mux::N] = {
+    Pins::kIrChFL, Pins::kIrChFR,
+    Pins::kIrChBL, Pins::kIrChBR
+};
+IR_mux ir(mux2, irChannels);
+
+// ── Timing ──
+uint32_t lastPrintMs = 0;
+constexpr uint32_t kPrintMs = 50;
+
+// ══════════════════════════════════════════════════════════════════════
+//  SETUP
+// ══════════════════════════════════════════════════════════════════════
+void setup()
+{
     Serial.begin(115200);
-    while (!Serial);
-    Wire.begin();
-    amux.begin(); 
-    ir.begin();
-    qtr1.begin();
-    qtr2.begin();
-    servos.begin();
+    while (!Serial && millis() < 3000) {}
+    Serial.println(F("=== FULL HARDWARE TEST ==="));
 
-      LARC.begin();
+    /* ── Drive ── */
+    LARC.begin();
     LARC.holdYaw(true);
     LARC.setTargetYaw(LARC.getYaw());
 
+    /* ── Servos ── */
+    servos.begin();
 
+    /* ── Elevator ── */
+    elevator.begin();
+    pinMode(Pins::kLimitSwitch, INPUT_PULLUP);
 
-    if (imuBNO.begin())
-        Serial.println("[OK] BNO055 ready");
-    else {
-        Serial.println("[FAIL] BNO055 not found!");
-        while (1);
-    }
-    pinMode(30, OUTPUT);
-    digitalWrite(30, HIGH);
-    delay(100);
-    Serial.print("Pin 30 reads back: ");
-    pinMode(30, INPUT);
-    Serial.println(digitalRead(30));
+    /* ── I2C Mux + ToF ── */
+    Wire.begin();
+    //i2cMux.begin();
+    tof1.begin();
+    tof2.begin();
+    tof3.begin();
+    tof4.begin();
+    tof1.setMaxRange(500);
+    tof2.setMaxRange(500);
+    tof3.setMaxRange(500);
+    tof4.setMaxRange(500);
 
-    if (!mux.begin()) {
-        Serial.println("[FAIL] TCA9548A not found!");
-        while (true);
-    }
-    Serial.println("[OK] TCA9548A found at 0x70\n");
-    mux.scanAll(); 
-    Serial.print("ToF1 init: "); Serial.println(tof1.begin() ? "OK" : "FAIL");
-Serial.print("ToF2 init: "); Serial.println(tof2.begin() ? "OK" : "FAIL");
-Serial.print("ToF3 init: "); Serial.println(tof3.begin() ? "OK" : "FAIL");
-Serial.print("ToF4 init: "); Serial.println(tof4.begin() ? "OK" : "FAIL");
+    /* ── QTR (mux1) ── */
+    qtrFront.begin();
+    qtrFront.useDefaultCalibration(0);
+    qtrRear.begin();
+    qtrRear.useDefaultCalibration(1);
+
+    /* ── IR (mux2) ── */
+    ir.begin();
+
+    Serial.println(F("=== INIT DONE ===\n"));
 }
 
+// ══════════════════════════════════════════════════════════════════════
+//  LOOP
+// ══════════════════════════════════════════════════════════════════════
 void loop()
 {
+    const uint32_t now = millis();
 
+    // ── update all sensors ──
+
+    /* ── Drive ── */
+    LARC.update();
+
+    /* ── ToF ── */
     tof1.update();
     tof2.update();
     tof3.update();
     tof4.update();
+
+    /* ── QTR ── */
+    qtrFront.update();
+    qtrRear.update();
+
+    /* ── IR ── */
     ir.update();
-    qtr1.update();
-    qtr2.update();
-    imuBNO.update();
-    LARC.update();
 
-    static enum { FWD, BWD, DONE } phase = FWD;
-    static uint32_t phaseStart = millis();
-    uint32_t now = millis();
+    // ── Print at kPrintMs rate ──
+    if (now - lastPrintMs < kPrintMs) return;
+    lastPrintMs = now;
 
-    switch (phase) {
-        case FWD:
-            LARC.forward(velocity);
-            if (now - phaseStart >= 5000) {
-                phaseStart = now;
-                phase = BWD;
-            }
-            break;
+    // ════════════════════════════════════════════════════════
+    //  1) DRIVE — yaw + commands (Drive already prints internally at 10Hz)
+    // ════════════════════════════════════════════════════════
+    /*
+    // Drive prints yaw/target/error/omega automatically in update()
+    // To test movement, uncomment one at a time:
+    // LARC.forward(0.3);
+    // LARC.backward(0.3);
+    // LARC.left(0.3);
+    // LARC.right(0.3);
+    // LARC.setTranslation(0.2, -0.3);
+    // LARC.stop();
+    */
 
-        case BWD:
-            LARC.backward(velocity);
-            if (now - phaseStart >= 5000) {
-                LARC.backward(velocity);
-                phase = DONE;
-            }
-            break;
-
-        case DONE:
-            // Robot is stopped, do nothing
-            break;
-    }
-
-
-    Serial.print("Roll: ");  Serial.print(imuBNO.getRoll());
-    Serial.print("  Pitch: "); Serial.print(imuBNO.getPitch());
-    Serial.print("  Yaw: ");  Serial.println(imuBNO.getYaw());
-
-
-
-    Serial.print("qtr1: ");
-    qtr1.debugPrint();
-    Serial.println();
-    Serial.print("qtr2: ");
-    qtr2.debugPrint();
-    amux.debugPrint();
-
-
-    // Intake Superior
-    servos.intakeUpperHome();
-    Serial.println("Intake upper home");
-    servos.intakeLowerHome();
-    Serial.println("Intake lower home");
-    servos.benefitBlueOpen();
-    Serial.println("Benefit blue open");
-    servos.separatorLeft();
-    Serial.println("Separator left");
-        delay(300);
-    servos.intakeUpperDeploy();
-    Serial.println("Intake upper deploy");
-    servos.intakeLowerDeploy();
-    Serial.println("Intake lower deploy");
-    servos. benefitRedClose();
-    Serial.println("Benefit red close");
-    servos.separatorRight();
-    Serial.println("Separator right");
-        delay(300);*/
-
-    // Separator
+    // ════════════════════════════════════════════════════════
+    //  2) SERVOS — cycle through positions
+    // ════════════════════════════════════════════════════════
+    
+    /*
+    delay(500);
     servos.separatorCenter();
-        delay(500);
-    servos.separatorLeft();
-        delay(500);
-    servos.separatorRight();
-        delay(500);
 
-    // Blue benefit
-    servos.benefitBlueOpen();
-        delay(500);
-    servos.benefitBlueClose();
-        delay(500);
+    servos.benefitRed();
+    delay(500);
+    servos.benefitCenter();
+    delay(500);
+    servos.benefitBlue();
+    delay(500);
+    servos.benefitCenter();
 
-    // Holder
-    servos.holderHold();
-        delay(500);
-    servos.holderRelease();
-        delay(500);
 
-    amux.debugPrint();
+    delay(500);
+  
+    delay(500);
+    Serial.println(F("-- SERVOS DONE --\n"));
+    */
 
-    Serial.print(" | ToF1: ");
+    // ════════════════════════════════════════════════════════
+    //  3) ELEVATOR + LIMIT SWITCH
+    // ════════════════════════════════════════════════════════
+    
+    //Serial.print(F("Limit switch: "));
+    //Serial.println(digitalRead(Pins::kLimitSwitch) == LOW ? "PRESSED" : "RELEASED");
+    // To test: uncomment one direction at a time
+    // elevator.ElevatorPosition(1);  // UP
+    // elevator.ElevatorPosition(2);  // DOWN
+    // elevator.ElevatorPosition(0);  // STOP
+    
+
+    // ════════════════════════════════════════════════════════
+    //  5) TOF SENSORS (via TCA9548A)
+    // ════════════════════════════════════════════════════════
+    /*
+    Serial.print(F("ToF ch0 (right): "));
     Serial.print(tof1.getDistanceMm());
-    Serial.println(" mm");
-
-    Serial.print(" | ToF2: ");
+    Serial.print(F(" mm  init="));
+    Serial.print(tof1.isInitialized());
+    Serial.print(F("  |  ch1 (left): "));
     Serial.print(tof2.getDistanceMm());
-    Serial.println(" mm");
-
-    Serial.print(" | ToF3: ");
+    Serial.print(F(" mm  init="));
+    Serial.print(tof2.isInitialized());
+    Serial.print(F("  |  ch2: "));
     Serial.print(tof3.getDistanceMm());
-    Serial.println(" mm");
-    
-    
-    Serial.print(" | ToF4: ");
+    Serial.print(F(" mm  init="));
+    Serial.print(tof3.isInitialized());
+    Serial.print(F("  |  ch4: "));
     Serial.print(tof4.getDistanceMm());
-    Serial.println(" mm");
+    Serial.print(F(" mm  init="));
+    Serial.println(tof4.isInitialized());*/
+    
 
-    Serial.println();
-    mux.scanAll();
-    delay(1000);
+    // ════════════════════════════════════════════════════════
+    //  6) I2C MUX SCAN (run once then comment out)
+    // ════════════════════════════════════════════════════════
+    
+    //i2cMux.scanAll();
+    //i2cMux.scanDirect();
+    
 
-    Serial.print("FL:"); Serial.print(ir.getState(IRLine::FL));
-    Serial.print(" FR:"); Serial.print(ir.getState(IRLine::FR));
-    Serial.print(" BL:"); Serial.print(ir.getState(IRLine::BL));
-    Serial.print(" BR:"); Serial.println(ir.getState(IRLine::BR));
+    // ════════════════════════════════════════════════════════
+    //  7) QTR FRONT (mux1, channels 0-7)
+    // ════════════════════════════════════════════════════════
+    
+    /*Serial.println(F("-- QTR FRONT --"));
+    qtrFront.debugPrint();
+    Serial.print(F("onLine: ")); Serial.println(qtrFront.onLine());
+    
 
+    // ════════════════════════════════════════════════════════
+    //  8) QTR REAR (mux1, channels 8-15)
+    // ════════════════════════════════════════════════════════
+    
+    Serial.println(F("-- QTR REAR --"));
+    qtrRear.debugPrint();
+    Serial.print(F("onLine: ")); Serial.println(qtrRear.onLine());*/
+    
+
+    // ════════════════════════════════════════════════════════
+    //  9) IR SENSORS (mux2, channels 10-13)
+    // ════════════════════════════════════════════════════════
+    
+    /*Serial.println(F("-- IR --"));
+    ir.debugPrint();*/
+    
+
+    // ════════════════════════════════════════════════════════
+    // 10) RAW MUX1 — all 16 channels (QTR debug)
+    // ════════════════════════════════════════════════════════
+    /*
+    Serial.print(F("MUX1: "));
+    mux1.debugPrint();
+    */
+
+    // ════════════════════════════════════════════════════════
+    // 11) RAW MUX2 — all 16 channels (IR debug)
+    // ════════════════════════════════════════════════════════
+    /*
+    Serial.print(F("MUX2: "));
+    mux2.debugPrint();
+    */
 }
