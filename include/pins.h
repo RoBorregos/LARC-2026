@@ -100,6 +100,7 @@ namespace Pins
 
     // ======== 74HC4067 Multiplexer ========
     static constexpr uint8_t kMuxSig = 24;
+    static constexpr uint8_t kMuxSig2 = 20; // Second mux SIG (IR sensors)
     static constexpr uint8_t kMuxS0  = 27;
     static constexpr uint8_t kMuxS1  = 21;
     static constexpr uint8_t kMuxS2  = 0;
@@ -112,19 +113,19 @@ namespace Pins
     static constexpr uint8_t kQtrRearFirstCh  = 8;
 
     // ======== IR Line – Channels on mux ========
-    static constexpr uint8_t kIrChFL = 13;  // Channel mux - sensor Front-Left
-    static constexpr uint8_t kIrChFR = 12;  // Channel mux - sensor Front-Right
-    static constexpr uint8_t kIrChBL = 11;  // Channel mux - sensor Back-Left
-    static constexpr uint8_t kIrChBR = 10;  // Channel mux - sensor Back-Right
+    static constexpr uint8_t kIrChFL = 10;  // Channel mux - sensor Front-Left
+    static constexpr uint8_t kIrChFR = 11;  // Channel mux - sensor Front-Right
+    static constexpr uint8_t kIrChBL = 13;  // Channel mux - sensor Back-Left
+    static constexpr uint8_t kIrChBR = 12;  // Channel mux - sensor Back-Right
 
  
 
     // ======== Intake ========
     const uint8_t kUpperIntakeServo = 3;
     const uint8_t kLowerIntakeServo = 4;
-    const uint8_t kSeparatorServo   = 255;
-    const uint8_t kBenefitServo     = 255;
-    const uint8_t kHolderServo      = 255;
+    const uint8_t kSeparatorServo   = 6;
+    const uint8_t kBenefitServo     = 7;
+    const uint8_t kHolderServo      = 23;
 
 }
 
