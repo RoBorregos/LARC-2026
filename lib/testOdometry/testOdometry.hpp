@@ -14,28 +14,23 @@ public:
     void begin();
     void update();
 
-    // movimientos de traslación
     void forward(float rpm);
     void backward(float rpm);
     void right(float rpm);
     void left(float rpm);
 
-    // detener
     void stop();
-
-    // pose / odometría
     void resetPose();
+
     float getX() const;
     float getY() const;
     float getTheta() const;
     float getThetaDeg() const;
     float getDistance() const;
 
-    // progreso por eje
-    float getForwardProgress() const;   // fabs(x)
-    float getLateralProgress() const;   // fabs(y)
+    float getForwardProgress() const;
+    float getLateralProgress() const;
 
-    // yaw
     float getYawNow() const;
     void captureCurrentYawTarget();
 
@@ -78,37 +73,23 @@ private:
 
     BNO bno_;
 
-    // pines
     uint8_t encUL_A_, encUL_B_, pwmUL_, inUL1_, inUL2_;
     uint8_t encUR_A_, encUR_B_, pwmUR_, inUR1_, inUR2_;
     uint8_t encLL_A_, encLL_B_, pwmLL_, inLL1_, inLL2_;
     uint8_t encLR_A_, encLR_B_, pwmLR_, inLR1_, inLR2_;
 
-    // motores
-    Motor UL_;
-    Motor UR_;
-    Motor LL_;
-    Motor LR_;
+    Motor UL_, UR_, LL_, LR_;
 
-    // LL especial por ticks
     volatile long ticksLL_count_;
     long prevTicksLL_;
 
-    // yaw PID
-    float yawTarget_;
-    float yawIntegral_;
-    float yawPrevErr_;
-    float yawNow_;
+    float yawTarget_, yawIntegral_, yawPrevErr_, yawNow_;
 
-    // EKF
-    float ekf_x_;
-    float ekf_y_;
-    float ekf_th_;
+    float ekf_x_, ekf_y_, ekf_th_;
     float P_[3][3];
     float Q_[3][3];
     float R_theta_;
 
-    // tiempo
     uint32_t lastCycleMs_;
 
 private:
@@ -129,7 +110,6 @@ private:
 
     void setRPMs(float ul, float ur, float ll, float lr);
 
-    // ISR
     static void isrUL_A();
     static void isrUL_B();
     static void isrUR_A();
