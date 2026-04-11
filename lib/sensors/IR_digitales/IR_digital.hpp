@@ -1,22 +1,19 @@
-#ifndef IR_DIGITAL_HPP
-#define IR_DIGITAL_HPP
-
+#pragma once
 #include <Arduino.h>
 
-class IR_digital
+class IR_mux
 {
 public:
-    static constexpr uint8_t N = 4;
-
     enum Sensor : uint8_t
     {
         FL = 0,
         FR,
         BL,
-        BR
+        BR,
+        N
     };
 
-    IR_digital(const uint8_t pins_[N], uint8_t invertedMask_ = 0);
+    IR_mux(const uint8_t pins_[N], uint8_t invertedMask_ = 0);
 
     bool begin();
     void update();
@@ -27,9 +24,9 @@ public:
 
 private:
     uint8_t pins[N];
-    bool lineState[N];
     uint8_t invertedMask;
     bool initialized;
-};
 
-#endif
+    uint16_t rawVal[N];
+    bool lineState[N];
+};
