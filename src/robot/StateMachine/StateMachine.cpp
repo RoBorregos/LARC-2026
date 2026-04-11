@@ -10,8 +10,8 @@ namespace
     static constexpr float kBaseSpeed = Constants::PID::kcurrentVelocity;
 
     // ToF thresholds (mm)
-    static constexpr uint16_t kObstacleDistanceMm = 50;
-    static constexpr uint16_t kTofValidMaxMm      = 500;
+    static constexpr uint16_t kObstacleDistanceMm = 260;
+    static constexpr uint16_t kTofValidMaxMm      = 300;
 
     static constexpr uint32_t kStartIgnoreTimeMs    = 2200;
     static constexpr uint32_t kClearDelayMs         = 800;
@@ -22,12 +22,12 @@ namespace
 
     // ========= velocidades para OdomMovement =========
     // Ajustadas pensando en tu test, donde 60 rpm sí se comporta bien.
-    static constexpr float kOdomForwardRpm     = 60.0f;
-    static constexpr float kOdomBackwardRpm    = 60.0f;
-    static constexpr float kOdomLateralRpm     = 60.0f;
-    static constexpr float kOdomCorrectionRpm  = 55.0f;
-    static constexpr float kOdomAvoidRpm       = 60.0f;
-    static constexpr float kOdomStartRpm       = 60.0f;
+    static constexpr float kOdomForwardRpm     = 70.0f;
+    static constexpr float kOdomBackwardRpm    = 70.0f;
+    static constexpr float kOdomLateralRpm     = 70.0f;
+    static constexpr float kOdomCorrectionRpm  = 70.0f;
+    static constexpr float kOdomAvoidRpm       = 70.0f;
+    static constexpr float kOdomStartRpm       = 70.0f;
 
     // ========= promedio filtrado de odometría =========
     static constexpr float kOdomAvgAlpha = 0.85f;
@@ -95,7 +95,7 @@ LARCStateMachine::LARCStateMachine()
 
 void LARCStateMachine::begin()
 {
-    currentState = STATES::POOL;
+    currentState = STATES::START;
     poolState = PoolSubState::FORWARD;
 
     state_start_time = millis();
@@ -238,7 +238,7 @@ void LARCStateMachine::update()
 
     static bool obstacleLatched = false;
     static uint32_t obstacleClearStartMs = 0;
-    static constexpr uint32_t kObstacleReleaseMs = 200;
+    static constexpr uint32_t kObstacleReleaseMs = 300;
 
     if (!obstacleLatched)
     {
@@ -538,11 +538,9 @@ void LARCStateMachine::handlePoolState(uint32_t now, bool obstacle, bool leftDet
     {
         static bool     lineCorrectionActive  = false;
         static uint32_t lineCorrectionStartMs = 0;
-        static int8_t   lineCorrectionDir     = 0;
+        static int8_t   lineCorrectionDir     = 0;   // -1 = left, +1 = right
 
-        static constexpr uint32_t kLineCorrectionMs  = 120;
-        static constexpr float    kForwardAvgTargetM = 0.50f;
-        static constexpr float    kForwardTolM       = 0.03f;
+        static constexpr uint32_t kLineCorrectionMs = 120;
 
         if (lineCorrectionActive)
         {
@@ -552,73 +550,57 @@ void LARCStateMachine::handlePoolState(uint32_t now, bool obstacle, bool leftDet
                     odomMove_.left(kOdomCorrectionRpm);
                 else
                     odomMove_.right(kOdomCorrectionRpm);
-                return;
+
+                break; // mientras corrige línea, no mete lógica de obstáculo
             }
 
             lineCorrectionActive  = false;
             lineCorrectionStartMs = 0;
             lineCorrectionDir     = 0;
-
-            odomMove_.stop();
-            odomMove_.resetPose();
-            odomMove_.captureCurrentYawTarget();
-            resetOdomAverages();
         }
 
-        // prioridad sensor obstáculo
         if (obstacle)
         {
             noObstacleStartMs = 0;
             setPoolState(PoolSubState::AVOID_LEFT);
-            return;
         }
-
-        // prioridad corrección lateral por sensores
-        if (rightDetected)
+        else
         {
-            lineCorrectionActive  = true;
-            lineCorrectionStartMs = now;
-            lineCorrectionDir     = -1;
-            odomMove_.left(kOdomCorrectionRpm);
-            return;
+            if (noObstacleStartMs == 0)
+            {
+                noObstacleStartMs = now;
+            }
+
+            if (rightDetected)
+            {
+                lineCorrectionActive  = true;
+                lineCorrectionStartMs = now;
+                lineCorrectionDir     = -1; // detecta derecha -> corrige izquierda
+                odomMove_.left(kOdomCorrectionRpm);
+                break;
+            }
+            else if (leftDetected)
+            {
+                lineCorrectionActive  = true;
+                lineCorrectionStartMs = now;
+                lineCorrectionDir     = +1; // detecta izquierda -> corrige derecha
+                odomMove_.right(kOdomCorrectionRpm);
+                break;
+            }
+
+            // mismo papel que el avance original, pero usando odometría
+            odomMove_.forward(kOdomForwardRpm);
+
+            if ((now - noObstacleStartMs) >= kNoObstacleToCornerMs)
+            {
+                setState(STATES::LOOKFORLINE);
+            }
         }
-        else if (leftDetected)
-        {
-            lineCorrectionActive  = true;
-            lineCorrectionStartMs = now;
-            lineCorrectionDir     = +1;
-            odomMove_.right(kOdomCorrectionRpm);
-            return;
-        }
-
-        // movimiento principal con odometría, como el test
-        odomMove_.forward(kOdomForwardRpm);
-
-        // respaldo odométrico
-        if (gAvgForwardProgress >= (kForwardAvgTargetM - kForwardTolM))
-        {
-            setState(STATES::LOOKFORLINE);
-            return;
-        }
-
-        // respaldo temporal
-        if (noObstacleStartMs == 0)
-            noObstacleStartMs = now;
-
-        if ((now - noObstacleStartMs) >= kNoObstacleToCornerMs)
-        {
-            setState(STATES::LOOKFORLINE);
-            return;
-        }
-
         break;
     }
 
     case PoolSubState::AVOID_LEFT:
     {
-        static constexpr float kAvoidLatTargetM = 0.22f;
-        static constexpr float kAvoidLatTolM    = 0.02f;
-
         odomMove_.left(kOdomAvoidRpm);
 
         const bool canChangeSide = (now - poolStateStartMs) >= kMinAvoidTimeMs;
@@ -633,36 +615,27 @@ void LARCStateMachine::handlePoolState(uint32_t now, bool obstacle, bool leftDet
                 clearStartMs = 0;
                 sideDetectStartMs = 0;
                 setPoolState(PoolSubState::AVOID_RIGHT);
-                return;
             }
         }
         else
         {
             sideDetectStartMs = 0;
-        }
 
-        if (gAvgLateralProgress >= (kAvoidLatTargetM - kAvoidLatTolM) && !obstacle)
-        {
-            noObstacleStartMs = 0;
-            setPoolState(PoolSubState::FORWARD);
-            return;
-        }
-
-        if (!obstacle)
-        {
-            if (clearStartMs == 0)
-                clearStartMs = now;
-
-            if ((now - clearStartMs) >= kClearDelayMs)
+            if (!obstacle)
             {
-                noObstacleStartMs = 0;
-                setPoolState(PoolSubState::FORWARD);
-                return;
+                if (clearStartMs == 0)
+                    clearStartMs = now;
+
+                if ((now - clearStartMs) >= kClearDelayMs)
+                {
+                    noObstacleStartMs = 0;
+                    setPoolState(PoolSubState::FORWARD);
+                }
             }
-        }
-        else
-        {
-            clearStartMs = 0;
+            else
+            {
+                clearStartMs = 0;
+            }
         }
 
         break;
@@ -670,9 +643,6 @@ void LARCStateMachine::handlePoolState(uint32_t now, bool obstacle, bool leftDet
 
     case PoolSubState::AVOID_RIGHT:
     {
-        static constexpr float kAvoidLatTargetM = 0.22f;
-        static constexpr float kAvoidLatTolM    = 0.02f;
-
         odomMove_.right(kOdomAvoidRpm);
 
         const bool canChangeSide = (now - poolStateStartMs) >= kMinAvoidTimeMs;
@@ -687,36 +657,27 @@ void LARCStateMachine::handlePoolState(uint32_t now, bool obstacle, bool leftDet
                 clearStartMs = 0;
                 sideDetectStartMs = 0;
                 setPoolState(PoolSubState::AVOID_LEFT);
-                return;
             }
         }
         else
         {
             sideDetectStartMs = 0;
-        }
 
-        if (gAvgLateralProgress >= (kAvoidLatTargetM - kAvoidLatTolM) && !obstacle)
-        {
-            noObstacleStartMs = 0;
-            setPoolState(PoolSubState::FORWARD);
-            return;
-        }
-
-        if (!obstacle)
-        {
-            if (clearStartMs == 0)
-                clearStartMs = now;
-
-            if ((now - clearStartMs) >= kClearDelayMs)
+            if (!obstacle)
             {
-                noObstacleStartMs = 0;
-                setPoolState(PoolSubState::FORWARD);
-                return;
+                if (clearStartMs == 0)
+                    clearStartMs = now;
+
+                if ((now - clearStartMs) >= kClearDelayMs)
+                {
+                    noObstacleStartMs = 0;
+                    setPoolState(PoolSubState::FORWARD);
+                }
             }
-        }
-        else
-        {
-            clearStartMs = 0;
+            else
+            {
+                clearStartMs = 0;
+            }
         }
 
         break;
