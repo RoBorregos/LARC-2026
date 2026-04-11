@@ -4,6 +4,7 @@
 #include <Arduino.h>
 #include "constants.h"
 #include "pins.h"
+#include "testOdometry.hpp"
 enum class STATES
 {
     START,
@@ -35,6 +36,10 @@ public:
     void update();
 
 private:
+
+    float stateX0_ = 0.0f;
+    float stateY0_ = 0.0f;
+    float stateTh0_ = 0.0f;
     STATES currentState = STATES::START;
     PoolSubState poolState = PoolSubState::FORWARD;
 
@@ -64,6 +69,9 @@ private:
     uint32_t lfCorrectionStartMs = 0;
     uint32_t lfLeftHoldMs        = 0;  
     uint32_t lfRightHoldMs       = 0;  
+
+    // Odometry
+    OdomMovement odomMove_;
 
     // Set states
     void setState(STATES newState);
