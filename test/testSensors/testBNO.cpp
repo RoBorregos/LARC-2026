@@ -13,7 +13,6 @@ void setup() {
   //motors.holdYaw(false); //"true" to initialize PID
 
   BNO1.begin();           // inicializa el BNO
-  BNO1.runCalibration();  // corre tu test/calibración
 }
 
 void loop() {
