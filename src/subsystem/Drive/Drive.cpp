@@ -73,7 +73,7 @@ void Drive::update() {
       while (err >  M_PI) err -= 2.0f * M_PI;
       while (err < -M_PI) err += 2.0f * M_PI;
 
-      Serial.print(now);
+      /*Serial.print(now);
       Serial.print("\t");
       Serial.print("YAW: ");
       Serial.print(rad2deg(yaw), 2);
@@ -91,7 +91,7 @@ void Drive::update() {
       Serial.print(vxCmd_, 2);
       Serial.print("\t");
       Serial.print("vyCmd");
-      Serial.println(vyCmd_, 2);
+      Serial.println(vyCmd_, 2);*/
     }
   }
 }
