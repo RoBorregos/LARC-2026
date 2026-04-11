@@ -5,132 +5,124 @@
 
 namespace Pins
 {
-
-    // ======== Chassis Motors ========
+    // =========================================================
+    // CHASSIS MOTORS
+    // =========================================================
     constexpr uint8_t kPwmPin[4] = {
         10, // PWM1 UPPER LEFT MOTOR
         2,  // PWM2 UPPER RIGHT MOTOR
         29, // PWM3 BOTTOM LEFT MOTOR
-        5,  // PWM4 BOTTOM RIGHT MOTOR
+        5   // PWM4 BOTTOM RIGHT MOTOR
     };
 
     constexpr uint8_t kUpperMotors[4] = {
         12, // IN1.1 UPPER LEFT MOTOR    m1
         11, // IN1.2 UPPER LEFT MOTOR    m1
         38, // IN2.1 UPPER RIGHT MOTOR   m2
-        37, // IN2.2 UPPER RIGHT MOTOR   m2
+        37  // IN2.2 UPPER RIGHT MOTOR   m2
     };
 
     constexpr uint8_t kLowerMotors[4] = {
-        32, // IN3.1 LOWER LEFT MOTOR   m3
-        31, // IN3.2 LOWER LEFT MOTOR   m3
-        26, // IN4.1 LOWER RIGHT MOTOR  m4    486
-        9   // IN4.2 LOWER RIGHT MOTOR  m4
+        32, // IN3.1 LOWER LEFT MOTOR    m3
+        31, // IN3.2 LOWER LEFT MOTOR    m3
+        26, // IN4.1 LOWER RIGHT MOTOR   m4
+        9   // IN4.2 LOWER RIGHT MOTOR   m4
     };
 
-    constexpr uint8_t kEncoders[8]{
-        40, // ENC1B  0
-        39, // ENC1A  1
-        15, // ENC2A  2
-        14, // ENC2B  3
-        41, // ENC3A  4
-        13, // ENC3B  5
-        17, // ENC4A  6
-        16  // ENC4B  7
+    // =========================================================
+    // ENCODERS
+    // kEncoders = {B1, A1, A2, B2, A3, B3, A4, B4}
+    // =========================================================
+    constexpr uint8_t kEncoders[8] = {
+        40, // ENC1B
+        39, // ENC1A
+        15, // ENC2A
+        14, // ENC2B
+        41, // ENC3A
+        13, // ENC3B
+        17, // ENC4A
+        16  // ENC4B
     };
 
-    // =======Line Sensor=======
-    constexpr uint8_t kQTR1[8]{
-        44, // ENC1B
-        49, // ENC1A
-        25, // ENC2A
-        24, // ENC2B
-        51, // ENC3A
-        33, // ENC3B
-        27, // ENC4A
-        26  // ENC4B
-    };
+    // =========================================================
+    // ELEVATOR
+    // =========================================================
+    constexpr uint8_t kElevatorINA1 = 8;   // IN1_MDC
+    constexpr uint8_t kElevatorINA2 = 1;   // IN2_MDC
+    constexpr uint8_t kElevatorPWM  = 22;  // PWM_DC
 
-    constexpr uint8_t kQTR2[8]{
-        50, // ENC1B
-        49, // ENC1A
-        55, // ENC2A
-        64, // ENC2B
-        31, // ENC3A
-        73, // ENC3B
-        97, // ENC4A
-        26  // ENC4B
-    };
+    // =========================================================
+    // LIMIT SWITCH
+    // =========================================================
+    constexpr uint8_t kLimitSwitch = 28;
 
-    // ======== Distance Sensors========
+    // =========================================================
+    // 74HC4067 MULTIPLEXERS
+    // shared S0-S3, different SIG
+    // =========================================================
+    static constexpr uint8_t kMuxSig  = 24; // Sig mux QTR
+    static constexpr uint8_t kMuxSig2 = 20; // Sig2 otro mux IRs
 
+    static constexpr uint8_t kMuxS0 = 27; // S0
+    static constexpr uint8_t kMuxS1 = 21; // S1
+    static constexpr uint8_t kMuxS2 = 0;  // S2
+    static constexpr uint8_t kMuxS3 = 25; // S3
+
+    // =========================================================
+    // QTR ARRAYS ON MUX1
+    // =========================================================
+    static constexpr uint8_t kQtrFrontFirstCh = 0; // C0..C7
+    static constexpr uint8_t kQtrRearFirstCh  = 8; // C8..C15
+
+    // =========================================================
+    // IR SENSORS ON MUX2
+    // =========================================================
+     static constexpr uint8_t kIrChFL = 34;
+    static constexpr uint8_t kIrChFR = 36;
+    static constexpr uint8_t kIrChBL = 33;
+    static constexpr uint8_t kIrChBR = 35;
+
+    // =========================================================
+    // TOF SENSORS ON I2C MUX
+    // =========================================================
+    static constexpr uint8_t kToFchFR = 0; // Front Right
+    static constexpr uint8_t kToFchFL = 1; // Front Left
+    static constexpr uint8_t kToFchBL = 2; // Back Left / placeholder
+    static constexpr uint8_t kToFchBR = 3; // Back Right / placeholder
+
+    // =========================================================
+    // SERVOS
+    // =========================================================
+    constexpr uint8_t kServo1 = 3;
+    constexpr uint8_t kServo2 = 4;
+    constexpr uint8_t kServo3 = 6;
+    constexpr uint8_t kServo4 = 30;
+    constexpr uint8_t kServo5 = 23;
+    constexpr uint8_t kServo6 = 7;
+
+    // Project-specific aliases
+    constexpr uint8_t kUpperIntakeServo = kServo1;
+    constexpr uint8_t kLowerIntakeServo = kServo2;
+    constexpr uint8_t kSeparatorServo   = kServo3;
+    constexpr uint8_t kRedBenefitServo  = kServo4;
+    constexpr uint8_t kBlueBenefitServo = kServo5;
+    constexpr uint8_t kHolderServo      = kServo6;
+
+    // =========================================================
+    // OPTIONAL / LEGACY ULTRASONICS
+    // =========================================================
     constexpr uint8_t kDistanceSensors[4][2] = {
-        {36, 34}, // FRONT LEFT {TRIG, ECHO}
-        {35, 33}, // FRONT RIGHT {TRIG, ECHO}
-        {37, 32}, // BACK RIGHT {TRIG, ECHO}     >>>    nuevos
-        {31, 34}, // BACK LEFt {TRIG, ECHO}
+        {35, 33},     // FRONT LEFT  {TRIG, ECHO}
+        {36, 34},     // FRONT RIGHT {TRIG, ECHO}
+        {255, 255},   // BACK RIGHT not confirmed
+        {255, 255}    // BACK LEFT  not confirmed
     };
 
-    // ======== Line Sensors ========
-
-    static constexpr uint8_t kLineSensorFL = 28;
-    static constexpr uint8_t kLineSensorFC = 0;
-    static constexpr uint8_t kLineSensorFR = 27;
-    static constexpr uint8_t kLineSensorBL = 21;
-    static constexpr uint8_t kLineSensorBR = 20;
-
-    // ======== Sorter ========
-
-    // NOT READY
-    constexpr uint8_t kSorterStepPin = 7;
-    constexpr uint8_t kSorterDirPin = 23;
-
-    // ========= Elevator =======
-
-    constexpr uint8_t kElevatorINA1 = 1;
-    constexpr uint8_t kElevatorINA2 = 8;
-    constexpr uint8_t kElevatorPWM = 22;
-
-    // ====== LED =====
-    //const uint8_t kLed1 = 6; // Esta para el limit switch
-    const uint8_t kLed2 = 10;
-
-    // ======== 74HC4067 Multiplexer ========
-    // NOTE: Valores TEMPORALES. Confirmar con el equipo antes de soldar.
-    static constexpr uint8_t kMuxSig = 24; // SIG → pin analógico
-    static constexpr uint8_t kMuxS0  = 27;
-    static constexpr uint8_t kMuxS1  = 21;
-    static constexpr uint8_t kMuxS2  = 0;
-    static constexpr uint8_t kMuxS3  = 25;
-
-    // ======== QTR – Canales en el mux ========
-    // Primer canal del arreglo frontal (C0..C7)
-    static constexpr uint8_t kQtrFrontFirstCh = 0;
-    // Primer canal del arreglo trasero (C8..C15)
-    static constexpr uint8_t kQtrRearFirstCh  = 8;
-
-    // ======== IR Line – Canales en el mux ========
-    // ← Modificar estos valores para reasignar los canales físicos del mux
-    static constexpr uint8_t kIrChFL = 13;  // Canal mux - sensor Front-Left
-    static constexpr uint8_t kIrChFR = 12;  // Canal mux - sensor Front-Right
-    static constexpr uint8_t kIrChBL = 11;  // Canal mux - sensor Back-Left
-    static constexpr uint8_t kIrChBR = 10;  // Canal mux - sensor Back-Right
-
-    // ======== Intake ========
-    const uint8_t kUpperIntakeServo = 3;
-    const uint8_t kLowerIntakeServo = 4;
-    const uint8_t kSeparatorServo   = 255;
-    const uint8_t kRedBenefitServo  = 255;
-    const uint8_t kBlueBenefitServo  = 255;
-    const uint8_t kHolderServo      = 255;
-
-    // ======== Limit Swicth ========
-    const uint8_t kLimitSwitch = 30;
-
-    // ======== BT module ======== (you don't need it)
-    constexpr uint8_t kBluetoothRx = 7;
-    constexpr uint8_t kBluetoothTx = 8;
-
+    // =========================================================
+    // OPTIONAL / LEGACY
+    // =========================================================
+    // constexpr uint8_t kBluetoothRx = 7;
+    // constexpr uint8_t kBluetoothTx = 8;
 }
 
 #endif
