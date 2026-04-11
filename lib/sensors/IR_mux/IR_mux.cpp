@@ -4,7 +4,7 @@
  *
  * @brief Implementation of the IR sensors using analog read with thresholds and per-sensor inversion.
  *        Through a 74HC4067.
- */
+ 
 
 #include "IR_mux.hpp"
 #include "constants.h"
@@ -142,3 +142,4 @@ void IR_mux::debugPrint() const
     }
     Serial.println();
 }
+    */
