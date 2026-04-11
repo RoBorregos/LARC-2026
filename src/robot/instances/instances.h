@@ -5,7 +5,7 @@
 #include "pins.h"
 #include "constants.h"
 //Sensors
-#include "IR_mux/IR_mux.hpp"
+#include "IR_digitales/IR_digital.hpp"
 #include "mux.h"
 #include "qtr.hpp"
 #include "ultrasonic/ultrasonic.hpp"
@@ -29,6 +29,8 @@ extern IR_mux ir;
 extern Ultrasonic us1;
 extern Ultrasonic us2;
 extern QTR qtrFront;
+extern QTR qtrRear;
+
 
 extern PIDController linePID;
 
