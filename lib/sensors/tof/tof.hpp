@@ -49,6 +49,14 @@ public:
     void startContinuous(uint16_t periodMs = Constants::ToFConfig::kContinuousPeriodMs);
     void stopContinuous();
 
+    bool isValid() const { 
+    return initialized && distanceMm != INVALID_MM; 
+    }
+
+    float getDistanceCm() const { 
+    return isValid() ? distanceMm / 10.0f : -1.0f; 
+    }
+
 private:
     VL53L0X  sensorL0X;
     VL53L1X  sensorL1X;
