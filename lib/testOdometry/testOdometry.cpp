@@ -471,3 +471,18 @@ float OdomMovement::getYawNow() const
 {
     return yawNow_;
 }
+
+// qtr correction
+void OdomMovement::setTranslation(float vx_rpm, float vy_rpm)
+{
+    // Cinemática inversa mecanum:
+    // UL = +vy +vx   (diagonal izquierda superior)
+    // UR = +vy -vx   (diagonal derecha superior)
+    // LL = +vy -vx   (diagonal izquierda inferior)
+    // LR = +vy +vx   (diagonal derecha inferior)
+    float ul = +vy_rpm + vx_rpm;
+    float ur = +vy_rpm - vx_rpm;
+    float ll = +vy_rpm - vx_rpm;
+    float lr = +vy_rpm + vx_rpm;
+    setRPMs(ul, ur, ll, lr);
+}

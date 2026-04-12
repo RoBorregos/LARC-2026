@@ -40,6 +40,10 @@ public:
     float getRpmLL() const { return lastRpmLL_; }
     float getRpmLR() const { return lastRpmLR_; }
 
+    // qtr correction
+    void setTranslation(float vx_rpm, float vy_rpm);
+
+
 private:
     static constexpr uint8_t FILTER_SIZE = 8;
 
@@ -48,7 +52,7 @@ private:
     static constexpr float kInvSqrt2    = 0.70710678f;
     static constexpr float kOdomScale   = 2.57f;
     static constexpr float kPwmDeadband = 60.0f;
-    static constexpr float kPwmMax      = 120.0f;
+    static constexpr float kPwmMax      = 150.0f;
 
     static constexpr float kKp = 1.5f;
     static constexpr float kKi = 1.2f;
