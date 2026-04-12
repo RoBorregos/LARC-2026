@@ -84,8 +84,7 @@ LARCStateMachine::LARCStateMachine()
 
 void LARCStateMachine::begin()
 {
-    odomMove_.update();
-
+    
     currentState = STATES::POOL; // siempre en START
     poolState = PoolSubState::FORWARD;
 
@@ -131,7 +130,7 @@ void LARCStateMachine::begin()
 
 void LARCStateMachine::update()
 {
-    LARC.update();
+    //LARC.update();
     ir.update();
     //us1.update();
     //us2.update();
@@ -139,6 +138,7 @@ void LARCStateMachine::update()
     vision.update(); // Vision
     tofLeft.update();
     tofRight.update();
+    odomMove_.update();
 
     const uint32_t now = millis();
     startStateTime();
@@ -154,7 +154,7 @@ void LARCStateMachine::update()
     const bool BR = ir.getState(IR_mux::BR);
 
     //Print to debug
-    ir.debugPrint();
+    //ir.debugPrint();
     //qtrFront.debugPrint();
     //Serial.print("linePos: ");
     //Serial.println(linePos); // To know the value for the center of the qtr
@@ -163,7 +163,16 @@ void LARCStateMachine::update()
     if ((now - debugPrintMs) >= 100)
     {
     debugPrintMs = now;
-
+    
+    // Odometría
+    Serial.print(F(" | X:"));    Serial.print(odomMove_.getX(),   3);
+    Serial.print(F(" Y:"));      Serial.print(odomMove_.getY(),   3);
+    Serial.print(F(" Yaw:"));    Serial.print(odomMove_.getThetaDeg(), 1);
+    Serial.print(F(" UL:"));     Serial.print(odomMove_.getRpmUL(), 0);
+    Serial.print(F(" UR:"));     Serial.print(odomMove_.getRpmUR(), 0);
+    Serial.print(F(" LL:"));     Serial.print(odomMove_.getRpmLL(), 0);
+    Serial.print(F(" LR:"));     Serial.print(odomMove_.getRpmLR(), 0);
+    
     // Estado actual
     Serial.print(F("ST:")); Serial.print((int)currentState);
     Serial.print(F(" PS:")); Serial.print((int)poolState);
@@ -508,15 +517,20 @@ void LARCStateMachine::handlePoolState(uint32_t now, bool obstacle, bool leftDet
 
     static constexpr uint32_t kLineCorrectionMs    = 120;
     static constexpr float    kLineCorrectionSpeed = 0.48f;
+    static constexpr float    kNormalSpeed = 50.0f; // velocidad que se usa
+
 
     if (lineCorrectionActive)
     {
         if ((now - lineCorrectionStartMs) < kLineCorrectionMs)
         {
             if (lineCorrectionDir < 0)
-                LARC.left(kLineCorrectionSpeed);
+                odomMove_.left(kNormalSpeed);
+
+                //LARC.left(kLineCorrectionSpeed);
             else
-                LARC.right(kLineCorrectionSpeed);
+                odomMove_.right(kNormalSpeed);
+                //LARC.right(kLineCorrectionSpeed);
 
             break; // mientras corrige linea, no mete logica de obstaculo
         }
@@ -543,7 +557,7 @@ void LARCStateMachine::handlePoolState(uint32_t now, bool obstacle, bool leftDet
             lineCorrectionActive  = true;
             lineCorrectionStartMs = now;
             lineCorrectionDir     = -1; // detecta derecha -> corrige izquierda
-            LARC.left(kLineCorrectionSpeed);
+            odomMove_.left(kNormalSpeed);
             break;
         }
         else if (leftDetected)
@@ -551,12 +565,13 @@ void LARCStateMachine::handlePoolState(uint32_t now, bool obstacle, bool leftDet
             lineCorrectionActive  = true;
             lineCorrectionStartMs = now;
             lineCorrectionDir     = +1; // detecta izquierda -> corrige derecha
-            LARC.right(kLineCorrectionSpeed);
+            odomMove_.right(kNormalSpeed);
             break;
         }
 
-        LARC.setTranslation(0.48f, 0.08);
-        //  LARC.forward(kVelocity);
+        odomMove_.forward(kNormalSpeed);
+        //LARC.setTranslation(0.48f, 0.08);
+        //LARC.forward(kVelocity);
 
         if ((now - noObstacleStartMs) >= kNoObstacleToCornerMs)
         {
@@ -568,7 +583,8 @@ void LARCStateMachine::handlePoolState(uint32_t now, bool obstacle, bool leftDet
 
     case PoolSubState::AVOID_LEFT:
     {
-        LARC.left(0.48f);
+        odomMove_.left(50.0f);
+        //LARC.left(0.48f);
 
         const bool canChangeSide = (now - poolStateStartMs) >= kMinAvoidTimeMs;
 
@@ -610,7 +626,8 @@ void LARCStateMachine::handlePoolState(uint32_t now, bool obstacle, bool leftDet
 
     case PoolSubState::AVOID_RIGHT:
     {
-        LARC.right(kVelocity);
+        odomMove_.right(50.0f);
+        //LARC.right(kVelocity);
 
         const bool canChangeSide = (now - poolStateStartMs) >= kMinAvoidTimeMs;
 
@@ -651,6 +668,9 @@ void LARCStateMachine::handlePoolState(uint32_t now, bool obstacle, bool leftDet
     }
     }
 }
+
+
+
 
 // qtr
 uint32_t lineDetectStartMs = 0;

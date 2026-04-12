@@ -34,6 +34,12 @@ public:
     float getYawNow() const;
     void captureCurrentYawTarget();
 
+    //Odometry
+    float getRpmUL() const { return lastRpmUL_; }
+    float getRpmUR() const { return lastRpmUR_; }
+    float getRpmLL() const { return lastRpmLL_; }
+    float getRpmLR() const { return lastRpmLR_; }
+
 private:
     static constexpr uint8_t FILTER_SIZE = 8;
 
@@ -66,9 +72,10 @@ private:
         float integral;
         float last_error;
         bool inverted;
+
+        
     };
 
-private:
     static OdomMovement* instance_;
 
     BNO bno_;
@@ -92,7 +99,6 @@ private:
 
     uint32_t lastCycleMs_;
 
-private:
     static float wrapPi(float a);
     static void pushPeriod(Motor& m, unsigned long p);
 
@@ -117,4 +123,11 @@ private:
     static void isrLR_A();
     static void isrLR_B();
     static void isrLL();
+
+    //Odometry
+    float lastRpmUL_ = 0.0f;
+    float lastRpmUR_ = 0.0f;
+    float lastRpmLL_ = 0.0f;
+    float lastRpmLR_ = 0.0f;
+
 };

@@ -409,6 +409,12 @@ void OdomMovement::update()
     float rpmLL = measureRPM_LL(dt);
     float rpmLR = measureRPM(LR_);
 
+    // ← AGREGAR ESTAS 4 LÍNEAS
+    lastRpmUL_ = rpmUL;
+    lastRpmUR_ = rpmUR;
+    lastRpmLL_ = rpmLL;
+    lastRpmLR_ = rpmLR;
+
     bno_.update();
     yawNow_ = bno_.getYaw();
     float omega = yawPidStep(yawNow_, dt);
