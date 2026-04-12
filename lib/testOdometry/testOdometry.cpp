@@ -367,25 +367,21 @@ void OdomMovement::captureCurrentYawTarget()
 
 void OdomMovement::forward(float rpm)
 {
-    captureCurrentYawTarget();
     setRPMs(+rpm, +rpm, +rpm, +rpm);
 }
 
 void OdomMovement::backward(float rpm)
 {
-    captureCurrentYawTarget();
     setRPMs(-rpm, -rpm, -rpm, -rpm);
 }
 
 void OdomMovement::right(float rpm)
 {
-    captureCurrentYawTarget();
     setRPMs(+rpm, -rpm, -rpm, +rpm);
 }
 
 void OdomMovement::left(float rpm)
 {
-    captureCurrentYawTarget();
     setRPMs(-rpm, +rpm, +rpm, -rpm);
 }
 
