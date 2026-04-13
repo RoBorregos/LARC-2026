@@ -16,41 +16,40 @@ namespace Constants
 {
     namespace SystemConstants
     {
-        constexpr float kUpdateInterval = 20.0;
-    } // namespace SystemConstants
+        constexpr float kUpdateInterval = 20.0; // ms between main loop updates
+    }
 
     namespace Kinematics
     {
-        // "omni_motors" class
-        constexpr float M1_ANGLE = 135.0f;  // M1     UL
-        constexpr float M2_ANGLE = 45.0f;   // M2     UR
-        constexpr float M3_ANGLE = -135.0f; // M3     LL
-        constexpr float M4_ANGLE = -45.0f;  // M4     LR
-    } // namespace Kinematics
+        constexpr float M1_ANGLE = 135.0f;  // Upper Left motor angle
+        constexpr float M2_ANGLE = 45.0f;   // Upper Right motor angle
+        constexpr float M3_ANGLE = -135.0f; // Lower Left motor angle
+        constexpr float M4_ANGLE = -45.0f;  // Lower Right motor angle
+    }
 
     namespace DriveConstants
     {
         static constexpr float kDEG2RAD = PI / 180.0f;
-
-        constexpr float kWheelDiameter = 0.109f;
-        constexpr float kWheelRaius = kWheelDiameter / 2.0;
+        constexpr float kWheelDiameter      = 0.109f;
+        constexpr float kWheelRaius         = kWheelDiameter / 2.0;
         constexpr float kWheelCircumference = 2 * M_PI * kWheelRaius;
-    } // namespace DriveConstants
+    }
+
     namespace PID
     {
-        static constexpr float kKp = 1.15; // 4.8f;  2.5f; 1.5f
-        static constexpr float kKi = 0.0f; //0.002f
-        static constexpr float kKd = 0.0012f;  //0.06f; 0.0f
+        static constexpr float kKp = 1.15;
+        static constexpr float kKi = 0.0f;
+        static constexpr float kKd = 0.0012f;
         static constexpr float kOmegaMax = 0.25f;
-        static constexpr float kcurrentVelocity = 0.42f; //Velocity according to PID
+        static constexpr float kcurrentVelocity = 0.42f;
+    }
 
-    } // namespace PID
-     namespace UltrasonicConstants
+    namespace UltrasonicConstants
     {
-        static constexpr uint32_t kPingPeriodMs  = 50;    // ms entre pings
-        static constexpr uint32_t kTrigHighUs    = 10;    // µs que el trigger está en HIGH
-        static constexpr uint32_t kEchoTimeoutUs = 25000; // µs (~4 m máx)
-    } // namespace UltrasonicConstants
+        static constexpr uint32_t kPingPeriodMs  = 50;    // ms between pings
+        static constexpr uint32_t kTrigHighUs    = 10;    // trigger pulse width (µs)
+        static constexpr uint32_t kEchoTimeoutUs = 25000; // max echo wait (~4 m)
+    }
 
     namespace QTRCalibration
     {
@@ -62,9 +61,6 @@ namespace Constants
             uint16_t max[kNumSensors];
         };
 
-        // PLACEHOLDERS
-
- 
         constexpr Profile Front = {
             {980, 960, 960, 960, 960, 960, 960, 960},
             {1015, 1015, 1015, 1015, 1015, 1015, 1015, 1015}
@@ -75,75 +71,87 @@ namespace Constants
             {3100, 3200, 3050, 3300, 3350, 3250, 3150, 3000}
         };
 
-        constexpr uint16_t kBinaryThreshold = 600; // 0-1000 normalized, tune this one value
-
-    } // namespace QTRCalibration
-
-    namespace LineFollower 
-    
-    {
-    constexpr int kSetpoint = 3500;   // center of 0-7000 range
-    // change to 4000, 2000, etc. as needed
+        constexpr uint16_t kBinaryThreshold = 600; // 0-1000 normalized
     }
 
+    namespace LineFollower
+    {
+        constexpr int kSetpoint = 3500; // center of 0-7000 range
+    }
 
     namespace IRCalibration
     {
-        // Umbrales analógicos por sensor (0..1023).
-        // Si raw >= umbral = línea detectada (antes de aplicar inversión).
-
-        // PLACEHOLDERS
-        static constexpr uint16_t kThreshFL = 112; // Front-Left
-        static constexpr uint16_t kThreshFR = 100; // Front-Right
-        static constexpr uint16_t kThreshBL = 100; // Back-Left
-        static constexpr uint16_t kThreshBR = 112; // Back-Right
-
-        static constexpr uint16_t kHysteresis = 20; // Hysteresis margin (same for all sensors)
-        static constexpr uint16_t kDebounceCount = 3; // Number of consecutive readings to confirm state change
-
-    } // namespace IRCalibration
+        static constexpr uint16_t kThreshFL = 112;
+        static constexpr uint16_t kThreshFR = 100;
+        static constexpr uint16_t kThreshBL = 100;
+        static constexpr uint16_t kThreshBR = 112;
+        static constexpr uint16_t kHysteresis    = 20;
+        static constexpr uint16_t kDebounceCount = 3;
+    }
 
     namespace ServoAngles
     {
-        // Intake Superior
-        static constexpr uint8_t kIntakeUpperHome   = 30;   // upright, 
-        static constexpr uint8_t kIntakeUpperDeploy = 85;  // deployed
+        // ── Startup ramp ────────────────────────────────────────
+        // Speed (deg/s) for the blocking ramp in begin()
+        static constexpr float kStartupSpeed = 70.0f;
 
-        // Intake Inferior
-        static constexpr uint8_t kIntakeLowerHome   = 30;   // retractado
-        static constexpr uint8_t kIntakeLowerDeploy = 85;  // posición de tumble
+        // Where attach() physically puts each servo (measure per servo)
+        static constexpr uint8_t kMechStartIntakeUpper = 154;
+        static constexpr uint8_t kMechStartIntakeLower = 160;
+        static constexpr uint8_t kMechStartSeparator   = 90;
+        static constexpr uint8_t kMechStartBenefit     = 90;
+        static constexpr uint8_t kMechStartHolder      = 90;
 
-        // Separator
-        static constexpr uint8_t kSeparatorCenter = 90;  // neutral/hold
-        static constexpr uint8_t kSeparatorLeft   = 45;  // left channel
-        static constexpr uint8_t kSeparatorRight  = 135; // right channel
+        // ── Servo positions ─────────────────────────────────────
+        static constexpr uint8_t kIntakeUpperHome   = 50;
+        static constexpr uint8_t kIntakeUpperDeploy = 85;
 
-        // Benefits
-        static constexpr uint8_t kBenefitRed    = 0;    // right side
-        static constexpr uint8_t kBenefitCenter = 90;   // neutral
-        static constexpr uint8_t kBenefitBlue   = 180;  // left side
+        static constexpr uint8_t kIntakeLowerHome   = 50;
+        static constexpr uint8_t kIntakeLowerDeploy = 80;
 
-        //Servo Holder
-        static constexpr uint8_t kHolderHold = 0;   // closed
-        static constexpr uint8_t kHolderRelease   = 20;  // open
+        static constexpr uint8_t kSeparatorCenter = 70;
+        static constexpr uint8_t kSeparatorLeft   = 100;
+        static constexpr uint8_t kSeparatorRight  = 120;
 
-        // Movement time (ms)
-        // Adjust accordingly if we want to delay or have an immediate response to the signal received.
-        static constexpr uint32_t kIntakeUpperMoveMs  = 300;
-        static constexpr uint32_t kIntakeLowerMoveMs  = 300;
-        static constexpr uint32_t kSeparatorMoveMs    = 300;
-        static constexpr uint32_t kBenefitMoveMs      = 300;
-        static constexpr uint32_t kHolderMoveMs       = 300;
+        static constexpr uint8_t kBenefitRed    = 70;
+        static constexpr uint8_t kBenefitCenter = 90;
+        static constexpr uint8_t kBenefitBlue   = 110;
+
+        static constexpr uint8_t kHolderHold    = 70;
+        static constexpr uint8_t kHolderRelease = 50;
+
+        // ── Busy time (ms) — isBusy() returns true for this long after a move
+        static constexpr uint32_t kIntakeUpperMoveMs = 200;
+        static constexpr uint32_t kIntakeLowerMoveMs = 200;
+        static constexpr uint32_t kSeparatorMoveMs   = 50;
+        static constexpr uint32_t kBenefitMoveMs     = 50;
+        static constexpr uint32_t kHolderMoveMs      = 50;
+
+        // ── Detach time (ms) — PWM cut after this long with no movement
+        static constexpr uint32_t kIntakeUpperDetachMs = 10000;
+        static constexpr uint32_t kIntakeLowerDetachMs = 10000;
+        static constexpr uint32_t kSeparatorDetachMs   = 50;
+        static constexpr uint32_t kBenefitDetachMs     = 50;
+        static constexpr uint32_t kHolderDetachMs      = 50;
+
+        // Debounce / hold (used by separatorUpdate / intakeUpdate) ──
+        // Separator: consecutive calls needed before actually moving
+        static constexpr uint8_t  kSepConfirm = 2;
+        // Separator: ms of no detection before returning to center
+        static constexpr uint32_t kSepClearMs = 300;
+        // Intakes: ms to hold deployed after last detection
+        static constexpr uint32_t kIntakeHoldMs = 100;
+
     } // namespace ServoAngles
-     namespace ToFConfig
+
+    namespace ToFConfig
     {
         static constexpr uint16_t kTimeoutMs          = 100;
         static constexpr uint32_t kTimingBudgetUs     = 20000;
         static constexpr uint16_t kContinuousPeriodMs = 20;
         static constexpr uint16_t kMuxSettleDelayMs   = 10;
-    } // namespace ToFConfig
+    }
 
 } // namespace Constants
-   
 
 #endif
