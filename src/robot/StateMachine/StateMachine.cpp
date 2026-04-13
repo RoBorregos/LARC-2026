@@ -85,7 +85,7 @@ LARCStateMachine::LARCStateMachine()
 void LARCStateMachine::begin()
 {
     
-    currentState = STATES::LOOKFORLINE; // siempre en START
+    currentState = STATES::LOOKFORCORNER; // siempre en START
     poolState = PoolSubState::FORWARD;
 
     state_start_time = millis();
@@ -172,7 +172,7 @@ void LARCStateMachine::update()
     Serial.print(F(" LR:"));     Serial.print(odomMove_.getRpmLR(), 0);
     
     // Estado actual
-    Serial.print(F(" ❤ State❤ | ST:")); Serial.print((int)currentState);
+    Serial.print(F(" ❤ State❤ | ST:")); Serial.print((int)currentState); Serial.print(")");
     Serial.print(F(" PS:")); Serial.print((int)poolState);
 
     // ToF
@@ -195,6 +195,7 @@ void LARCStateMachine::update()
     // Línea
     Serial.print(F(" ❤ qtr❤ | onLine:")); Serial.print(onLine);
     Serial.print(F(" lPos:"));  Serial.print(qtrFront.getPosition());
+    Serial.print(F(" vx:")); Serial.print(vx);
 
     Serial.println();
     }
@@ -709,7 +710,7 @@ void LARCStateMachine::handleLookForCornerState(uint32_t now, bool cornerLEFTDet
             return;
         }
 
-        odomMove_.left(59.0f);
+        odomMove_.setTranslation(-59.0f, vx * 60.0f);
         break;
     }
 
