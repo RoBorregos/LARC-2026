@@ -54,7 +54,7 @@ namespace Constants
 
     namespace QTRCalibration
     {
-        constexpr size_t kNumSensors = 8;
+        constexpr size_t kNumSensors = 8; 
 
         struct Profile
         {
@@ -64,8 +64,8 @@ namespace Constants
 
         // PLACEHOLDERS
         constexpr Profile Front = {
-            {901, 881, 874, 866, 875, 867, 868, 885},          // On white
-            {1001, 994, 996, 995, 994, 991, 993, 995}}; // black (up and DOWN)
+             {711, 649, 700, 722, 729, 709, 650},          // On white
+            {1001, 998, 999, 1000, 1000, 1000, 997}}; // black (up and DOWN)
 
         constexpr Profile Rear = {
             {120, 130, 115, 140, 150, 135, 128, 122},
@@ -78,7 +78,7 @@ namespace Constants
     namespace LineFollower
 
     {
-        constexpr int kSetpoint = 3900;//2700; // center of 0-7000 range
+        constexpr int kSetpoint = 2900;//2700; // center of 0-6000 range (el ultimo no se esta tomndo otherwise 0-7000)
         // change to 4000, 2000, etc. as needed
     }
 
@@ -151,7 +151,7 @@ namespace Constants
         static constexpr uint32_t kIntakeHoldMs = 100;
 
     } // namespace ServoAngles
-    
+
     namespace ToFConfig
     {
         static constexpr uint16_t kTimeoutMs = 100;
