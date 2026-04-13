@@ -43,6 +43,7 @@ public:
     // qtr correction
     void setTranslation(float vx_rpm, float vy_rpm);
 
+    void setRPMs(float ul, float ur, float ll, float lr);
 
 private:
     static constexpr uint8_t FILTER_SIZE = 8;
@@ -118,7 +119,6 @@ private:
     void pidStepWithRPM(Motor& m, float rpm, float extraRPM);
     void ekfStep(float dt, float rpmUL, float rpmUR, float rpmLL, float rpmLR);
 
-    void setRPMs(float ul, float ur, float ll, float lr);
 
     static void isrUL_A();
     static void isrUL_B();
