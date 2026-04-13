@@ -85,7 +85,7 @@ LARCStateMachine::LARCStateMachine()
 void LARCStateMachine::begin()
 {
     
-    currentState = STATES::LOOKFORCORNER; // siempre en START
+    currentState = STATES::START; // siempre en START
     poolState = PoolSubState::FORWARD;
 
     state_start_time = millis();
@@ -193,10 +193,9 @@ void LARCStateMachine::update()
     Serial.print(F(" BR:"));   Serial.print(BR);
 
     // Línea
-    Serial.print(F(" ❤ qtr❤ | onLine:")); Serial.print(onLine);
-    Serial.print(F(" lPos:"));  Serial.print(qtrFront.getPosition());
+    Serial.print(F(" ❤ qtr| onLine:")); Serial.print(onLine);
     Serial.print(F(" vx:")); Serial.print(vx);
-
+    Serial.print(F(" lPos:"));  Serial.print(qtrFront.getPosition());
     Serial.println();
     }
     
@@ -709,13 +708,15 @@ void LARCStateMachine::handleLookForCornerState(uint32_t now, bool cornerLEFTDet
             action_start_time = now;
             return;
         }
-
-        odomMove_.setTranslation(-59.0f, vx * 60.0f);
+        const int error = 2900 - qtrFront.getPosition(); // ← invertido
+        const float corr = constrain(error * 0.03f, -30.0f, 30.0f);
+        odomMove_.setTranslation(-59.0f, corr);
         break;
     }
 
     case 1:
     {
+        
         odomMove_.stop();
 
         if ((now - action_start_time) >= kCornerStopMs)
@@ -758,55 +759,37 @@ void LARCStateMachine::handleBEANS(uint32_t now, bool cornerRIGHTDetected, bool 
     {
     case 0:
     {
-        //static uint32_t lostLineStartMs = 0;
+    if (cornerRIGHTDetected)
+    {
+        odomMove_.stop();
+        action_start_time = now;
+        action_stage = 1;
+        return;
+    }
 
-        if (cornerRIGHTDetected)
-        {
-            //LARC.brake();
-            odomMove_.stop();
-            //servos.intakeUpperHome();
-            //servos.intakeLowerHome();
+    if (!onLine)
+    {
+        if (action_start_time == 0)
             action_start_time = now;
-            action_stage = 1;
-            return;
-        }
 
-        if (!onLine)
+        odomMove_.backward(60.0f);
+
+        if ((now - action_start_time) >= kLostLineTimeoutMs)
         {
-            if (action_start_time == 0)
-                action_start_time = now;
-
-            odomMove_.backward(60.0f);
-             //LARC.backward(kVelocity);    
-
-            if ((now - action_start_time) >= kLostLineTimeoutMs)
-            {
-                vision.stop();
-                setState(STATES::POOLSGOBACK); // cambia aqui al estado que quieras para avoid pools
-            }
-
-            return;
+            vision.stop();
+            setState(STATES::POOLSGOBACK);
         }
 
-        action_start_time = 0;
+        return;
+    }
 
-        odomMove_.right(59.0f);
+    action_start_time = 0;
 
-        //odomMove_.setTranslation(vx * 50.0f, -100.0f);
-        //LARC.setTranslation(vx, -0.36f);
-        /*
-        if (vision.beanBottom())
-            //servos.intakeUpperDeploy();
-        else
-            //servos.intakeUpperHome();
+    const int error = 2500 - qtrFront.getPosition(); // ← invertido
+    const float corr = constrain(error * 0.03f, -30.0f, 30.0f);
+    odomMove_.setTranslation(+59.0f, corr);
 
-        if (vision.beanTop())
-            //servos.intakeLowerDeploy();
-        else
-            //servos.intakeLowerHome();
-            */
-
-        break;
+    break;
     }
 
     case 1:
