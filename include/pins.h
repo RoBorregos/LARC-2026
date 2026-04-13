@@ -90,23 +90,13 @@ namespace Pins
     static constexpr uint8_t kToFchBL = 2; // Back Left / placeholder
     static constexpr uint8_t kToFchBR = 3; // Back Right / placeholder
 
-    // =========================================================
-    // SERVOS
-    // =========================================================
-    constexpr uint8_t kServo1 = 3;
-    constexpr uint8_t kServo2 = 4;
-    constexpr uint8_t kServo3 = 6;
-    constexpr uint8_t kServo4 = 30;
-    constexpr uint8_t kServo5 = 23;
-    constexpr uint8_t kServo6 = 7;
+    // ======== Servos ========
+    constexpr uint8_t kUpperIntakeServo = 30;
+    constexpr uint8_t kLowerIntakeServo = 6;
+    constexpr uint8_t kSeparatorServo   = 255;
+    constexpr uint8_t kBenefitServo     = 255;
+    constexpr uint8_t kHolderServo      = 255;
 
-    // Project-specific aliases
-    constexpr uint8_t kUpperIntakeServo = kServo1;
-    constexpr uint8_t kLowerIntakeServo = kServo2;
-    constexpr uint8_t kSeparatorServo   = kServo3;
-    constexpr uint8_t kRedBenefitServo  = kServo4;
-    constexpr uint8_t kBlueBenefitServo = kServo5;
-    constexpr uint8_t kHolderServo      = kServo6;
 
     // =========================================================
     // OPTIONAL / LEGACY ULTRASONICS

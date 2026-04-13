@@ -64,8 +64,8 @@ namespace Constants
 
         // PLACEHOLDERS
         constexpr Profile Front = {
-            {957, 935, 934, 926, 926, 922, 925, 948},          // On white
-            {1015, 1011, 1010, 1010, 1009, 1008, 1011, 1016}}; // black (up and DOWN)
+            {901, 881, 874, 866, 875, 867, 868, 885},          // On white
+            {1001, 994, 996, 995, 994, 991, 993, 995}}; // black (up and DOWN)
 
         constexpr Profile Rear = {
             {120, 130, 115, 140, 150, 135, 128, 122},
@@ -99,45 +99,59 @@ namespace Constants
 
     namespace ServoAngles
     {
-        // Intake Superior
-        static constexpr uint8_t kIntakeUpperHome = 30;   // retractado,
-        static constexpr uint8_t kIntakeUpperDeploy = 85; // posición de tumble
+        // ── Startup ramp ────────────────────────────────────────
+        // Speed (deg/s) for the blocking ramp in begin()
+        static constexpr float kStartupSpeed = 70.0f;
 
-        // Intake Inferior
-        static constexpr uint8_t kIntakeLowerHome = 30;   // retractado
-        static constexpr uint8_t kIntakeLowerDeploy = 85; // posición de tumble
+        // Where attach() physically puts each servo (measure per servo)
+        static constexpr uint8_t kMechStartIntakeUpper = 154;
+        static constexpr uint8_t kMechStartIntakeLower = 160;
+        static constexpr uint8_t kMechStartSeparator   = 90;
+        static constexpr uint8_t kMechStartBenefit     = 90;
+        static constexpr uint8_t kMechStartHolder      = 90;
 
-        // Compuerta Separadora
-        // Compuerta que dirige la semilla al canal correcto
-        static constexpr uint8_t kSeparatorCenter = 90; // neutro/hold
-        static constexpr uint8_t kSeparatorLeft = 45;   // canal izquierdo
-        static constexpr uint8_t kSeparatorRight = 135; // canal derecho
+        // ── Servo positions ─────────────────────────────────────
+        static constexpr uint8_t kIntakeUpperHome   = 50;
+        static constexpr uint8_t kIntakeUpperDeploy = 85;
 
-        // Servo Beneficiadero Rojo
-        // Permanece cerrado hasta recibir señal
-        static constexpr uint8_t kBenefitRedClosed = 0; // cerrado
-        static constexpr uint8_t kBenefitRedOpen = 90;  // abierto
+        static constexpr uint8_t kIntakeLowerHome   = 50;
+        static constexpr uint8_t kIntakeLowerDeploy = 80;
 
-        // Servo Beneficiadero Azul
-        // Permanece cerrado hasta recibir señal
-        static constexpr uint8_t kBenefitBlueClosed = 0; // cerrado
-        static constexpr uint8_t kBenefitBlueOpen = 90;  // abierto
+        static constexpr uint8_t kSeparatorCenter = 70;
+        static constexpr uint8_t kSeparatorLeft   = 100;
+        static constexpr uint8_t kSeparatorRight  = 120;
 
-        // Servo Holder
-        //  Permanece cerrado hasta recibir señal
-        static constexpr uint8_t kHolderHold = 0;     // cerrado
-        static constexpr uint8_t kHolderRelease = 20; // abierto
+        static constexpr uint8_t kBenefitRed    = 70;
+        static constexpr uint8_t kBenefitCenter = 90;
+        static constexpr uint8_t kBenefitBlue   = 110;
 
-        // Tiempo de movimiento (ms)
-        // Ajustar si queremos que se tarde o que la respuesta sea inmediata a la señal que recibe.
-        static constexpr uint32_t kIntakeUpperMoveMs = 300;
-        static constexpr uint32_t kIntakeLowerMoveMs = 300;
-        static constexpr uint32_t kSeparatorMoveMs = 300;
-        static constexpr uint32_t kBenefitRedMoveMs = 300;
-        static constexpr uint32_t kBenefitBlueMoveMs = 300;
-        static constexpr uint32_t kHolderMoveMs = 300;
+        static constexpr uint8_t kHolderHold    = 70;
+        static constexpr uint8_t kHolderRelease = 50;
+
+        // ── Busy time (ms) — isBusy() returns true for this long after a move
+        static constexpr uint32_t kIntakeUpperMoveMs = 200;
+        static constexpr uint32_t kIntakeLowerMoveMs = 200;
+        static constexpr uint32_t kSeparatorMoveMs   = 50;
+        static constexpr uint32_t kBenefitMoveMs     = 50;
+        static constexpr uint32_t kHolderMoveMs      = 50;
+
+        // ── Detach time (ms) — PWM cut after this long with no movement
+        static constexpr uint32_t kIntakeUpperDetachMs = 10000;
+        static constexpr uint32_t kIntakeLowerDetachMs = 10000;
+        static constexpr uint32_t kSeparatorDetachMs   = 50;
+        static constexpr uint32_t kBenefitDetachMs     = 50;
+        static constexpr uint32_t kHolderDetachMs      = 50;
+
+        // Debounce / hold (used by separatorUpdate / intakeUpdate) ──
+        // Separator: consecutive calls needed before actually moving
+        static constexpr uint8_t  kSepConfirm = 2;
+        // Separator: ms of no detection before returning to center
+        static constexpr uint32_t kSepClearMs = 300;
+        // Intakes: ms to hold deployed after last detection
+        static constexpr uint32_t kIntakeHoldMs = 100;
+
     } // namespace ServoAngles
-
+    
     namespace ToFConfig
     {
         static constexpr uint16_t kTimeoutMs = 100;
