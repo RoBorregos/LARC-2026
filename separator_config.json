@@ -1,8 +1,8 @@
 {
-  "roi_x1": 760,
-  "roi_y1": 340,
-  "roi_x2": 1160,
-  "roi_y2": 740,
+  "roi_x": 238,
+  "roi_y": 133,
+  "roi_w": 87,
+  "roi_h": 176,
   "warm_h_lo": 0,
   "warm_h_hi": 35,
   "warm_s_min": 80,
@@ -16,6 +16,10 @@
   "cool_frac": 5,
   "morph_k": 5,
   "morph_iter": 1,
+  "roi_x1": 760,
+  "roi_y1": 340,
+  "roi_x2": 1160,
+  "roi_y2": 740,
   "ghost_frames": 10,
   "area_min": 800,
   "area_max": 50000
