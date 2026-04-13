@@ -21,7 +21,7 @@ class QTR
 {
 public:
 
-    static constexpr uint8_t N = 8;
+    static constexpr uint8_t N = 7;
 
     // firstChannel as it states is where the QTR starts in the mux.
     // QTR qtrFront(0, mux); (C0..C7)
