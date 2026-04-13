@@ -1,3 +1,4 @@
+// mux.h
 #pragma once
 #include <Arduino.h>
 #include "pins.h"
@@ -5,15 +6,15 @@
 class Mux74HC4067
 {
 public:
-    // Constructor con SIG configurable
-    Mux74HC4067(uint8_t sig = Pins::kMuxSig)
-        : _sig(sig),
-          _s0(Pins::kMuxS0),
-          _s1(Pins::kMuxS1),
-          _s2(Pins::kMuxS2),
-          _s3(Pins::kMuxS3)
-    {
-    }
+    Mux74HC4067()
+        : _sig(Pins::kMuxSig),
+          _s0(Pins::kMuxS0), _s1(Pins::kMuxS1),
+          _s2(Pins::kMuxS2), _s3(Pins::kMuxS3) {}
+
+    Mux74HC4067(uint8_t sigPin)
+        : _sig(sigPin),
+          _s0(Pins::kMuxS0), _s1(Pins::kMuxS1),
+          _s2(Pins::kMuxS2), _s3(Pins::kMuxS3) {}
 
     void begin()
     {
@@ -36,14 +37,24 @@ public:
     inline uint16_t read(uint8_t ch) const
     {
         select(ch);
-        delayMicroseconds(5);
+        delayMicroseconds(50);
         return analogRead(_sig);
     }
 
+    inline void setSigMode(uint8_t mode) { pinMode(_sig, mode); }
+    inline uint8_t sig() const { return _sig; }
+
+    void debugPrint() const
+    {
+        for (uint8_t ch = 0; ch < 16; ch++) {
+            uint16_t v = read(ch);
+            Serial.print(ch);
+            Serial.print(':');
+            Serial.print(v);
+            if (ch < 15) Serial.print('\t');
+        }
+        Serial.println();
+    }
 private:
-    uint8_t _sig;
-    uint8_t _s0;
-    uint8_t _s1;
-    uint8_t _s2;
-    uint8_t _s3;
+    uint8_t _sig, _s0, _s1, _s2, _s3;
 };
