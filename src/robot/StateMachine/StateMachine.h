@@ -5,6 +5,7 @@
 #include "constants.h"
 #include "pins.h"
 #include "testOdometry.hpp"
+#include "robot/instances/instances.h"
 
 enum class STATES
 {

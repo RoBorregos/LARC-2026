@@ -85,7 +85,7 @@ LARCStateMachine::LARCStateMachine()
 void LARCStateMachine::begin()
 {
     
-    currentState = STATES::LOOKFORLINE; // siempre en START
+    currentState = STATES::POOL; // siempre en START
     poolState = PoolSubState::FORWARD;
 
     state_start_time = millis();
@@ -103,16 +103,20 @@ void LARCStateMachine::begin()
     vision.begin();
     vision.requestStatus();
 
+    Wire.begin();
+    Wire.setClock(400000);
+    i2cMux.begin();
+
+    bool okL = tofLeft.begin();
+    bool okR = tofRight.begin();
+
+    Serial.print("tofLeft init: ");  Serial.println(okL ? "OK" : "FAIL");
+    Serial.print("tofRight init: "); Serial.println(okR ? "OK" : "FAIL");
+
     //QTR
     qtrFront.begin();
     qtrFront.useDefaultCalibration(0);   // FRONT
     //qtrFront.printCalibration("QTR FRONT");
-
-    // ToF
-    i2cMux.begin();      // multiplexo
-
-    tofLeft.begin();
-    tofRight.begin();
 
     tofLeft.setMaxRange(500);
     tofRight.setMaxRange(500);
@@ -158,7 +162,7 @@ void LARCStateMachine::update()
     //qtrFront.debugPrint();
     //Serial.print("linePos: ");
     //Serial.println(linePos); // To know the value for the center of the qtr
-    /*
+    
     static uint32_t debugPrintMs = 0;
     if ((now - debugPrintMs) >= 100)
     {
@@ -204,7 +208,7 @@ void LARCStateMachine::update()
     Serial.print(F(" lPos:"));  Serial.print(qtrFront.getPosition());
     Serial.println();
     }
-    */
+    
     const bool frontLeftDetectedLine = FL; // Also used for corner
     const bool frontRightDetectedLine = FR;
     const bool backLeftDetectedLine = BL;
@@ -429,7 +433,7 @@ void LARCStateMachine::handleStartState(uint32_t now, bool backDetected)
 
     case 4:
         elevator.ElevatorPosition(0);
-        odomMove_.forward(59.0f);
+        odomMove_.forward(50.0f);
 
         if ((now - action_start_time) >= kStartIgnoreTimeMs)
         {
@@ -464,7 +468,7 @@ void LARCStateMachine::handlePoolState(uint32_t now, bool obstacle, bool leftDet
 
     static constexpr uint32_t kLineCorrectionMs    = 120;
     static constexpr float    kLineCorrectionSpeed = 0.48f;
-    static constexpr float    kNormalSpeed = 59.0f; // velocidad que se usa
+    static constexpr float    kNormalSpeed = 50.0f; // velocidad que se usa
 
 
     if (lineCorrectionActive)
@@ -530,7 +534,7 @@ void LARCStateMachine::handlePoolState(uint32_t now, bool obstacle, bool leftDet
 
     case PoolSubState::AVOID_LEFT:
     {
-        odomMove_.left(59.0f);
+        odomMove_.left(50.0f);
         //LARC.left(0.48f);
 
         const bool canChangeSide = (now - poolStateStartMs) >= kMinAvoidTimeMs;
@@ -573,7 +577,7 @@ void LARCStateMachine::handlePoolState(uint32_t now, bool obstacle, bool leftDet
 
     case PoolSubState::AVOID_RIGHT:
     {
-        odomMove_.right(59.0f);
+        odomMove_.right(50.0f);
         //LARC.right(kVelocity);
 
         const bool canChangeSide = (now - poolStateStartMs) >= kMinAvoidTimeMs;
@@ -636,12 +640,11 @@ void LARCStateMachine::handleLookForLineState(uint32_t now,
     }
 
     // ── Avance recto hasta encontrar la línea ─────────────────────────────
-    odomMove_.forward(58.0f);
+    odomMove_.forward(50.0f);
 }
 
 void LARCStateMachine::handleLookForCornerState(uint32_t now, bool cornerLEFTDetected, float vx)
 {
-    vision.startBeans();
 
     static constexpr uint32_t kCornerStopMs = 1200;
     static constexpr uint32_t kSoftStartMs  = 500;
@@ -653,13 +656,14 @@ void LARCStateMachine::handleLookForCornerState(uint32_t now, bool cornerLEFTDet
         if (cornerLEFTDetected)
         {
             odomMove_.stop();
+            vision.startBeans(); 
             action_stage = 1;
             action_start_time = now;
             return;
         }
         const int error = 2900 - qtrFront.getPosition(); // ← invertido
         const float corr = constrain(error * 0.03f, -30.0f, 30.0f);
-        odomMove_.setTranslation(-59.0f, corr);
+        odomMove_.setTranslation(-50.0f, corr);
         break;
     }
 
@@ -682,7 +686,6 @@ void LARCStateMachine::handleLookForCornerState(uint32_t now, bool cornerLEFTDet
 
         if ((now - action_start_time) >= kSoftStartMs)
         {
-            vision.startBeans();
             setState(STATES::BEANS);
         }
         break;
@@ -708,8 +711,6 @@ void LARCStateMachine::handleBEANS(uint32_t now, bool cornerRIGHTDetected, bool 
         if (cornerRIGHTDetected)
         {
             odomMove_.stop();
-            servos.intakeUpperHome();
-            servos.intakeLowerHome();
             action_start_time = now;
             action_stage = 1;
             return;
@@ -720,7 +721,7 @@ void LARCStateMachine::handleBEANS(uint32_t now, bool cornerRIGHTDetected, bool 
             if (action_start_time == 0)
                 action_start_time = now;
 
-            odomMove_.backward(60.0f);
+            odomMove_.backward(58.0f);
 
             if ((now - action_start_time) >= kLostLineTimeoutMs)
             {
@@ -735,18 +736,7 @@ void LARCStateMachine::handleBEANS(uint32_t now, bool cornerRIGHTDetected, bool 
 
         const int error = 2500 - qtrFront.getPosition();
         const float corr = constrain(error * 0.03f, -30.0f, 30.0f);
-        odomMove_.setTranslation(+59.0f, corr);
-
-        // Intakes según visión
-        if (vision.beanBottom())
-            servos.intakeUpperDeploy();
-        else
-            servos.intakeUpperHome();
-
-        if (vision.beanTop())
-            servos.intakeLowerDeploy();
-        else
-            servos.intakeLowerHome();
+        odomMove_.setTranslation(+50.0f, corr);
 
         break;
     }
