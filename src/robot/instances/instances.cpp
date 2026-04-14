@@ -27,5 +27,5 @@ PIDController linePID(0.000035f, 0.0f, 0.00000008f, -1.0f, 1.0f);
 Vision vision(Serial);
 
 TCA9548A i2cMux;
-ToF tofLeft(Pins::kToFchFL, i2cMux, ToFType::L0X);
-ToF tofRight(Pins::kToFchFR, i2cMux, ToFType::L0X);
+ToF tofLeft(Pins::kToFchFL, i2cMux, ToFType::L1X);
+ToF tofRight(Pins::kToFchFR, i2cMux, ToFType::L1X);
