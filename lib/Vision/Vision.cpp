@@ -1,17 +1,11 @@
 #include "Vision.hpp"
 
-// ══════════════════════════════════════════════════════════════════════
-//  Constructor
-// ══════════════════════════════════════════════════════════════════════
 Vision::Vision(Stream &port)
     : _serial(port)
     , _beansSent(false)
     , _benefitsSent(false)
     , _stopSent(false)
-    , _beanLeft(0)
-    , _beanRight(0)
-    , _warmHit(0)
-    , _coolHit(0)
+    , _bitfield(0)
     , _boxType(0)
     , _piReady(false)
     , _beansRunning(false)
@@ -20,37 +14,51 @@ Vision::Vision(Stream &port)
     , _separatorError(false)
     , _benefitsError(false)
     , _lastError(0)
+    , _parseState(0)
+    , _parseHeader(0)
 {}
 
-// ══════════════════════════════════════════════════════════════════════
-//  begin()
-// ══════════════════════════════════════════════════════════════════════
 void Vision::begin()
-    // Reset everything to a clean state.
-    // NOTE: We do NOT call _serial.begin() here, the caller handles that
-    // since baud rate and port config are projectclevel decisions.
 {
     resetGuards();
-    _beanLeft  = 0;  
-    _beanRight = 0;
-    _warmHit   = 0;  
-    _coolHit   = 0;
-    _boxType   = 0;
+    _bitfield    = 0;
+    _boxType     = 0;
+    _parseState  = 0;
+    _parseHeader = 0;
     _piReady         = false;
     _beansRunning    = false;
     _benefitsRunning = false;
     clearErrors();
 }
 
-// ══════════════════════════════════════════════════════════════════════
-//  update() — call every loop()
-// ══════════════════════════════════════════════════════════════════════
 void Vision::update()
 {
     while (_serial.available()) {
         uint8_t b = _serial.read();
 
-        // ── Dispatcher ACKs ──
+        // Collecting payload for a multi-byte message
+        if (_parseState == 1) {
+            if (_parseHeader == HEADER_BOX) {
+                _boxType = b;
+            }
+            else if (_parseHeader >= ERROR_MIN && _parseHeader <= ERROR_MAX) {
+                _lastError = _parseHeader;
+                if (_parseHeader == ERR_SEPARATOR) {
+                    _separatorError = true;
+                } else if (_parseHeader == ERR_BENEFITS) {
+                    _benefitsError   = true;
+                    _benefitsRunning = false;
+                } else {
+                    _criticalError   = true;
+                    _beansRunning    = false;
+                    _benefitsRunning = false;
+                }
+            }
+            _parseState = 0;
+            continue;
+        }
+
+        // ACKs (single byte, no payload)
         if (b == ACK_READY)    { _piReady = true;          continue; }
         if (b == ACK_STARTING) {                            continue; }
         if (b == ACK_RUNNING)  { _beansRunning = true;     continue; }
@@ -58,63 +66,23 @@ void Vision::update()
         if (b == ACK_STOPPED)  { _beansRunning = false;
                                  _benefitsRunning = false;  continue; }
 
-        // ── Bean vision: [0xFF, left, right] ──
-        if (b == HEADER_BEANS) {
-            if (_serial.available() >= 2) {
-                _beanLeft  = _serial.read();
-                _beanRight = _serial.read();
-            }
-            continue;
-        }
-
-        // ── Separator vision: [0xFD, warm, cool] ──
-        if (b == HEADER_SEPARATOR) {
-            if (_serial.available() >= 2) {
-                _warmHit = _serial.read();
-                _coolHit = _serial.read();
-            }
-            continue;
-        }
-
-        // ── Box vision: [0xFE, boxType] ──
+        // Box header (0xFE + 1 payload byte)
         if (b == HEADER_BOX) {
-            if (_serial.available() >= 1) {
-                _boxType = _serial.read();
-            }
+            _parseHeader = b;
+            _parseState  = 1;
             continue;
         }
 
-        // ── Errors: [0xE0-0xEF, errorCode] ──
+        // Error header (0xE0-0xEF + 1 payload byte)
         if (b >= ERROR_MIN && b <= ERROR_MAX) {
-            _lastError = b;
-            if (_serial.available()) _serial.read();  // consume error code byte
+            _parseHeader = b;
+            _parseState  = 1;
+            continue;
+        }
 
-            //  ERROR CLASSIFICATION:
-            //
-            //  0xE1 (separator died)  → NOT critical. Beans keeps running.
-            //                           Separator servo just stays centered.
-            //
-            //  0xE4 (benefits died)   → NOT critical. Robot keeps moving.
-            //                           Benefit servo just stays centered.
-            //
-            //  0xE0 (raspi_visao died) → CRITICAL. No bean detection.
-            //  0xE2 (both died)        → CRITICAL. raspi_visao is gone.
-            //  Anything else           → CRITICAL. Unknown = be safe.
-
-            if (b == ERR_SEPARATOR) {
-                _separatorError = true;
-                // Do NOT touch _beansRunning — raspi_visao is still alive
-            }
-            else if (b == ERR_BENEFITS) {
-                _benefitsError   = true;
-                _benefitsRunning = false;
-            }
-            else {
-                // raspi_visao died, or both died, or unknown → CRITICAL
-                _criticalError   = true;
-                _beansRunning    = false;
-                _benefitsRunning = false;
-            }
+        // Vision bitfield (0x00-0x0F) — naked single byte, no header
+        if (b <= 0x0F) {
+            _bitfield = b;
             continue;
         }
 
@@ -122,9 +90,6 @@ void Vision::update()
     }
 }
 
-// ══════════════════════════════════════════════════════════════════════
-//  Commands (Teensy to Pi) — each sends only once until resetGuards()
-// ══════════════════════════════════════════════════════════════════════
 void Vision::startBeans()
 {
     if (!_beansSent) {
@@ -154,9 +119,6 @@ void Vision::requestStatus()
     _serial.write(CMD_STATUS);
 }
 
-// ══════════════════════════════════════════════════════════════════════
-//  Error handling
-// ══════════════════════════════════════════════════════════════════════
 void Vision::clearErrors()
 {
     _criticalError  = false;
