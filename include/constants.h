@@ -64,8 +64,8 @@ namespace Constants
 
         // PLACEHOLDERS
         constexpr Profile Front = {
-             {711, 649, 700, 722, 729, 709, 650},          // On white
-            {1001, 998, 999, 1000, 1000, 1000, 997}}; // black (up and DOWN)
+             {717, 672, 712, 683, 699, 752, 791},          // On white
+            {1010, 1004, 1007, 1005, 1004, 1002, 1006}}; // black (up and DOWN)
 
         constexpr Profile Rear = {
             {120, 130, 115, 140, 150, 135, 128, 122},
@@ -99,7 +99,7 @@ namespace Constants
 
     namespace ServoAngles
     {
-        // ── Startup ramp ────────────────────────────────────────
+       // ── Startup ramp ────────────────────────────────────────
         // Speed (deg/s) for the blocking ramp in begin()
         static constexpr float kStartupSpeed = 70.0f;
 

@@ -90,7 +90,7 @@ namespace Pins
     static constexpr uint8_t kToFchBL = 2; // Back Left / placeholder
     static constexpr uint8_t kToFchBR = 3; // Back Right / placeholder
 
-    // ======== Servos ========
+   // ======== Servos ========
     constexpr uint8_t kUpperIntakeServo = 30;
     constexpr uint8_t kLowerIntakeServo = 6;
     constexpr uint8_t kSeparatorServo   = 255;
