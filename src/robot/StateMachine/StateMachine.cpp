@@ -153,7 +153,7 @@ void LARCStateMachine::update()
     const bool BL = ir.getState(IR_mux::BL);
     const bool BR = ir.getState(IR_mux::BR);
 
-    // Print to debug
+//❤❤ ❤❤ ❤❤ Print to debug ❤❤ ❤❤ ❤❤ 
     //ir.debugPrint();
     //qtrFront.debugPrint();
     //Serial.print("linePos: ");
