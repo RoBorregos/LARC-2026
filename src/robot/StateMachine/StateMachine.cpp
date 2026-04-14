@@ -85,7 +85,7 @@ LARCStateMachine::LARCStateMachine()
 void LARCStateMachine::begin()
 {
     
-    currentState = STATES::START; // siempre en START
+    currentState = STATES::LOOKFORLINE; // siempre en START
     poolState = PoolSubState::FORWARD;
 
     state_start_time = millis();
@@ -109,6 +109,8 @@ void LARCStateMachine::begin()
     //qtrFront.printCalibration("QTR FRONT");
 
     // ToF
+    i2cMux.begin();      // multiplexo
+
     tofLeft.begin();
     tofRight.begin();
 
@@ -156,7 +158,7 @@ void LARCStateMachine::update()
     //qtrFront.debugPrint();
     //Serial.print("linePos: ");
     //Serial.println(linePos); // To know the value for the center of the qtr
-
+    /*
     static uint32_t debugPrintMs = 0;
     if ((now - debugPrintMs) >= 100)
     {
@@ -176,10 +178,14 @@ void LARCStateMachine::update()
     Serial.print(F(" PS:")); Serial.print((int)poolState);
 
     // ToF
-    Serial.print(F(" ❤ Tof❤ | TL:"));  Serial.print(tofLeft.getDistanceCm(),  1);
-    Serial.print(F(" TR:"));    Serial.print(tofRight.getDistanceCm(), 1);
-    Serial.print(F(" vL:"));    Serial.print(tofLeft.isValid());
-    Serial.print(F(" vR:"));    Serial.print(tofRight.isValid());
+    Serial.print(F(" ❤ Tof❤ |"));  //Serial.print(tofLeft.getDistanceCm(),  1);
+    //Serial.print(F(" TR:"));    Serial.print(tofRight.getDistanceCm(), 1);
+    //Serial.print(F(" vL:"));    Serial.print(tofLeft.isValid());
+    //Serial.print(F(" vR:"));    Serial.print(tofRight.isValid());
+    Serial.print(F(" TL:")); Serial.print(tofLeft.getDistanceCm(), 0);
+    Serial.print(F("cm vL:")); Serial.print(tofLeft.isValid() ? "OK" : "NO");
+    Serial.print(F(" TR:")); Serial.print(tofRight.getDistanceCm(), 0);
+    Serial.print(F("cm vR:")); Serial.print(tofRight.isValid() ? "OK" : "NO");
 
     // Obstáculo
     //Serial.print(F(" | OBS:")); Serial.print(obstacle);
@@ -198,7 +204,7 @@ void LARCStateMachine::update()
     Serial.print(F(" lPos:"));  Serial.print(qtrFront.getPosition());
     Serial.println();
     }
-    
+    */
     const bool frontLeftDetectedLine = FL; // Also used for corner
     const bool frontRightDetectedLine = FR;
     const bool backLeftDetectedLine = BL;
@@ -361,9 +367,8 @@ void LARCStateMachine::readVision()
 void LARCStateMachine::handleStartState(uint32_t now, bool backDetected)
 {
     vision.stop();
-    // Serial.print("START State");
 
-    const bool limitPressed = (digitalRead(limitSwitch) == HIGH); // invertido
+    const bool limitPressed = (digitalRead(limitSwitch) == HIGH);
 
     if (limitPressed != lastLimitPressed)
     {
@@ -378,119 +383,63 @@ void LARCStateMachine::handleStartState(uint32_t now, bool backDetected)
     switch (action_stage)
     {
     case 0:
-        // Goes down until the limit switch is pressed out
         if (!limitPressed)
         {
-            elevator.ElevatorPosition(0); // bajar (2)
+            elevator.ElevatorPosition(0);
             odomMove_.stop();
         }
         else
         {
             elevator.ElevatorPosition(0);
             odomMove_.stop();
-            // Serial.println("ELEVADOR ABAJO -> STOP 2000 ms");
             action_start_time = now;
             action_stage = 1;
         }
         break;
 
     case 1:
-        // Stop 2000 ms
         elevator.ElevatorPosition(0);
         odomMove_.stop();
-
         if ((now - action_start_time) >= 2000)
         {
-            // Serial.println("ELEVADOR SUBIENDO 9000 ms");
             action_start_time = now;
             action_stage = 2;
         }
         break;
 
     case 2:
-        // Goes up 9000 ms
-        elevator.ElevatorPosition(0); //subir (1)
+        elevator.ElevatorPosition(0);
         odomMove_.stop();
-
         if ((now - action_start_time) >= 9000)
         {
-            elevator.ElevatorPosition(0);
-            odomMove_.stop();
-            // Serial.println("ELEVADOR DETENIDO -> STOP 3000 ms");
             action_start_time = now;
             action_stage = 3;
         }
         break;
 
     case 3:
-        // Stop 3000 ms
         elevator.ElevatorPosition(0);
         odomMove_.stop();
-
         if ((now - action_start_time) >= 3000)
         {
-            // Serial.println("START IGNORANDO IR Y AVANZANDO");
             action_start_time = now;
             action_stage = 4;
         }
         break;
 
     case 4:
-        // Goes forward ignoring IR's
         elevator.ElevatorPosition(0);
-        //LARC.forward(kVelocity);
-
-        //---------INTENTO DE MEJORAR ARRANQUE ------- (todo esto esta en vez de LARC.forward(velocidad))
-
-        static float currentSpeed = 0.0f;
-        static uint32_t lastRampMs = 0;
-
-        static constexpr float kAccelPerSec = 0.70f;  // qué tan rápido acelera
-        static constexpr float kBrakePerSec = 1.20f;  // qué tan rápido frena
-
-        if (lastRampMs == 0)
-
-        lastRampMs = now;
-
-        float dt = (now - lastRampMs) * 0.001f;
-        lastRampMs = now;
-
-
-        float speed = 0.48f;
-        float targetSpeed = speed;   // la velocidad que ya calculaste
-        float rate = (targetSpeed > currentSpeed) ? kAccelPerSec : kBrakePerSec;
-        float maxStep = rate * dt;
-
-        if (currentSpeed < targetSpeed)
-        {
-        currentSpeed += maxStep;
-        if (currentSpeed > targetSpeed) currentSpeed = targetSpeed;
-        }
-        else if (currentSpeed > targetSpeed)
-        {
-        currentSpeed -= maxStep;
-        if (currentSpeed < targetSpeed) currentSpeed = targetSpeed;
-        }
-
-        if (currentSpeed <= 0.0f)
-        odomMove_.stop();
-            else
         odomMove_.forward(59.0f);
 
-        static constexpr uint32_t kStartPassToPools = 1000;
-        //---------FIN DE INTENTO DE MEJORAR ARRANQUE
-
-        if ((now - action_start_time) >= kStartIgnoreTimeMs )
+        if ((now - action_start_time) >= kStartIgnoreTimeMs)
         {
             setPoolState(PoolSubState::FORWARD);
             setState(STATES::POOL);
-            // Serial.println("START -> POOL");
-        } else if(backDetected){
-            if((now - action_start_time) >= kStartPassToPools) {
-           setPoolState(PoolSubState::FORWARD);
+        }
+        else if (backDetected && (now - action_start_time) >= 1000)
+        {
+            setPoolState(PoolSubState::FORWARD);
             setState(STATES::POOL);
-        // Serial.println("START -> POOL"); 
-            }
         }
         break;
     }
@@ -741,12 +690,9 @@ void LARCStateMachine::handleLookForCornerState(uint32_t now, bool cornerLEFTDet
     }
 }
 
-
 void LARCStateMachine::handleBEANS(uint32_t now, bool cornerRIGHTDetected, bool onLine, float vx)
 {
     static constexpr uint32_t kLostLineTimeoutMs = 1200;
-
-    //vision.startBeans();
 
     if (vision.hasCriticalError())
     {
@@ -759,43 +705,55 @@ void LARCStateMachine::handleBEANS(uint32_t now, bool cornerRIGHTDetected, bool 
     {
     case 0:
     {
-    if (cornerRIGHTDetected)
-    {
-        odomMove_.stop();
-        action_start_time = now;
-        action_stage = 1;
-        return;
-    }
-
-    if (!onLine)
-    {
-        if (action_start_time == 0)
-            action_start_time = now;
-
-        odomMove_.backward(60.0f);
-
-        if ((now - action_start_time) >= kLostLineTimeoutMs)
+        if (cornerRIGHTDetected)
         {
-            vision.stop();
-            setState(STATES::POOLSGOBACK);
+            odomMove_.stop();
+            servos.intakeUpperHome();
+            servos.intakeLowerHome();
+            action_start_time = now;
+            action_stage = 1;
+            return;
         }
 
-        return;
-    }
+        if (!onLine)
+        {
+            if (action_start_time == 0)
+                action_start_time = now;
 
-    action_start_time = 0;
+            odomMove_.backward(60.0f);
 
-    const int error = 2500 - qtrFront.getPosition(); // ← invertido
-    const float corr = constrain(error * 0.03f, -30.0f, 30.0f);
-    odomMove_.setTranslation(+59.0f, corr);
+            if ((now - action_start_time) >= kLostLineTimeoutMs)
+            {
+                vision.stop();
+                setState(STATES::POOLSGOBACK);
+            }
 
-    break;
+            return;
+        }
+
+        action_start_time = 0;
+
+        const int error = 2500 - qtrFront.getPosition();
+        const float corr = constrain(error * 0.03f, -30.0f, 30.0f);
+        odomMove_.setTranslation(+59.0f, corr);
+
+        // Intakes según visión
+        if (vision.beanBottom())
+            servos.intakeUpperDeploy();
+        else
+            servos.intakeUpperHome();
+
+        if (vision.beanTop())
+            servos.intakeLowerDeploy();
+        else
+            servos.intakeLowerHome();
+
+        break;
     }
 
     case 1:
     {
         odomMove_.stop();
-        //LARC.brake();
         if ((now - action_start_time) >= 1000)
         {
             action_start_time = 0;
