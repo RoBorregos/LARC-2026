@@ -18,6 +18,8 @@
 #include "PIDController.hpp"
 // Vision
 #include "Vision.hpp"
+// VLX
+#include "TCA9548A/TCA9548A.h"
 
 
 extern Drive LARC;
@@ -38,5 +40,7 @@ extern Vision vision;
 
 extern ToF tofLeft;
 extern ToF tofRight;
+
+extern TCA9548A i2cMux;
 
 #endif
