@@ -94,7 +94,7 @@ void ToF::update()
             return;
         }
         if (raw > maxRangeMm_) {
-            // Out of your useful range = keep last value
+            distanceMm = maxRangeMm_; // valor alto = sin obstáculo
             return;
         }
         distanceMm = raw;
@@ -109,7 +109,9 @@ void ToF::update()
         if (sensorL1X.timeoutOccurred()) {
             return;
         }
-        if (raw == 0 || raw > maxRangeMm_) {
+        if (raw == 0) return; // mantener último valor si es 0
+        if (raw > maxRangeMm_) {
+            distanceMm = maxRangeMm_; // valor alto = sin obstáculo
             return;
         }
         distanceMm = raw;
