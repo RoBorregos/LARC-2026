@@ -13,7 +13,7 @@ namespace
 
     static constexpr uint32_t kInitializedStoppedMs = 9000;
     static constexpr uint32_t kStartIgnoreTimeMs = 2200;    // Time to ignore IR's at the START point
-    static constexpr uint32_t kClearDelayMs = 150;          // Tiempo para cambiar nuevamente a Forward
+    static constexpr uint32_t kClearDelayMs = 300;          // Tiempo para cambiar nuevamente a Forward
     static constexpr uint32_t kNoObstacleToCornerMs = 2000; // Time without obstacle to go forward and LOOKFORLINE -> tal vez disminuir
     static constexpr uint32_t kCornerDeployWazitMs = 1800;
 
@@ -239,7 +239,7 @@ void LARCStateMachine::update()
     static bool obstacleLatched = false;
     static uint32_t obstacleClearStartMs  = 0;
     static uint32_t obstacleDetectStartMs = 0;          // ← nuevo
-    static constexpr uint32_t kObstacleReleaseMs  = 800; // ← subido de 200 a 400
+    static constexpr uint32_t kObstacleReleaseMs  = 400; // ← subido de 200 a 400
     static constexpr uint32_t kObstacleConfirmMs  = 0; //50;  // ← nuevo: ms consecutivos para activar
 
     if (!obstacleLatched)
