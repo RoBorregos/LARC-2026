@@ -52,7 +52,7 @@ bool ToF::begin()
         sensorL1X.setTimeout(Constants::ToFConfig::kTimeoutMs);
         ok = sensorL1X.init();
         if (ok) {
-            sensorL1X.setDistanceMode(VL53L1X::Short);
+            sensorL1X.setDistanceMode(VL53L1X::Long);
             sensorL1X.setMeasurementTimingBudget(Constants::ToFConfig::kTimingBudgetUs);
             sensorL1X.startContinuous(Constants::ToFConfig::kContinuousPeriodMs);
         }
@@ -109,7 +109,7 @@ void ToF::update()
         if (sensorL1X.timeoutOccurred()) {
             return;
         }
-        if (raw == 0) return; // mantener último valor si es 0
+        if (raw == 0) return; 
         if (raw > maxRangeMm_) {
             distanceMm = maxRangeMm_; // valor alto = sin obstáculo
             return;

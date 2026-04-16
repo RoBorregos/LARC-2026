@@ -57,6 +57,8 @@ public:
     return isValid() ? distanceMm / 10.0f : -1.0f; 
     }
 
+    uint16_t getMaxRange() const { return maxRangeMm_; }
+
 private:
     VL53L0X  sensorL0X;
     VL53L1X  sensorL1X;
