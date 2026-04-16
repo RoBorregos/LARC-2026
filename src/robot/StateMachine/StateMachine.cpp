@@ -14,7 +14,7 @@ namespace
     static constexpr uint32_t kInitializedStoppedMs = 9000;
     static constexpr uint32_t kStartIgnoreTimeMs = 2200;    // Time to ignore IR's at the START point
     static constexpr uint32_t kClearDelayMs = 300;          // Tiempo para cambiar nuevamente a Forward
-    static constexpr uint32_t kNoObstacleToCornerMs = 2000; // Time without obstacle to go forward and LOOKFORLINE -> tal vez disminuir
+    static constexpr uint32_t kNoObstacleToCornerMs = 2800; // Time without obstacle to go forward and LOOKFORLINE -> tal vez disminuir
     static constexpr uint32_t kCornerDeployWazitMs = 1800;
 
     static constexpr uint32_t kMinAvoidTimeMs = 250;
@@ -85,7 +85,7 @@ LARCStateMachine::LARCStateMachine()
 void LARCStateMachine::begin()
 {
     
-    currentState = STATES::POOL; // siempre en START
+    currentState = STATES::LOOKFORLINE; // siempre en START
     poolState = PoolSubState::FORWARD;
 
     state_start_time = millis();
@@ -833,7 +833,9 @@ void LARCStateMachine::handleBEANSGoBackState(uint32_t now, bool cornerLEFTDetec
             return;
         }
 
-        odomMove_.setTranslation(vx * 50.0f, 0.48f); // 0.45f
+        const int error = 2500 - qtrFront.getPosition();
+        const float corr = constrain(error * 0.03f, -30.0f, 30.0f);
+        odomMove_.setTranslation(-50.0f, corr);
         /*
         if (visionLeft)
             servos.intakeUpperDeploy();
