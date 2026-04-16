@@ -14,7 +14,7 @@ namespace
     static constexpr uint32_t kInitializedStoppedMs = 9000;
     static constexpr uint32_t kStartIgnoreTimeMs = 2200;    // Time to ignore IR's at the START point
     static constexpr uint32_t kClearDelayMs = 300;          // Tiempo para cambiar nuevamente a Forward
-    static constexpr uint32_t kNoObstacleToCornerMs = 2800; // Time without obstacle to go forward and LOOKFORLINE -> tal vez disminuir
+    static constexpr uint32_t kNoObstacleToCornerMs = 3000; // Time without obstacle to go forward and LOOKFORLINE -> tal vez disminuir
     static constexpr uint32_t kCornerDeployWazitMs = 1800;
 
     static constexpr uint32_t kMinAvoidTimeMs = 250;
@@ -163,7 +163,7 @@ void LARCStateMachine::update()
     //Serial.print("linePos: ");
     //Serial.println(linePos); // To know the value for the center of the qtr
     
-    /*
+    
     static uint32_t debugPrintMs = 0;
     if ((now - debugPrintMs) >= 100)
     {
@@ -205,11 +205,11 @@ void LARCStateMachine::update()
 
     // Línea
     Serial.print(F(" ❤ qtr| onLine:")); Serial.print(onLine);
-    Serial.print(F(" vx:")); Serial.print(vx);
     Serial.print(F(" lPos:"));  Serial.print(qtrFront.getPosition());
+    Serial.print(F(" vx:")); Serial.print(vx);
     Serial.println();
     }
-    */
+    
     
     const bool frontLeftDetectedLine = FL; // Also used for corner
     const bool frontRightDetectedLine = FR;
@@ -280,7 +280,7 @@ void LARCStateMachine::update()
         }
     }
     const bool obstacle = obstacleLatched;
-
+    /*
     // VLX debug print
     Serial.print(" tofReady: "); Serial.print(tofReady);
     Serial.print(" | Lvalid: "); Serial.print(tofLeft.isValid());
@@ -292,7 +292,7 @@ void LARCStateMachine::update()
     Serial.print(" | obstacleLatched: "); Serial.print(obstacleLatched);
     Serial.print(" | obstacleUsed: "); Serial.print(obstacle);
     Serial.print(" | state: "); Serial.println((int)currentState);
-
+    */
     switch (currentState)
     {
     case STATES::START:
@@ -410,8 +410,8 @@ void LARCStateMachine::readVision()
 void LARCStateMachine::handleStartState(uint32_t now, bool backDetected)
 {
     vision.stop();
-    //tofLeft.update();
-    //tofRight.update();
+    tofLeft.update();
+    tofRight.update();
 
     const bool limitPressed = (digitalRead(limitSwitch) == HIGH);
 
@@ -567,16 +567,16 @@ void LARCStateMachine::handlePoolState(uint32_t now, bool obstacle, bool leftDet
         // Si el obstáculo se acerca demasiado, retroceder
         const float distL = tofLeft.getDistanceCm();
         const float distR = tofRight.getDistanceCm();
-        const bool tooClose = (tofLeft.isValid()  && distL < 10.0f) ||
-                              (tofRight.isValid() && distR < 10.0f);
+        const bool tooClose = (tofLeft.isValid()  && distL < 12.0f) ||
+                              (tofRight.isValid() && distR < 12.0f);
 
         if (tooClose)
         {
-            odomMove_.backward(50.0f);
+            odomMove_.backward(53.0f);
             break;
         }
 
-        odomMove_.left(50.0f);
+        odomMove_.left(53.0f);
 
         const bool justEntered = (now - poolStateStartMs) < 150;
 
@@ -619,11 +619,11 @@ void LARCStateMachine::handlePoolState(uint32_t now, bool obstacle, bool leftDet
 
         if (tooClose)
         {
-            odomMove_.backward(50.0f);
+            odomMove_.backward(53.0f);
             break;
         }
 
-        odomMove_.right(50.0f);
+        odomMove_.right(53.0f);
 
         const bool justEntered = (now - poolStateStartMs) < 150;
 
@@ -684,7 +684,7 @@ void LARCStateMachine::handleLookForLineState(uint32_t now,
 void LARCStateMachine::handleLookForCornerState(uint32_t now, bool cornerLEFTDetected, float vx)
 {
 
-    static constexpr uint32_t kCornerStopMs = 1200;
+    static constexpr uint32_t kCornerStopMs = 8200;//1200; //Para que vision empiece
     static constexpr uint32_t kSoftStartMs  = 500;
 
     switch (action_stage)
@@ -772,7 +772,7 @@ void LARCStateMachine::handleBEANS(uint32_t now, bool cornerRIGHTDetected, bool 
 
         action_start_time = 0;
 
-        const int error = 2500 - qtrFront.getPosition();
+        const int error = 2000 - qtrFront.getPosition();
         const float corr = constrain(error * 0.03f, -30.0f, 30.0f);
         odomMove_.setTranslation(+50.0f, corr);
 
