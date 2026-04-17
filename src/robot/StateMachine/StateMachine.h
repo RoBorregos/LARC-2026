@@ -54,6 +54,7 @@ private:
     // ELEVATOR
     const int limitSwitch = Pins::kLimitSwitch;
     bool lastLimitPressed = false;
+    bool limitWasPressed = false;
     bool elevatorGoingUpByLimit = false;
     uint32_t elevatorUpStartMs = 0;
 
