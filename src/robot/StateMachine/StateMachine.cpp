@@ -85,7 +85,7 @@ LARCStateMachine::LARCStateMachine()
 void LARCStateMachine::begin()
 {
     
-    currentState = STATES::LOOKFORLINE; // siempre en START
+    currentState = STATES::START; // siempre en START
     poolState = PoolSubState::FORWARD;
 
     state_start_time = millis();
@@ -427,52 +427,69 @@ void LARCStateMachine::handleStartState(uint32_t now, bool backDetected)
 
     switch (action_stage)
     {
+    // ── Subir por 9000 ms ────────────────────────────────────────────────
     case 0:
-        if (!limitPressed)
+        if (limitPressed)
         {
-            elevator.ElevatorPosition(0);
-            odomMove_.stop();
-        }
-        else
-        {
+            // Limit presionado durante la subida → interrumpir y bajar
             elevator.ElevatorPosition(0);
             odomMove_.stop();
             action_start_time = now;
             action_stage = 1;
         }
+        else
+        {
+            elevator.ElevatorPosition(2);
+            odomMove_.stop();
+
+            if ((now - action_start_time) >= 9000)
+            {
+                // Subida completa → pasar al elevador stop
+                action_start_time = now;
+                action_stage = 4;
+            }
+        }
         break;
 
+    // ── Bajar mientras limit esté presionado ─────────────────────────────
     case 1:
-        elevator.ElevatorPosition(0);
+        elevator.ElevatorPosition(1);
         odomMove_.stop();
-        if ((now - action_start_time) >= 2000)
+
+        if (!limitPressed)
         {
+            // Limit suelto → esperar 2000 ms antes de reintentar subida
             action_start_time = now;
             action_stage = 2;
         }
         break;
 
+    // ── Esperar 2000 ms con elevador parado ──────────────────────────────
     case 2:
         elevator.ElevatorPosition(0);
         odomMove_.stop();
-        if ((now - action_start_time) >= 9000)
+
+        if ((now - action_start_time) >= 2000)
         {
+            // Reintentar subida desde cero
             action_start_time = now;
-            action_stage = 3;
+            action_stage = 0;
         }
         break;
 
-    case 3:
+    // ── Subida completa: elevador stop 3000 ms ───────────────────────────
+    case 4:
         elevator.ElevatorPosition(0);
         odomMove_.stop();
-        if ((now - action_start_time) >= 3000)
+        if ((now - action_start_time) >= 1500)
         {
             action_start_time = now;
-            action_stage = 4;
+            action_stage = 5;
         }
         break;
 
-    case 4:
+    // ── Avanzar y transicionar a POOL ────────────────────────────────────
+    case 5:
         elevator.ElevatorPosition(0);
         odomMove_.forward(50.0f);
 
