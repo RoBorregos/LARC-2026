@@ -12,7 +12,7 @@ namespace
     static constexpr float kBaseSpeed = Constants::PID::kcurrentVelocity;
 
     static constexpr uint32_t kInitializedStoppedMs = 9000;
-    static constexpr uint32_t kStartIgnoreTimeMs = 2200;    // Time to ignore IR's at the START point
+    static constexpr uint32_t kStartIgnoreTimeMs = 3000;    // Time to ignore IR's at the START point
     static constexpr uint32_t kClearDelayMs = 300;          // Tiempo para cambiar nuevamente a Forward
     static constexpr uint32_t kNoObstacleToCornerMs = 3000; // Time without obstacle to go forward and LOOKFORLINE -> tal vez disminuir
     static constexpr uint32_t kCornerDeployWazitMs = 1800;
@@ -89,7 +89,7 @@ void LARCStateMachine::begin()
     poolState = PoolSubState::FORWARD;
 
     state_start_time = millis();
-    action_start_time = 0;
+    action_start_time = millis();
     action_stage = 0;
 
     clearStartMs = 0;
@@ -413,7 +413,7 @@ void LARCStateMachine::handleStartState(uint32_t now, bool backDetected)
     tofLeft.update();
     tofRight.update();
 
-    const bool limitPressed = (digitalRead(limitSwitch) == HIGH);
+    const bool limitPressed = (digitalRead(limitSwitch) == HIGH); // ==HIGH
 
     if (limitPressed != lastLimitPressed)
     {
@@ -498,7 +498,7 @@ void LARCStateMachine::handleStartState(uint32_t now, bool backDetected)
             setPoolState(PoolSubState::FORWARD);
             setState(STATES::POOL);
         }
-        else if (backDetected && (now - action_start_time) >= 1000)
+        else if (backDetected && (now - action_start_time) >= 1500)
         {
             setPoolState(PoolSubState::FORWARD);
             setState(STATES::POOL);
@@ -681,20 +681,62 @@ void LARCStateMachine::handleLookForLineState(uint32_t now,
                                               bool rightDetected,
                                               bool onLine)
 {
+    
 
-    // ── Prioridad 1: línea frontal detectada -> ir a LOOKFORCORNER ────────
+    static constexpr uint32_t kBorderCorrectMs = 150;
+    static constexpr float    kTofBorderCm     = 15.0f;
+
+    const bool realBorderLeft  = leftDetected  && tofLeft.isValid()  && tofLeft.getDistanceCm()  > kTofBorderCm;
+    const bool realBorderRight = rightDetected && tofRight.isValid() && tofRight.getDistanceCm() > kTofBorderCm;
+
+    if (lfCorrecting)
+    {
+        if ((now - lfCorrectionStartMs) < kBorderCorrectMs)
+        {
+            if (lfCorrectionDir < 0)
+                odomMove_.left(55.0f);
+            else
+                odomMove_.right(55.0f);
+            return;
+        }
+        // Corrección terminó → forward y salir sin re-chequear IRs este loop
+        lfCorrecting = false;
+        odomMove_.forward(50.0f);
+        return;
+    }
+
+    if (realBorderLeft && !rightDetected)
+    {
+        lfCorrecting        = true;
+        lfCorrectionDir     = +1;
+        lfCorrectionStartMs = now;
+        odomMove_.right(55.0f);
+        return;
+    }
+
+    if (realBorderRight && !leftDetected)
+    {
+        lfCorrecting        = true;
+        lfCorrectionDir     = -1;
+        lfCorrectionStartMs = now;
+        odomMove_.left(55.0f);
+        return;
+    }
+
+    // ── Prioridad absoluta: línea frontal real ────────────────────────────
     if (frontDetected && onLine)
     {
-        lfCorrecting  = false;
-        lfLeftHoldMs  = 0;
-        lfRightHoldMs = 0;
+        lfCorrecting        = false;
+        lfCorrectionDir     = 0;
+        lfCorrectionStartMs = 0;
+        lfLeftHoldMs        = 0;
+        lfRightHoldMs       = 0;
         Serial.println("[LOOKFORLINE] FRONT DETECTED -> LOOKFORCORNER");
         odomMove_.stop();
         setState(STATES::LOOKFORCORNER);
         return;
     }
 
-    // ── Avance recto hasta encontrar la línea ─────────────────────────────
     odomMove_.forward(50.0f);
 }
 
