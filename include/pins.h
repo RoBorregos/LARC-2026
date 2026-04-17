@@ -77,7 +77,7 @@ namespace Pins
     // =========================================================
     // IR SENSORS ON MUX2
     // =========================================================
-     static constexpr uint8_t kIrChFL = 34;
+     static constexpr uint8_t kIrChFL = 30;
     static constexpr uint8_t kIrChFR = 36;
     static constexpr uint8_t kIrChBL = 33;
     static constexpr uint8_t kIrChBR = 35;
