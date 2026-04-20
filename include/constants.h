@@ -64,8 +64,8 @@ namespace Constants
 
         // PLACEHOLDERS
         constexpr Profile Front = {
-            {815, 804, 835, 831, 838, 831, 834},          // On white
-            {979, 977, 983, 978, 980, 978, 980}}; // black (up and DOWN)
+            {714, 697, 739, 727, 745, 735, 732},          // On white
+            {962, 961, 966, 961, 968, 963, 968}}; // black (up and DOWN)
 
         constexpr Profile Rear = {
             {120, 130, 115, 140, 150, 135, 128, 122},
@@ -78,7 +78,7 @@ namespace Constants
     namespace LineFollower
 
     {
-        constexpr int kSetpoint = 2000;//2700; // center of 0-6000 range (el ultimo no se esta tomndo otherwise 0-7000)
+        constexpr int kSetpoint = 2200;//2700; // center of 0-6000 range (el ultimo no se esta tomndo otherwise 0-7000)
         // change to 4000, 2000, etc. as needed
     }
 
