@@ -12,8 +12,8 @@ namespace
     static constexpr float kBaseSpeed = Constants::PID::kcurrentVelocity;
 
     static constexpr uint32_t kInitializedStoppedMs = 9000;
-    static constexpr uint32_t kStartIgnoreTimeMs = 3000;    // Time to ignore IR's at the START point
-    static constexpr uint32_t kClearDelayMs = 300;          // Tiempo para cambiar nuevamente a Forward
+    static constexpr uint32_t kStartIgnoreTimeMs = 4500;    // Time to ignore IR's at the START point
+    static constexpr uint32_t kClearDelayMs = 1500;  //6500;          // Tiempo para cambiar nuevamente a Forward
     static constexpr uint32_t kNoObstacleToCornerMs = 3000; // Time without obstacle to go forward and LOOKFORLINE -> tal vez disminuir
     static constexpr uint32_t kCornerDeployWazitMs = 1800;
 
@@ -98,8 +98,10 @@ void LARCStateMachine::begin()
     visionLeft = 0;
     visionRight = 0;
 
-    pinMode(limitSwitch, INPUT_PULLUP);
+    //Elevator
 
+    pinMode(limitSwitch, INPUT_PULLUP);
+    
     vision.begin();
     vision.requestStatus();
 
@@ -209,6 +211,7 @@ void LARCStateMachine::update()
     Serial.print(F(" vx:")); Serial.print(vx);
     Serial.println();
     }
+    
     
     
     const bool frontLeftDetectedLine = FL; // Also used for corner
@@ -442,7 +445,7 @@ void LARCStateMachine::handleStartState(uint32_t now, bool backDetected)
             elevator.ElevatorPosition(2);
             odomMove_.stop();
 
-            if ((now - action_start_time) >= 9000)
+            if ((now - action_start_time) >= 12000)
             {
                 // Subida completa → pasar al elevador stop
                 action_start_time = now;
@@ -498,11 +501,6 @@ void LARCStateMachine::handleStartState(uint32_t now, bool backDetected)
             setPoolState(PoolSubState::FORWARD);
             setState(STATES::POOL);
         }
-        else if (backDetected && (now - action_start_time) >= 1500)
-        {
-            setPoolState(PoolSubState::FORWARD);
-            setState(STATES::POOL);
-        }
         break;
     }
 }
@@ -511,8 +509,8 @@ void LARCStateMachine::handlePoolState(uint32_t now, bool obstacle, bool leftDet
 {
     vision.stop();
     vision.clearErrors();
-    //tofLeft.update();
-    //tofRight.update();
+    tofLeft.update();
+    tofRight.update();
 
     switch (poolState)
     {
@@ -593,7 +591,7 @@ void LARCStateMachine::handlePoolState(uint32_t now, bool obstacle, bool leftDet
             break;
         }
 
-        odomMove_.left(53.0f);
+        odomMove_.left(55.0f);
 
         const bool justEntered = (now - poolStateStartMs) < 150;
 
@@ -636,11 +634,11 @@ void LARCStateMachine::handlePoolState(uint32_t now, bool obstacle, bool leftDet
 
         if (tooClose)
         {
-            odomMove_.backward(53.0f);
+            odomMove_.backward(55.0f);
             break;
         }
 
-        odomMove_.right(53.0f);
+        odomMove_.right(55.0f);
 
         const bool justEntered = (now - poolStateStartMs) < 150;
 
@@ -681,8 +679,49 @@ void LARCStateMachine::handleLookForLineState(uint32_t now,
                                               bool rightDetected,
                                               bool onLine)
 {
-    
+    // ── case 0: retroceder 400 ms ─────────────────────────────────────────
+    if (action_stage == 0)
+    {
+        if (action_start_time == 0)
+            action_start_time = now;
 
+        odomMove_.backward(180.0f);
+
+        if ((now - action_start_time) >= 200)
+        {
+            action_stage = 1;
+            action_start_time = now;
+        }
+        return;
+    }
+
+    // ── case 1: avanzar 400 ms ────────────────────────────────────────────
+    if (action_stage == 1)
+    {
+        odomMove_.backward(200.0f);
+
+        if ((now - action_start_time) >= 200)
+        {
+            action_stage = 2;
+            action_start_time = now;
+        }
+        return;
+    }
+
+    // ── case 2: stop 400 ms ───────────────────────────────────────────────
+    if (action_stage == 2)
+    {
+        odomMove_.forward(120.0f);
+
+        if ((now - action_start_time) >= 300)
+        {
+            action_stage = 3;
+            action_start_time = now;
+        }
+        return;
+    }
+
+    // ── case 3: búsqueda normal ───────────────────────────────────────────
     static constexpr uint32_t kBorderCorrectMs = 150;
     static constexpr float    kTofBorderCm     = 15.0f;
 
@@ -699,7 +738,6 @@ void LARCStateMachine::handleLookForLineState(uint32_t now,
                 odomMove_.right(55.0f);
             return;
         }
-        // Corrección terminó → forward y salir sin re-chequear IRs este loop
         lfCorrecting = false;
         odomMove_.forward(50.0f);
         return;
@@ -723,7 +761,6 @@ void LARCStateMachine::handleLookForLineState(uint32_t now,
         return;
     }
 
-    // ── Prioridad absoluta: línea frontal real ────────────────────────────
     if (frontDetected && onLine)
     {
         lfCorrecting        = false;
@@ -831,7 +868,7 @@ void LARCStateMachine::handleBEANS(uint32_t now, bool cornerRIGHTDetected, bool 
 
         action_start_time = 0;
 
-        const int error = 2000 - qtrFront.getPosition();
+        const int error = 2200 - qtrFront.getPosition();
         const float corr = constrain(error * 0.03f, -30.0f, 30.0f);
         odomMove_.setTranslation(+50.0f, corr);
 
@@ -851,78 +888,74 @@ void LARCStateMachine::handleBEANS(uint32_t now, bool cornerRIGHTDetected, bool 
     }
 }
 
-void LARCStateMachine::handleBEANSGoBackState(uint32_t now, bool cornerLEFTDetected, bool onLine, float vx)
+void LARCStateMachine::handleBEANSGoBackState(uint32_t now, bool frontLeftDetected, bool onLine, float vx)
 {
-
-    const bool limitPressed = (digitalRead(limitSwitch) == HIGH);
-
     switch (action_stage)
     {
     case 0:
-    {
-        // Bajar elevador hasta tocar limit
-        if (!limitPressed)
-        {
-            elevator.ElevatorPosition(0); //Bajar (2)
-            odomMove_.stop();
-            return;
-        }
-
+        vision.stop();
+        vision.clearErrors();
         elevator.ElevatorPosition(0);
-        action_stage = 1;
+        odomMove_.stop();
         action_start_time = now;
+        action_stage = 1;  // ← falta esto
         return;
-    }
 
     case 1:
-    {
-        if (cornerLEFTDetected)
+        elevator.ElevatorPosition(0);
+        odomMove_.stop();
+        action_start_time = now;
+        action_stage = 2;
+        return;
+
+    case 2:
+        //elevator.ElevatorPosition(1);
+        odomMove_.stop();
+        /*
+        if ((now - action_start_time) >= 3700)
+        {   vision.stop();
+            vision.clearErrors();
+            action_start_time = now;
+            action_stage = 3;
+        }
+        return;
+        */
+
+    case 3:
+        elevator.ElevatorPosition(0);
+
+        if (frontLeftDetected)
         {
             odomMove_.stop();
-            //servos.intakeUpperHome();
-            //servos.intakeLowerHome();
             action_start_time = now;
-            action_stage = 2;
+            action_stage = 4;
             return;
         }
 
         if (!onLine)
         {
-            LARC.stop();
-            return;
+            odomMove_.backward(55.0f);
         }
-
-        const int error = 2500 - qtrFront.getPosition();
-        const float corr = constrain(error * 0.03f, -30.0f, 30.0f);
-        odomMove_.setTranslation(-50.0f, corr);
-        /*
-        if (visionLeft)
-            servos.intakeUpperDeploy();
         else
-            servos.intakeUpperHome();
-
-        if (visionRight)
-            servos.intakeLowerDeploy();
-        else
-            servos.intakeLowerHome();
-            */
-        break;
-    }
-
-    case 2:
-    {
-        LARC.brake();
-
-        if ((now - action_start_time) >= 300)
         {
-            setPoolState(PoolSubState::FORWARD);
-            setState(STATES::POOLSGOBACK);
+            const int error = 2900 - qtrFront.getPosition();
+            const float corr = constrain(error * 0.03f, -30.0f, 30.0f);
+            odomMove_.setTranslation(-50.0f, corr);
         }
-        break;
-    }
+        return;
+
+    case 4:
+        elevator.ElevatorPosition(0);
+        odomMove_.stop();
+
+        if ((now - action_start_time) >= 8000)
+        {
+            vision.startBeans();
+            setState(STATES::BEANS);
+        }
+        return;
     }
 }
-
 
 void LARCStateMachine::handlePOOLSGoBackState(uint32_t now, bool rearObstacle, bool leftDetected, bool rightDetected)
 {
