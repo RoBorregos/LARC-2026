@@ -1,0 +1,21 @@
+{
+    "s_min": 145,
+    "v_dark": 62,
+    "bg_h_lo": 33,
+    "bg_h_hi": 104,
+    "bg_s_min": 0,
+    "bg_v_min": 0,
+    "area_min": 961,
+    "area_max": 5247,
+    "rad_min": 31,
+    "rad_max": 125,
+    "circ_min": 66,
+    "circ_max": 99,
+    "morph_k": 9,
+    "morph_iter": 3,
+    "det_cy_l": 286,
+    "det_cy_r": 379,
+    "det_thick": 97,
+    "trigger_x": 103,
+    "trig_y2": 376
+  }
