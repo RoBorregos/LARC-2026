@@ -1,190 +1,168 @@
 #!/usr/bin/env python3
 """
-separator_visao.py — Headless ball sorter (dispatcher mode)
-============================================================
-Camera  : /dev/video3  (RealSense RGB via V4L2)
-Config  : separator_config.json
-Serial  : NONE — prints VISION:FD:WW:CC lines for dispatcher to forward
-Output  : FPS + warm/cool hits to terminal, VISION tags to stdout
-Ctrl+C  : stop
+separator_visao.py — Headless ball color sorter with servo control
+==================================================================
+Camera    : /dev/video_separator  (Global Shutter)
+Config    : separator_config.json
+Servos    : holder (pin 17) + separator (pin 27)
+Output    : VISION:FD:WW:CC lines for dispatcher
+
+Classification
+--------------
+  WHITE (background)  - no ball, idle
+  WARM (R/O/Y)        - separator - mature
+  COOL (blue + black) - separator - immature
+  unclassified ball   - holder pulse (fallback)
 """
 
 import cv2
 import numpy as np
 import sys, json, os, time
+from ServoSystem import ServoSystem
 
-# ══════════════════════════════════════════════════════════════════════
-#  CONSTANTS
-# ══════════════════════════════════════════════════════════════════════
 CONFIG_FILE = "separator_config.json"
-CAM_PORT    = 9
-FRAME_W     = 1280
-FRAME_H     = 720
+FRAME_W     = 640
+FRAME_H     = 480
 
 DEFAULT_CFG = dict(
-    roi_x1=760, roi_y1=340, roi_x2=1160, roi_y2=740,
+    roi_x=551, roi_y=208, roi_w=197, roi_h=251,
     warm_h_lo=0,   warm_h_hi=35,
     warm_s_min=80, warm_v_min=80,
     cool_h_lo=95,  cool_h_hi=135,
     cool_s_min=60, cool_v_min=40,
     black_v_max=50,
-    warm_frac=5,   cool_frac=5,
-    morph_k=5,     morph_iter=1,
-    ghost_frames=10,
-    area_min=800,  area_max=80000,
+    white_s_max=40,
+    white_v_min=180,
+    warm_frac=5,
+    cool_frac=5,
+    white_frac=60,
+    morph_k=5,
+    morph_iter=1,
 )
 
-# ══════════════════════════════════════════════════════════════════════
-#  CONFIG
-# ══════════════════════════════════════════════════════════════════════
 def load_cfg() -> dict:
     if not os.path.exists(CONFIG_FILE):
-        print(f"[Config] {CONFIG_FILE} not found — using defaults")
+        print(f"[Config] {CONFIG_FILE} not found — defaults", file=sys.stderr)
         return dict(DEFAULT_CFG)
     with open(CONFIG_FILE) as f:
         saved = json.load(f)
+    if "roi" in saved:
+        r = saved["roi"]
+        saved["roi_x"] = r["x"]; saved["roi_y"] = r["y"]
+        saved["roi_w"] = r["w"]; saved["roi_h"] = r["h"]
     cfg = {**DEFAULT_CFG, **saved}
-    print(f"[Config] loaded {CONFIG_FILE}")
-    print(f"[Config] ROI  x:{cfg['roi_x1']}-{cfg['roi_x2']}  y:{cfg['roi_y1']}-{cfg['roi_y2']}")
+    print(f"[Config] loaded — ROI {cfg['roi_w']}x{cfg['roi_h']} @ ({cfg['roi_x']},{cfg['roi_y']})",
+          file=sys.stderr)
     return cfg
 
-# ══════════════════════════════════════════════════════════════════════
-#  KALMAN GHOST TRACKER
-# ══════════════════════════════════════════════════════════════════════
-def _make_kalman():
-    kf = cv2.KalmanFilter(4, 2)
-    kf.measurementMatrix   = np.array([[1,0,0,0],[0,1,0,0]], np.float32)
-    kf.transitionMatrix    = np.array([[1,0,1,0],[0,1,0,1],
-                                       [0,0,1,0],[0,0,0,1]], np.float32)
-    kf.processNoiseCov     = np.eye(4, dtype=np.float32) * 0.03
-    kf.measurementNoiseCov = np.eye(2, dtype=np.float32) * 1.0
-    kf.errorCovPost        = np.eye(4, dtype=np.float32)
-    return kf
 
-_ghosts = {
-    'warm': dict(kf=_make_kalman(), ttl=0, pos=(0,0), r=0),
-    'cool': dict(kf=_make_kalman(), ttl=0, pos=(0,0), r=0),
-}
-
-def update_ghosts(detections, ghost_frames):
-    seen = {k: None for k in _ghosts}
-    for cx, cy, r, group in detections:
-        if seen[group] is None or r > seen[group][2]:
-            seen[group] = (cx, cy, r)
-    for group, g in _ghosts.items():
-        if seen[group]:
-            cx, cy, r = seen[group]
-            g['kf'].correct(np.array([[np.float32(cx)],[np.float32(cy)]]))
-            g['ttl'] = ghost_frames
-            g['r']   = r
-        else:
-            g['ttl'] = max(0, g['ttl'] - 1)
-        pred     = g['kf'].predict()
-        g['pos'] = (int(pred[0]), int(pred[1]))
-
-# ══════════════════════════════════════════════════════════════════════
-#  VISION PIPELINE
-# ══════════════════════════════════════════════════════════════════════
-def process_roi(roi_bgr, cfg):
-    hsv        = cv2.cvtColor(roi_bgr, cv2.COLOR_BGR2HSV)
-    roi_pixels = roi_bgr.shape[0] * roi_bgr.shape[1]
-
-    warm_main = cv2.inRange(hsv,
+def process(roi_hsv, cfg, roi_pixels):
+    """Returns (warm_hit, cool_hit, no_ball)."""
+    warm = cv2.inRange(roi_hsv,
         np.array([cfg['warm_h_lo'], cfg['warm_s_min'], cfg['warm_v_min']], np.uint8),
-        np.array([cfg['warm_h_hi'], 255,               255],               np.uint8))
-    warm_mask = warm_main
+        np.array([cfg['warm_h_hi'], 255, 255], np.uint8))
     if cfg['warm_h_lo'] < 10:
-        warm_mask = cv2.bitwise_or(warm_main, cv2.inRange(hsv,
+        warm = cv2.bitwise_or(warm, cv2.inRange(roi_hsv,
             np.array([160, cfg['warm_s_min'], cfg['warm_v_min']], np.uint8),
-            np.array([180, 255,               255],               np.uint8)))
+            np.array([180, 255, 255], np.uint8)))
 
-    blue_mask = cv2.inRange(hsv,
+    cool = cv2.inRange(roi_hsv,
         np.array([cfg['cool_h_lo'], cfg['cool_s_min'], cfg['cool_v_min']], np.uint8),
-        np.array([cfg['cool_h_hi'], 255,               255],               np.uint8))
-    blk_mask  = (hsv[:,:,2] < cfg['black_v_max']).astype(np.uint8) * 255
-    cool_mask = cv2.bitwise_or(blue_mask, blk_mask)
+        np.array([cfg['cool_h_hi'], 255, 255], np.uint8))
+    blk  = (roi_hsv[:, :, 2] < cfg['black_v_max']).astype(np.uint8) * 255
+    cool = cv2.bitwise_or(cool, blk)
+
+    white = ((roi_hsv[:, :, 1] < cfg['white_s_max']) &
+             (roi_hsv[:, :, 2] > cfg['white_v_min'])).astype(np.uint8) * 255
 
     k = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (cfg['morph_k'], cfg['morph_k']))
     n = cfg['morph_iter']
-    for m in (warm_mask, cool_mask):
-        m[:] = cv2.morphologyEx(m, cv2.MORPH_OPEN,  k, iterations=n)
-        m[:] = cv2.morphologyEx(m, cv2.MORPH_CLOSE, k, iterations=n)
+    warm  = cv2.morphologyEx(warm,  cv2.MORPH_OPEN,  k, iterations=n)
+    warm  = cv2.morphologyEx(warm,  cv2.MORPH_CLOSE, k, iterations=n)
+    cool  = cv2.morphologyEx(cool,  cv2.MORPH_OPEN,  k, iterations=n)
+    cool  = cv2.morphologyEx(cool,  cv2.MORPH_CLOSE, k, iterations=n)
+    white = cv2.morphologyEx(white, cv2.MORPH_OPEN,  k, iterations=n)
+    white = cv2.morphologyEx(white, cv2.MORPH_CLOSE, k, iterations=n)
 
-    warm_hit = (np.count_nonzero(warm_mask) / roi_pixels * 100) >= cfg['warm_frac']
-    cool_hit = (np.count_nonzero(cool_mask) / roi_pixels * 100) >= cfg['cool_frac']
+    white_pct = np.count_nonzero(white) / roi_pixels * 100
+    no_ball   = white_pct >= cfg['white_frac']
 
-    detections = []
-    for mask, group in ((warm_mask, 'warm'), (cool_mask, 'cool')):
-        cnts, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        for cnt in cnts:
-            area = cv2.contourArea(cnt)
-            if cfg['area_min'] <= area <= cfg['area_max']:
-                (cx,cy), r = cv2.minEnclosingCircle(cnt)
-                detections.append((int(cx), int(cy), int(r), group))
+    warm_hit = (not no_ball) and (np.count_nonzero(warm) / roi_pixels * 100) >= cfg['warm_frac']
+    cool_hit = (not no_ball) and (np.count_nonzero(cool) / roi_pixels * 100) >= cfg['cool_frac']
+    return warm_hit, cool_hit, no_ball
 
-    return detections, warm_hit, cool_hit
 
-# ══════════════════════════════════════════════════════════════════════
-#  MAIN
-# ══════════════════════════════════════════════════════════════════════
 def main():
     cfg = load_cfg()
 
-    cap = cv2.VideoCapture(CAM_PORT, cv2.CAP_V4L2)
+    cap = cv2.VideoCapture("/dev/video_separator", cv2.CAP_V4L2)
     cap.set(cv2.CAP_PROP_FRAME_WIDTH,  FRAME_W)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, FRAME_H)
     if not cap.isOpened():
-        sys.exit(f"[ERROR] Cannot open /dev/video{CAM_PORT}")
+        sys.exit("[ERROR] Cannot open /dev/video_separator")
 
-    actual_w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-    actual_h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    print(f"[Camera] /dev/video{CAM_PORT}  {actual_w}x{actual_h}")
-    print("[Mode] Dispatcher (VISION tags via stdout)")
-    print("[Running] Ctrl+C to stop")
+    w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    print(f"[Camera] /dev/video_separator  {w}x{h}", file=sys.stderr)
 
-    frame_count = 0
-    hit_counts  = {'warm': 0, 'cool': 0}
-    t0          = time.time()
-    t_last      = t0
+    rx = max(0, min(cfg['roi_x'], w - 2))
+    ry = max(0, min(cfg['roi_y'], h - 2))
+    rw = min(cfg['roi_w'], w - rx)
+    rh = min(cfg['roi_h'], h - ry)
+    roi_pixels = rw * rh
+    print(f"[ROI] {rw}x{rh} @ ({rx},{ry})  = {roi_pixels} px", file=sys.stderr)
+
+    servos = ServoSystem(holder_pin=17, separator_pin=27)
+    servos.holder.home()
+    servos.separator.force(30)
+    servos.update()
+    print("[Servos] holder=17, separator=27 initialized", file=sys.stderr)
+
+    frames = 0
+    hits_w = hits_c = hits_none = idle = 0
+    t0 = time.time()
+    t_last = t0
 
     try:
         while True:
             ret, frame = cap.read()
-            if not ret or frame is None:
+            if not ret:
                 continue
 
-            x1 = max(0, min(cfg['roi_x1'], actual_w - 2))
-            y1 = max(0, min(cfg['roi_y1'], actual_h - 2))
-            x2 = max(x1+2, min(cfg['roi_x2'], actual_w))
-            y2 = max(y1+2, min(cfg['roi_y2'], actual_h))
+            roi_hsv = cv2.cvtColor(frame[ry:ry+rh, rx:rx+rw], cv2.COLOR_BGR2HSV)
+            warm_hit, cool_hit, no_ball = process(roi_hsv, cfg, roi_pixels)
 
-            detections, pixel_warm, pixel_cool = process_roi(frame[y1:y2, x1:x2], cfg)
-            update_ghosts(detections, cfg['ghost_frames'])
+            # ball present but not classified as warm or cool → fallback holder pulse
+            unclassified = (not no_ball) and (not warm_hit) and (not cool_hit)
 
-            warm_hit = pixel_warm or (_ghosts['warm']['ttl'] > 0)
-            cool_hit = pixel_cool or (_ghosts['cool']['ttl'] > 0)
+            if warm_hit:
+                servos.separator_mature()
+            elif cool_hit:
+                servos.separator_immature()
 
-            if warm_hit: hit_counts['warm'] += 1
-            if cool_hit: hit_counts['cool'] += 1
+            servos.holder_trigger(unclassified)
+            servos.update()
 
-            # Output vision data for dispatcher to forward
-            # Format: VISION:FD:WW:CC (hex bytes)
-            # 0xFD = separator sync byte, WW = warm, CC = cool
-            print(f"VISION:FD:{int(warm_hit):02X}:{int(cool_hit):02X}", flush=True)
+            if no_ball:      idle      += 1
+            if warm_hit:     hits_w    += 1
+            if cool_hit:     hits_c    += 1
+            if unclassified: hits_none += 1
 
-            frame_count += 1
+            #print(f"VISION:FD:{int(warm_hit):02X}:{int(cool_hit):02X}", flush=True)
+
+            frames += 1
             now = time.time()
-            if now - t_last >= 1.0:
-                fps = frame_count / (now - t0)
-                w_str = "WARM" if warm_hit else "    "
-                c_str = "COOL" if cool_hit else "    "
-                print(f"[FPS] {fps:5.1f}  |  {w_str}  {c_str}  |  warm: {hit_counts['warm']:4d}  cool: {hit_counts['cool']:4d}")
+            if now - t_last >= 2.0:
+                fps = frames / (now - t0)
+                print(f"[SEP] {fps:5.1f} fps  W:{hits_w}  C:{hits_c}  ?:{hits_none}  idle:{idle}",
+                      file=sys.stderr)
                 t_last = now
 
     except KeyboardInterrupt:
         elapsed = time.time() - t0
-        print(f"\n[Stopped]  {frame_count} frames in {elapsed:.1f}s  avg {frame_count/elapsed:.1f} fps")
+        print(f"\n[Stopped] {frames} frames  {frames/max(elapsed,0.1):.1f} fps", file=sys.stderr)
     finally:
+        servos.close()
         cap.release()
 
 if __name__ == "__main__":
