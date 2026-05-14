@@ -1,0 +1,19 @@
+{
+    "roi_x1": 200,
+    "roi_y1": 150,
+    "roi_x2": 440,
+    "roi_y2": 330,
+    "red_h_lo1": 0,
+    "red_h_hi1": 10,
+    "red_h_lo2": 170,
+    "red_h_hi2": 180,
+    "red_s_min": 80,
+    "red_v_min": 80,
+    "blue_h_lo": 100,
+    "blue_h_hi": 130,
+    "blue_s_min": 80,
+    "blue_v_min": 60,
+    "min_pct": 5,
+    "morph_k": 5,
+    "morph_iter": 1
+  }
