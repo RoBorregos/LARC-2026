@@ -2,10 +2,26 @@
  * @file ServoSystem.hpp
  * @date 2026-02-27
  *
- * @brief Unified sysem for the SG90 servos
- *        Each servo with its own isbusy()
- *        Angles are defined in Constants::ServoAngles (constants.h).
- *        Pins are defined on pins.h
+ * @brief Unified system for the SG90 servos.
+ *        Angles and timing in Constants::ServoAngles (constants.h).
+ *        Pins in pins.h.
+ *
+ *  begin()  — blocking ramp from mechanical start to home position.
+ *  update() — call every loop. Handles auto-detach after idle.
+ *
+ *  Move methods write the servo immediately. Each servo has a hold
+ *  timer: after the last move, the servo stays in position for
+ *  kDetachMs before PWM is cut (servo goes loose).
+ *
+ *  Separator has debounce: separatorLeft/Right require kSepConfirm
+ *  consecutive calls before moving; separatorCenter requires
+ *  kSepClearMs of no detection before returning to center.
+ *  Use separatorUpdate(warm, cool) instead of calling left/right/center
+ *  directly for debounced behavior.
+ *
+ *  Intakes have hold timers: intakeUpperUpdate(detected) and
+ *  intakeLowerUpdate(detected) deploy on detection and hold for
+ *  kIntakeHoldMs after the last detection before returning home.
  */
 
 #ifndef SERVO_SYSTEM_HPP
@@ -21,68 +37,71 @@ class ServoSystem
 public:
     ServoSystem();
 
-    // Starts all the servos on the default pos
     void begin();
+    void update();
 
-    // Servo state
-    bool intakeUpperBusy() const;
-    bool intakeLowerBusy() const;
-    bool separatorBusy()   const;
-    bool benefitRedBusy()  const;
-    bool benefitBlueBusy() const;
-    bool holderBusy()     const;
+    // Debounced high-level methods (use these from the state machine)
+    void separatorUpdate(bool warm, bool cool);
+    void intakeUpperUpdate(bool detected);
+    void intakeLowerUpdate(bool detected);
 
-    // Intake Superior
+    // Direct move methods (no debounce, for manual control)
     void intakeUpperHome();
     void intakeUpperDeploy();
-
-    // Intake Inferior
     void intakeLowerHome();
     void intakeLowerDeploy();
-
-    // Separator
     void separatorCenter();
     void separatorLeft();
     void separatorRight();
+    void benefitCenter();
+    void benefitLeft();
+    void benefitRight();
+    void holderPos1();
+    void holderPos2();
 
-    // Red benefit
-    void benefitRedOpen();
-    void benefitRedClose();
-
-    // Blue benefit
-    void benefitBlueOpen();
-    void benefitBlueClose();
-
-    // Holder
-    void holderHold();
-    void holderRelease();
+    bool intakeUpperBusy() const;
+    bool intakeLowerBusy() const;
+    bool separatorBusy()   const;
+    bool benefitBusy()     const;
+    bool holderBusy()      const;
 
 private:
-    Servo _intakeUpper;
-    Servo _intakeLower;
-    Servo _separator;
-    Servo _benefitRed;
-    Servo _benefitBlue;
-    Servo _holder;
+    static constexpr uint8_t kNumServos = 5;
 
-    // Current angle per servo to avoid overwriting
-    uint8_t _curIntakeUpper;
-    uint8_t _curIntakeLower;
-    uint8_t _curSeparator;
-    uint8_t _curBenefitRed;
-    uint8_t _curBenefitBlue;
-    uint8_t _curholder;
+    enum Idx : uint8_t
+    {
+        INTAKE_UPPER = 0,
+        INTAKE_LOWER,
+        SEPARATOR,
+        BENEFIT,
+        HOLDER
+    };
 
-    // Timestamp of the last movement per servo
-    uint32_t _tIntakeUpper;
-    uint32_t _tIntakeLower;
-    uint32_t _tSeparator;
-    uint32_t _tBenefitRed;
-    uint32_t _tBenefitBlue;
-    uint32_t _tholder;
+    Servo    _servo[kNumServos];
+    uint8_t  _cur[kNumServos];
+    uint32_t _tMove[kNumServos];
+    uint8_t  _pin[kNumServos];
 
-    void _move(Servo& srv, uint8_t angle, uint8_t& current, uint32_t& timestamp);
-    bool _isMoving(uint32_t timestamp, uint32_t moveTimeMs) const;
+    // Separator debounce state
+    uint8_t  _sepWarmCount;
+    uint8_t  _sepCoolCount;
+    int8_t   _sepLastDir;
+    uint32_t _sepLastHitMs;
+
+    // Intake hold state
+    bool     _topActive;
+    bool     _botActive;
+    uint32_t _topLastHitMs;
+    uint32_t _botLastHitMs;
+
+    void _move(Idx idx, uint8_t angle);
+    bool _isBusy(Idx idx, uint32_t moveMsConst) const;
+    void _rampTo(Idx idx, uint8_t target);
+
+    static uint8_t  _homeAngle(Idx idx);
+    static uint8_t  _mechStart(Idx idx);
+    static uint32_t _moveMs(Idx idx);
+    static uint32_t _detachMs(Idx idx);
 };
 
-#endif // SERVO_SYSTEM_HPP
+#endif
