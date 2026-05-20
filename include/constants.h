@@ -59,13 +59,15 @@ namespace Constants
         struct Profile
         {
             uint16_t min[kNumSensors];
+
+
             uint16_t max[kNumSensors];
         };
 
         // PLACEHOLDERS
         constexpr Profile Front = {
-            {714, 697, 739, 727, 745, 735, 732},          // On white
-            {962, 961, 966, 961, 968, 963, 968}}; // black (up and DOWN)
+            {811, 805, 846, 841, 856, 855, 869},          // On white
+            {997, 995, 1001, 1001, 1001, 1000, 999}}; // black (up and DOWN)
 
         constexpr Profile Rear = {
             {120, 130, 115, 140, 150, 135, 128, 122},
@@ -78,7 +80,7 @@ namespace Constants
     namespace LineFollower
 
     {
-        constexpr int kSetpoint = 2200;//2700; // center of 0-6000 range (el ultimo no se esta tomndo otherwise 0-7000)
+        constexpr int kSetpoint = 2700;//2700; // center of 0-6000 range (el ultimo no se esta tomndo otherwise 0-7000)
         // change to 4000, 2000, etc. as needed
     }
 
