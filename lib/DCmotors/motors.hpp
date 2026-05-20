@@ -37,7 +37,10 @@ class DCMotor
         DCMotor(int in1, int in2, int pwm, bool invert, 
             int encoder_pin1, int encoder_pin2);
         
-        ~DCMotor();    
+        ~DCMotor();
+
+        DCMotor(const DCMotor&)            = delete;
+        DCMotor& operator=(const DCMotor&) = delete;
 
         void begin();
         void move(int speed, Direction direction);
@@ -47,6 +50,9 @@ class DCMotor
         int getEncoderCount();
         double getPRotation(); // Position Rotation
         float getPMeters(); // Position Meters
+        void  resetEncoder();
+        float getDistanceMeters() const;   
+        void  setPPR(float ppr);     // para configurar por motor
 
         void testForwardBackward();
 
@@ -64,7 +70,7 @@ class DCMotor
         
         Encoder* encoder_ = nullptr;
     
-        int rotation_factor = 473;
+        float ppr_ = 473.0f;  // pulsos por revolución (configurable por motor)
 
 
 };
