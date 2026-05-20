@@ -15,27 +15,29 @@
 
 
 #pragma once
-#include <Wire.h>
-#include <Arduino.h>
-#include <Adafruit_BNO055.h>
-#include <Adafruit_Sensor.h>
-#include <utility/imumaths.h>
-#include <tuple> //optional 
-#include <math.h>
 
+#include <Arduino.h>
+#include <Wire.h>
+#include <Adafruit_Sensor.h>
+#include <Adafruit_BNO055.h>
+#include <tuple>
 
 class BNO
 {
 public:
     BNO();
+
     bool begin();
     void update();
+
+    float getYaw() const;
     float getRoll() const;
     float getPitch() const;
-    float getYaw() const; // in rad
-    void runCalibration(); //get a "diagnosis" on screen
-    void getAngular();
+
     std::tuple<float, float, float> getLinealAcceleration();
+
+    void getAngular();
+    void getAngularPrinted();
 
 private:
     Adafruit_BNO055 bno;
@@ -43,6 +45,10 @@ private:
     bool initialized;
 
     float wrapAngle(float angle) const;
+
+    // filtro de calma
+    float filteredYawDeg_ = 0.0f;
+    bool firstYawSample_ = true;
 };
 
 #endif

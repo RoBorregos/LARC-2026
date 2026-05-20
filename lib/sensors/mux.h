@@ -8,10 +8,13 @@ class Mux74HC4067
 public:
     Mux74HC4067()
         : _sig(Pins::kMuxSig),
-          _s0(Pins::kMuxS0),
-          _s1(Pins::kMuxS1),
-          _s2(Pins::kMuxS2),
-          _s3(Pins::kMuxS3) {}
+          _s0(Pins::kMuxS0), _s1(Pins::kMuxS1),
+          _s2(Pins::kMuxS2), _s3(Pins::kMuxS3) {}
+
+    Mux74HC4067(uint8_t sigPin)
+        : _sig(sigPin),
+          _s0(Pins::kMuxS0), _s1(Pins::kMuxS1),
+          _s2(Pins::kMuxS2), _s3(Pins::kMuxS3) {}
 
     void begin()
     {
@@ -34,7 +37,7 @@ public:
     inline uint16_t read(uint8_t ch) const
     {
         select(ch);
-        delayMicroseconds(5);
+        delayMicroseconds(50);
         return analogRead(_sig);
     }
 
@@ -44,7 +47,7 @@ public:
     void debugPrint() const
     {
         for (uint8_t ch = 0; ch < 16; ch++) {
-            uint16_t v = read(ch);  // just read(), not mux.read()
+            uint16_t v = read(ch);
             Serial.print(ch);
             Serial.print(':');
             Serial.print(v);
