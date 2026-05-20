@@ -14,7 +14,6 @@ BNO::BNO() : bno(55, 0x28, &Wire), initialized(false)
 
 bool BNO::begin()
 {
-    //To begin BNO
     Serial.println("BEGIN >>>> BNO055 <<<<");
 
     while (!bno.begin())
@@ -24,50 +23,57 @@ bool BNO::begin()
     }
     Serial.println(">>>> BNO055 <<<< BEGINED successfully");
 
-    delay(2000); // Give the sensor time to initialize
+    delay(2000);
     bno.setExtCrystalUse(true);
+
     initialized = true;
+    firstYawSample_ = true;
+    filteredYawDeg_ = 0.0f;
+
     return true;
 }
 
-// Call this function in the main loop
 void BNO::update()
 {
-    if (!initialized) //if BNO is not initialized 
+    if (!initialized)
         return;
 
     bno.getEvent(&event);
-}
 
+    // ===== filtro de calma =====
+    static constexpr float alpha = 0.07f;   // más chico = más calmado
+
+    float rawYawDeg = -wrapAngle(event.orientation.x);
+
+    if (firstYawSample_)
+    {
+        filteredYawDeg_ = rawYawDeg;
+        firstYawSample_ = false;
+    }
+    else
+    {
+        float err = wrapAngle(rawYawDeg - filteredYawDeg_);
+        filteredYawDeg_ = wrapAngle(filteredYawDeg_ + alpha * err);
+    }
+}
 
 float BNO::wrapAngle(float angle) const
 {
-    // Normalize angle to [0, 360) : range
     angle = fmod(angle, 360.0f);
     if (angle < 0)
-    {
         angle += 360.0f;
-    }
 
-    // Wrap to [-180, 180] : shortest way
     if (angle > 180.0f)
-    {
         angle -= 360.0f;
-    }
     else if (angle < -180.0f)
-    {
         angle += 360.0f;
-    }
 
     return angle;
 }
 
-
 float BNO::getYaw() const
 {
-    float yawDeg;
-    yawDeg = -wrapAngle(event.orientation.x); //-event.orientation.x; 
-    return yawDeg * (M_PI/180.0f);// convert to radians
+    return filteredYawDeg_ * (M_PI / 180.0f);
 }
 
 float BNO::getRoll() const
@@ -80,8 +86,7 @@ float BNO::getPitch() const
     return event.orientation.z;
 }
 
-
-std::tuple<float, float, float> BNO::getLinealAcceleration() //acceleration tuple <x,y,z>
+std::tuple<float, float, float> BNO::getLinealAcceleration()
 {
     sensors_event_t event;
     bno.getEvent(&event, Adafruit_BNO055::adafruit_vector_type_t::VECTOR_LINEARACCEL);
@@ -89,10 +94,21 @@ std::tuple<float, float, float> BNO::getLinealAcceleration() //acceleration tupl
     return std::make_tuple(event.acceleration.x, event.acceleration.y, event.acceleration.z);
 }
 
-
 void BNO::getAngular()
 {
-    //Get on screen Yaw, Roll and Pitch values:
+    update();
+
+    float current_yaw = getYaw();
+    float current_roll = getRoll();
+    float current_pitch = getPitch();
+
+    (void)current_yaw;
+    (void)current_roll;
+    (void)current_pitch;
+}
+
+void BNO::getAngularPrinted()
+{
     update();
 
     float current_yaw = getYaw();
@@ -101,13 +117,12 @@ void BNO::getAngular()
 
     Serial.println("CURRENT ORIENTATION:");
     Serial.print("  Yaw (Z-axis):   ");
-    Serial.print(current_yaw, 2);
-    Serial.println("°");
+    Serial.print(current_yaw * 180.0f / M_PI, 2);
+    Serial.println(" deg");
     Serial.print("  Roll (Y-axis):  ");
     Serial.print(current_roll, 2);
-    Serial.println("°");
+    Serial.println(" deg");
     Serial.print("  Pitch (X-axis): ");
     Serial.print(current_pitch, 2);
-    Serial.println("°");
+    Serial.println(" deg");
 }
-

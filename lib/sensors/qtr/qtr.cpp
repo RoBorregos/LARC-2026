@@ -54,6 +54,28 @@ void QTR::setCalibration(const uint16_t* minVals, const uint16_t* maxVals)
     ensureCalValid();
 }
 
+void QTR::calibrate(uint32_t durationMs)
+{
+    uint16_t cMin[N], cMax[N];
+
+    // Init min to max possible, max to 0
+    for (uint8_t i = 0; i < N; i++) { cMin[i] = 65535; cMax[i] = 0; }
+
+    uint32_t t0 = millis();
+    while (millis() - t0 < durationMs) {
+        update();
+        // Track min/max raw values seen per sensor
+        for (uint8_t i = 0; i < N; i++) {
+            if (raw[i] < cMin[i]) cMin[i] = raw[i];
+            if (raw[i] > cMax[i]) cMax[i] = raw[i];
+        }
+        delay(5);
+    }
+
+    // Apply captured range as calibration
+    setCalibration(cMin, cMax);
+}
+
 void QTR::useDefaultCalibration(uint8_t profile)
 {
     using namespace Constants::QTRCalibration;
@@ -124,6 +146,41 @@ bool QTR::onLine(uint16_t threshold) const
             maxv = norm[i];
 
     return maxv > threshold;
+}
+
+int QTR::getBinaryPosition() const { //Hubo cambio de funcion
+    uint32_t weightedSum = 0;
+    uint32_t totalWeight = 0;
+
+    for (uint8_t i = 0; i < N; i++) {
+        if (norm[i] > Constants::QTRCalibration::kBinaryThreshold) {
+            weightedSum += (uint32_t)norm[i] * i * 1000;
+            totalWeight += norm[i];
+        }
+    }
+
+    if (totalWeight == 0) return position;
+    return (int)(weightedSum / totalWeight);
+}
+
+
+void QTR::printCalibration(const char* label) const
+{
+    // Print in constants.h ready format, copy paste directly
+    Serial.print(label); Serial.println(":");
+    Serial.print("min = {");
+    for (uint8_t i = 0; i < N; i++) {
+        Serial.print(calMin[i]);
+        if (i < N - 1) Serial.print(", ");
+    }
+    Serial.println("};");
+
+    Serial.print("max = {");
+    for (uint8_t i = 0; i < N; i++) {
+        Serial.print(calMax[i]);
+        if (i < N - 1) Serial.print(", ");
+    }
+    Serial.println("};");
 }
 
 void QTR::debugPrint() const
