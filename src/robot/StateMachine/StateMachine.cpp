@@ -727,6 +727,19 @@ void LARCStateMachine::handleLookForLineState(uint32_t now,
     const bool realBorderLeft  = leftDetected  && tofLeft.isValid()  && tofLeft.getDistanceCm()  > kTofBorderCm;
     const bool realBorderRight = rightDetected && tofRight.isValid() && tofRight.getDistanceCm() > kTofBorderCm;
 
+    if (frontDetected && onLine)
+    {
+        lfCorrecting        = false;
+        lfCorrectionDir     = 0;
+        lfCorrectionStartMs = 0;
+        lfLeftHoldMs        = 0;
+        lfRightHoldMs       = 0;
+        Serial.println("[LOOKFORLINE] FRONT DETECTED -> LOOKFORCORNER");
+        odomMove_.stop();
+        setState(STATES::LOOKFORCORNER);
+        return;
+    }
+
     if (lfCorrecting)
     {
         if ((now - lfCorrectionStartMs) < kBorderCorrectMs)
@@ -759,20 +772,7 @@ void LARCStateMachine::handleLookForLineState(uint32_t now,
         odomMove_.left(55.0f);
         return;
     }
-
-    if (frontDetected && onLine)
-    {
-        lfCorrecting        = false;
-        lfCorrectionDir     = 0;
-        lfCorrectionStartMs = 0;
-        lfLeftHoldMs        = 0;
-        lfRightHoldMs       = 0;
-        Serial.println("[LOOKFORLINE] FRONT DETECTED -> LOOKFORCORNER");
-        odomMove_.stop();
-        setState(STATES::LOOKFORCORNER);
-        return;
-    }
-
+  
     odomMove_.forward(50.0f);
 }
 
