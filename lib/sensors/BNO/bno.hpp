@@ -1,26 +1,13 @@
-/*
- * @file motors.hpp
- *
- * @author Ximena Patricia García Magdaleno
- * 
- * @brief Header file for the bno Class.
- *
- * @version 0.1
- * 
- * @date 2026-01-12
- */
-
 #ifndef BNO_HPP
 #define BNO_HPP
-
 
 #pragma once
 
 #include <Arduino.h>
 #include <Wire.h>
-#include <Adafruit_Sensor.h>
-#include <Adafruit_BNO055.h>
+#include <Adafruit_BNO08x.h>
 #include <tuple>
+// BN085 .cpp
 
 class BNO
 {
@@ -40,15 +27,26 @@ public:
     void getAngularPrinted();
 
 private:
-    Adafruit_BNO055 bno;
-    sensors_event_t event;
+    Adafruit_BNO08x bno;
+    sh2_SensorValue_t sensorValue;
+
     bool initialized;
+
+    float yawDeg_   = 0.0f;
+    float rollDeg_  = 0.0f;
+    float pitchDeg_ = 0.0f;
+
+    float linAccX_ = 0.0f;
+    float linAccY_ = 0.0f;
+    float linAccZ_ = 0.0f;
 
     float wrapAngle(float angle) const;
 
-    // filtro de calma
     float filteredYawDeg_ = 0.0f;
-    bool firstYawSample_ = true;
+    bool firstYawSample_  = true;
+
+    void quaternionToEuler(float qw, float qx, float qy, float qz,
+                           float &yaw, float &pitch, float &roll) const;
 };
 
 #endif
