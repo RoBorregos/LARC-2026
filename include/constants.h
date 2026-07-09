@@ -112,7 +112,7 @@ namespace Constants
         static constexpr uint8_t kMechStartBenefit     = 90;
         static constexpr uint8_t kMechStartHolder      = 90;
 
-        // ── Servo positions ─────────────────────────────────────
+        // Servo positions
         static constexpr uint8_t kIntakeUpperHome   = 50;
         static constexpr uint8_t kIntakeUpperDeploy = 85;
 
