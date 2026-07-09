@@ -52,7 +52,7 @@ class DCMotor
         float getPMeters(); // Position Meters
         void  resetEncoder();
         float getDistanceMeters() const;   
-        void  setPPR(float ppr);     // para configurar por motor
+        void  setPPR(float ppr);     // to configure the motor
 
         void testForwardBackward();
 
@@ -70,8 +70,7 @@ class DCMotor
         
         Encoder* encoder_ = nullptr;
     
-        float ppr_ = 473.0f;  // pulsos por revolución (configurable por motor)
-
+        float ppr_ = 473.0f;    // pulses per revolution (PPR) (each motor has its own configuration)
 
 };
 
