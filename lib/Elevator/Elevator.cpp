@@ -34,12 +34,12 @@ void Elevator::moveElevator(int direction)
         digitalWrite(pin1, LOW);
         digitalWrite(pin2, HIGH);
         analogWrite(pwm, 180);
-        //delay(7000); se puede omitir por ahora
+        //delay(7000); // It can be omitted for now.
     }
-    else if(direction == 2){ //DOWN
+    else if(direction == 2){ // DOWN
         digitalWrite(pin1, HIGH);
         digitalWrite(pin2, LOW);
-        analogWrite(pwm, 180);   // velocidad de 0 a 255
+        analogWrite(pwm, 180);   // Velocity of 0 a 255
         //delay(7000); 
     }
     else{
@@ -49,6 +49,7 @@ void Elevator::moveElevator(int direction)
 
 
 }
+
 /*
 #include <Arduino.h>
 #include "pins.h"
