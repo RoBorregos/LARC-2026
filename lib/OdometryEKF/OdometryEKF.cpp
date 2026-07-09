@@ -28,7 +28,7 @@ void OdometryEKF::step(float dt,
     const float vx = ( w1 + w2 + w3 + w4) * k * kScale_;
     const float vy = (-w1 + w2 - w3 + w4) * k * kScale_;
 
-    // Predicción
+    // Prediction
     const float c  = cosf(th_);
     const float s  = sinf(th_);
     const float xp = x_  + (vx*c - vy*s) * dt;
@@ -56,7 +56,7 @@ void OdometryEKF::step(float dt,
         for (int j=0;j<3;j++)
             Pp[i][j] += kQ_[i][j];
 
-    // Corrección
+    // Correction
     const float yt = wrapPi(yawBNO - tp);
     const float Sc = Pp[2][2] + kRtheta_;
     const float K[3] = { Pp[0][2]/Sc, Pp[1][2]/Sc, Pp[2][2]/Sc };
