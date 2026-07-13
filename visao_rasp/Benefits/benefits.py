@@ -92,16 +92,15 @@ def detect_box(roi_bgr, cfg):
 def main():
     cfg = load_cfg()
 
-    cap = cv2.VideoCapture("/dev/video_c920", cv2.CAP_V4L2)
+    cap = cv2.VideoCapture(CAM_PORT, cv2.CAP_V4L2)
     cap.set(cv2.CAP_PROP_FRAME_WIDTH,  FRAME_W)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, FRAME_H)
     if not cap.isOpened():
-        sys.exit("[ERROR] Cannot open /dev/video_c920")
-
+        sys.exit(f"[ERROR] Cannot open /dev/video{CAM_PORT}")
 
     actual_w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     actual_h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    print(f"[Camera] /dev/video_c920  {actual_w}x{actual_h}")
+    print(f"[Camera] /dev/video{CAM_PORT}  {actual_w}x{actual_h}")
     print("[Mode] Dispatcher (VISION tags via stdout)")
     print("[Running] Ctrl+C to stop")
 
