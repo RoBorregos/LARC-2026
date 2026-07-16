@@ -5,6 +5,17 @@
  * 
  * Elevator.cpp file from Elevator class
  * 
+ * Linear Elevator Actuator
+ *
+ * Bidirectional elevator mechanism driven by a DC motor.
+ * Direction is controlled through an H-Bridge using INA1 and INA2,
+ * while motion speed is adjusted through PWM control.
+ *
+ * States:
+ * 0 -> Stop
+ * 1 -> Move Up
+ * 2 -> Move Down
+ * 
 **/
 #include "Elevator.hpp"
 
