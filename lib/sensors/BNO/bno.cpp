@@ -1,9 +1,25 @@
 /*
- * @file bno.cpp
- * @author Ximena Patricia García Magdaleno
- * @brief Source file for the BNO class.
- * @version 0.1
- * @date 2026-01-12
+
+* @file bno.cpp
+* @author Ximena Patricia García Magdaleno
+*
+* @brief Implements the BNO class for reading and processing orientation
+* ```
+     and linear acceleration data from a BNO055 inertial sensor.
+  ```
+*
+* The class initializes the BNO055 through the I2C interface using address
+* 0x28 and continuously reads its orientation data. The yaw measurement is
+* normalized to the range [-180, 180] degrees and filtered using exponential
+* smoothing to reduce noise and sudden changes.
+*
+* Yaw is returned in radians, while roll and pitch are returned in degrees.
+* The class also provides access to linear acceleration along the X, Y,
+* and Z axes, as well as a debugging method that prints the current
+* orientation values to the Serial Monitor.
+*
+* @version 0.1
+* @date 2026-01-12
 */
 
 #include "BNO/bno.hpp"
@@ -40,8 +56,8 @@ void BNO::update()
 
     bno.getEvent(&event);
 
-    // ===== filtro de calma =====
-    static constexpr float alpha = 0.07f;   // más chico = más calmado
+    // Kalman filter 
+    static constexpr float alpha = 0.07f;   //lower alpha = more smoothing, but more lag
 
     float rawYawDeg = -wrapAngle(event.orientation.x);
 
