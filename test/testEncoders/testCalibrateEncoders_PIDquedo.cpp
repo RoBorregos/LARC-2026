@@ -1,8 +1,9 @@
-//Use this code to calibrate
+// Use this code for calibration
 
-// Penultimo code o test para los Encoders
-// Funciona (4:50 am)
-// FINAL que manda velocidad al motor
+// Second-to-last encoder test code
+// Working (4:50 a.m.)
+// FINAL version that sends speed commands to the motor
+
 #include <Arduino.h>
 #include "pins.h"
 
@@ -12,7 +13,7 @@ const uint8_t motorPWM    = Pins::kPwmPin[0];
 const uint8_t motorIN1    = Pins::kUpperMotors[0];
 const uint8_t motorIN2    = Pins::kUpperMotors[1];
 
-// ─── Encoder / filtro ────────────────────────────────────────────────────────
+//Encoder filter
 #define FILTER_SIZE 8
 
 volatile unsigned long period_buf[FILTER_SIZE] = {0};
@@ -22,9 +23,8 @@ volatile bool          got_pulse   = false;
 
 
 
-// ─── PID ─────────────────────────────────────────────────────────────────────
 const float PPR = 475.0f;
-const float Ts  = 0.05f;   // 50ms — más estable que 10ms
+const float Ts  = 0.05f;   // 50ms more stable than 10ms
 
 float Kp = 3.4f;
 float Ki = 2.2f;
@@ -36,7 +36,6 @@ float last_error = 0.0f;
 
 unsigned long last_time = 0;
 
-// ─── Helpers ISR ─────────────────────────────────────────────────────────────
 void pushPeriod(unsigned long p)
 {
     period_buf[period_idx] = p;
@@ -44,7 +43,6 @@ void pushPeriod(unsigned long p)
     got_pulse  = true;
 }
 
-// ─── ISR ─────────────────────────────────────────────────────────────────────
 void isrA()
 {
     unsigned long now = micros();
@@ -61,7 +59,6 @@ void isrB()
     if (p > 200UL) pushPeriod(p);  // Ignora rebotes < 200µs
 }
 
-// ─── Medición RPM ────────────────────────────────────────────────────────────
 float measureRPM()
 {
     noInterrupts();
@@ -86,7 +83,6 @@ float measureRPM()
     return 60000000.0f / (avg_period * 4.0f * PPR);
 }
 
-// ─── Motor ───────────────────────────────────────────────────────────────────
 void setMotor(float pwm)
 {
     if (pwm >= 0.0f) {
@@ -100,7 +96,6 @@ void setMotor(float pwm)
     analogWrite(motorPWM, (int)constrain(pwm, 0.0f, 255.0f));
 }
 
-// ─── Setup ───────────────────────────────────────────────────────────────────
 void setup()
 {
     Serial.begin(115200);
@@ -120,7 +115,6 @@ void setup()
     last_time = millis();
 }
 
-// ─── Loop ────────────────────────────────────────────────────────────────────
 void loop()
 {
     unsigned long now = millis();
