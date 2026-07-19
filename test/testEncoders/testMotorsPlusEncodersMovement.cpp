@@ -1,8 +1,23 @@
+/*
+ * Final encoder and motor PID test.
+ *
+ * This code measures the RPM of all four motors and uses a PID controller
+ * to maintain a desired speed.
+ *
+ * The same PPR value and PID gains obtained from the Upper Left motor
+ * were temporarily applied to all four motors, so the results should not
+ * be considered a final individual calibration.
+ *
+ * The encoder direction is not calculated; only the magnitude of the
+ * rotational speed is measured.
+ *
+ * Note: The Lower Right encoder was not working during this test.
+ */
+
 // Last Encoder test (not accurate beacuse we sample the configuration of encoder UL for all motors)
 #include <Arduino.h>
 #include "pins.h"
 
-// ─── Clase MotorPID ───────────────────────────────────────────────────────────
 class MotorPID
 {
 public:
@@ -122,7 +137,6 @@ public:
     }
 };
 
-// ─── Instancias (pines exactos de pins.h) ────────────────────────────────────
 //      IN1                   IN2                   PWM
 //      ENC_A                 ENC_B
 MotorPID m1(Pins::kUpperMotors[0], Pins::kUpperMotors[1], Pins::kPwmPin[0],
@@ -137,7 +151,7 @@ MotorPID m3(Pins::kLowerMotors[0], Pins::kLowerMotors[1], Pins::kPwmPin[2],
 MotorPID m4(Pins::kLowerMotors[2], Pins::kLowerMotors[3], Pins::kPwmPin[3],
             Pins::kEncoders[6],    Pins::kEncoders[7]);   // LR  A=17 B=16
 
-// ─── ISRs — una por fase por motor ───────────────────────────────────────────
+//  ISRs — one per motor fase
 void isr_m1_A() { m1.onPulse(); }
 void isr_m1_B() { m1.onPulse(); }
 void isr_m2_A() { m2.onPulse(); }
@@ -150,7 +164,6 @@ void isr_m4_B() { m4.onPulse(); }
 unsigned long last_time = 0;
 const float   Ts        = 0.05f;
 
-// ─── Setup ───────────────────────────────────────────────────────────────────
 void setup()
 {
     Serial.begin(115200);
@@ -158,13 +171,12 @@ void setup()
 
     m1.begin(); m2.begin(); m3.begin(); m4.begin();
 
-    // Setpoints iniciales — cambia según necesites
+    // Initial setpoints  — change it depending on needs
     m1.setpoint = 40.0f;
     m2.setpoint = 40.0f;
     m3.setpoint = 40.0f;
-    // m4.setpoint = 40.0f;   // --->> Encoder que no funnciona
 
-    // Attach interrupts — ambas fases, ambos flancos
+    // Attach interrupts - both fases, both flancos
     attachInterrupt(digitalPinToInterrupt(Pins::kEncoders[1]), isr_m1_A, CHANGE);
     attachInterrupt(digitalPinToInterrupt(Pins::kEncoders[0]), isr_m1_B, CHANGE);
 
@@ -180,7 +192,6 @@ void setup()
     last_time = millis();
 }
 
-// ─── Loop ────────────────────────────────────────────────────────────────────
 void loop()
 {
     unsigned long now = millis();
@@ -193,7 +204,6 @@ void loop()
         m3.update();
         m4.update();
 
-        // Serial plotter — todos los motores en una línea
         m1.printSerial("m1");
         Serial.print(",");
         m2.printSerial("m2");
