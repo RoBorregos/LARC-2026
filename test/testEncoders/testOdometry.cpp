@@ -1,3 +1,26 @@
+/*
+
+* Odometry Test Using Wheel Encoders
+*
+* This code tests the robot's odometry using only the wheel encoders,
+* without using the BNO sensor for yaw correction.
+*
+* At startup, the Drive subsystem is initialized, yaw holding is disabled,
+* and the odometry values are reset to zero.
+*
+* The robot then moves forward at a speed of 0.45 and continuously updates
+* its estimated position. Once the absolute X displacement reaches 0.5 meters,
+* the robot applies the brakes.
+*
+* Every 100 milliseconds, the program prints:
+* * The distance traveled by each motor: M1, M2, M3, and M4
+* * The estimated X position
+* * The estimated Y position
+*
+* The serial output can be used to verify the encoder measurements,
+* wheel calibration, and odometry calculations.
+*/
+
 #include <Arduino.h>
 #include "Subsystem/Drive/Drive.hpp"
 
@@ -11,7 +34,7 @@ void setup() {
     delay(500);
 
     drive.begin();
-    drive.holdYaw(false);   // sin BNO, solo encoders
+    drive.holdYaw(false);   // Without BNO, using encoders only
     drive.resetOdometry();
 
     Serial.println("=== TEST ODOMETRIA ===");
@@ -21,18 +44,18 @@ void setup() {
 void loop() {
     drive.update();
 
-    // Arranca una sola vez
+    // Starts only once
     if (!started) {
         started = true;
         drive.forward(0.45f);
     }
 
-    // Para a 0.5m
+    // Stops at 0.5m
     if (fabsf(drive.getOdoX()) >= 0.5f) {
         drive.brake();
     }
 
-    // Print 10 Hz
+    // Print at 10 Hz
     if (millis() - lastPrint >= 100) {
         lastPrint = millis();
         Serial.print(drive.getM1Meters(), 3); Serial.print("\t");
