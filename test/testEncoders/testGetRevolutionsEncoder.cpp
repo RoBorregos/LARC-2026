@@ -1,4 +1,27 @@
-// Code 1 obten las revoluciones
+/*
+ * Encoder Revolution and RPM Test
+ *
+ * This code reads the signals from four quadrature encoders connected
+ * to the robot's motors: Upper Left (UL), Upper Right (UR),
+ * Lower Left (LL), and Lower Right (LR).
+ *
+ * Interrupts are used to count the encoder ticks each time a rising
+ * edge is detected on channel A of each encoder.
+ *
+ * For the Upper Left motor, channel B is also read to determine
+ * the direction of rotation and increase or decrease the tick count.
+ *
+ * The code calculates the RPM of the Upper Left motor using:
+ *
+ * RPM = (delta ticks / pulses per revolution) * (60 / sample time)
+ *
+ * The calculated RPM is displayed through the Serial Monitor.
+ *
+ * PPR: 475 pulses per revolution
+ * Sample time: 0.01 seconds
+ */
+
+// Code 1: obtain the revolutions
 
 #include <Arduino.h>
 #include "pins.h"
@@ -20,7 +43,7 @@ volatile long ticksUR = 0;
 volatile long ticksLL = 0;
 volatile long ticksLR = 0;
 
-// RPM para un motor
+// RPM for one motor
 long last_ticks = 0;
 float rpm = 0.0f;
 
@@ -35,11 +58,11 @@ void isrUL()
         ticksUL++;
     else
         ticksUL--;
-
-        // 445 // 2376 (5 vueltas) = 475 <---- 
-        // (445 + 475) 
-        // 2 = 460 
-        // 482
+    
+    // 445 // 2376 (5 revolutions) = 475 <---- 
+    // (445 + 475) 
+    // 2 = 460 
+    // 482
 }
 
 void isrUR()
