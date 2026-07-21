@@ -13,7 +13,7 @@
 #include "Servo.h"
 #include "pins.h"
 #include "constants.h"
-#include "robot/instances/instances.h"
+#include "robot/instances/instances.hpp"
 
 class SORTER
 {
