@@ -4,10 +4,39 @@
  *
  * @brief QTR-8A (8-channel reflectance array) read through a shared 74HC4067 analog mux.
  *
- * Case of use, 2 separate arrays connected to the same mux:
+ * ## Signal path: sensor -> mux -> ADC
+ * Each QTR-8A phototransistor outputs an analog voltage proportional to
+ * reflected IR light (more reflective surface = higher voltage). Instead of
+ * wiring every sensor to its own analog pin, all sensor outputs feed the 16
+ * input channels (C0..C15) of a shared 74HC4067 analog mux (see mux.h /
+ * Mux74HC4067). Only the mux's single SIG pin is wired to a Teensy analog
+ * input; the S0..S3 select lines pick which channel is currently connected
+ * to SIG.
+ *
+ * QTR itself owns no pins and no mux -- it only stores a `firstChannel`
+ * offset plus a reference to the shared Mux74HC4067 instance. Reading
+ * sensor i means: mux.select(firstChannel + i) -> settle -> analogRead(SIG)
+ * (done inside Mux74HC4067::read()). This lets two independent 7-sensor
+ * arrays time-share one mux and one ADC pin:
  *  - QTR Frontal front connected form C0 to C7 (firstChannel = 0)
  *  - QTR Back connected from C8 to C15 (firstChannel = 8)
  * State machine can use them independently
+ *
+ * ## Read -> position pipeline (see QTR::update())
+ *  1. Raw:       mux.read(firstChannel + i) for each of the N=7 sensors,
+ *                giving raw[i] as a 0..1023 ADC count.
+ *  2. Normalize: raw[i] is rescaled to 0..1000 using per-sensor
+ *                calMin/calMax (from setCalibration(), from a
+ *                useDefaultCalibration() profile in constants.h, or from a
+ *                runtime calibrate() sweep) -> norm[i].
+ *  3. Position:  weighted average of sensor index using norm[i] as weight,
+ *                from 0 (line under sensor 0, extreme left) to 7000 (line
+ *                under sensor 6, extreme right). If every sensor reads 0
+ *                (no line seen), the previous position is kept.
+ *
+ * getBinaryPosition() is an alternate estimator that only counts sensors
+ * above Constants::QTRCalibration::kBinaryThreshold, which helps reject
+ * noise from faint reflections when a firm on/off read is preferred.
  */
 
 #ifndef QTR_HPP
