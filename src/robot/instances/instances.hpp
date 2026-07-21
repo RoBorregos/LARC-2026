@@ -5,7 +5,7 @@
 #include "pins.h"
 #include "constants.h"
 //Sensors
-#include "IR_digitales/IR_digital.hpp"
+#include "IR/IR.hpp"
 #include "mux.h"
 #include "qtr.hpp"
 #include "ultrasonic/ultrasonic.hpp"
@@ -27,7 +27,7 @@ extern Mux74HC4067 mux;
 extern ServoSystem servos;
 extern Elevator elevator;
 
-extern IR_mux ir;
+extern IRLine ir;
 extern Ultrasonic us1;
 extern Ultrasonic us2;
 extern QTR qtrFront;
