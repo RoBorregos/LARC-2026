@@ -10,8 +10,8 @@
 enum class STATES
 {
     START,
-    POOL,
-    LOOKFORLINE, // Ver si funciona bien en el caso que NO hay albercas (add qtr for front line detection)
+    POOL,         
+    LOOKFORLINE,          //Try if this works well, in case there aren't pools (add qtr for front line detection)
     LOOKFORCORNER,
     BEANS,                // BEANS(left to right) :: Recoje las pelotas y inicializa vision + Sorter (vision)
     BEANSGOBACK,          // BEANS(right to left) :: Elevator goes down :: Recoje las pelotas y inicializa vision (stop when corner detected) + Sorter (vision) +
