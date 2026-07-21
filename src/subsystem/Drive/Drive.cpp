@@ -1,8 +1,7 @@
 #include "Drive.hpp"
 
-// ─────────────────────────────────────────────────────────────────
 //  Constructor
-// ─────────────────────────────────────────────────────────────────
+
 Drive::Drive()
     : bno_(),
       m1_ul_(Pins::kUpperMotors[0], Pins::kUpperMotors[1], Pins::kPwmPin[0], true, UL_ENC_A, UL_ENC_B, diameter),
@@ -14,9 +13,7 @@ Drive::Drive()
       linePid_(0.00008f, 0.000005f, 0.0f, -kLinePidMax, +kLinePidMax)
 {}
 
-// ─────────────────────────────────────────────────────────────────
 //  begin
-// ─────────────────────────────────────────────────────────────────
 void Drive::begin() {
     Serial.begin(115200);
     delay(500);
@@ -44,9 +41,7 @@ void Drive::begin() {
     resetOdometry();
 }
 
-// ─────────────────────────────────────────────────────────────────
 //  update  — llamar siempre en loop(), sin delay()
-// ─────────────────────────────────────────────────────────────────
 void Drive::update() {
     const uint32_t now = millis();
     if (now - lastControl_ < kControlMs) return;
@@ -110,9 +105,8 @@ void Drive::update() {
     }
 }
 
-// ─────────────────────────────────────────────────────────────────
 //  updateOdometry — deltas de encoder → EKF
-// ─────────────────────────────────────────────────────────────────
+
 void Drive::updateOdometry() {
     const float d1 = m1_ul_.getDistanceMeters();
     const float d2 = m2_ur_.getDistanceMeters();
@@ -139,9 +133,7 @@ void Drive::updateOdometry() {
     ekf_.step(dt, rpmUL, rpmUR, rpmLL, rpmLR, bno_.getYaw());
 }
 
-// ─────────────────────────────────────────────────────────────────
 //  resetOdometry
-// ─────────────────────────────────────────────────────────────────
 void Drive::resetOdometry() {
     ekf_.resetPose();
     prevD1_ = prevD2_ = prevD3_ = prevD4_ = 0.0f;
@@ -151,9 +143,7 @@ void Drive::resetOdometry() {
     m4_lr_.resetEncoder();
 }
 
-// ─────────────────────────────────────────────────────────────────
 //  updateBusy — gestiona driveDistance / strafeDistance / turnTo
-// ─────────────────────────────────────────────────────────────────
 void Drive::updateBusy(uint32_t now) {
     if (!busy_) return;
 
@@ -177,9 +167,7 @@ void Drive::updateBusy(uint32_t now) {
     }
 }
 
-// ─────────────────────────────────────────────────────────────────
 //  driveDistance
-// ─────────────────────────────────────────────────────────────────
 void Drive::driveDistance(float meters, float speed) {
     resetOdometry();
     distTarget_  = fabsf(meters);
@@ -194,9 +182,7 @@ void Drive::driveDistance(float meters, float speed) {
     holdYaw(true);
 }
 
-// ─────────────────────────────────────────────────────────────────
 //  strafeDistance
-// ─────────────────────────────────────────────────────────────────
 void Drive::strafeDistance(float meters, float speed) {
     resetOdometry();
     distTarget_  = fabsf(meters);
@@ -211,9 +197,7 @@ void Drive::strafeDistance(float meters, float speed) {
     holdYaw(true);
 }
 
-// ─────────────────────────────────────────────────────────────────
 //  turnTo
-// ─────────────────────────────────────────────────────────────────
 void Drive::turnTo(float targetDeg, uint32_t timeoutMs) {
     stop();
     setTargetYaw(deg2rad(targetDeg));
@@ -224,9 +208,7 @@ void Drive::turnTo(float targetDeg, uint32_t timeoutMs) {
     holdYaw(true);
 }
 
-// ─────────────────────────────────────────────────────────────────
 //  QTR
-// ─────────────────────────────────────────────────────────────────
 void Drive::attachQTR(QTR& qtr) {
     qtrFront_ = &qtr;
     linePid_.reset();
@@ -248,9 +230,7 @@ void Drive::stopLineFollow() {
     stop();
 }
 
-// ─────────────────────────────────────────────────────────────────
 //  Movimiento básico
-// ─────────────────────────────────────────────────────────────────
 void Drive::forward(float speed)      { vxCmd_ = +speed; vyCmd_ = 0.0f;  }
 void Drive::backward(float speed)     { vxCmd_ = -speed; vyCmd_ = 0.0f;  }
 void Drive::right(float speed)        { vxCmd_ = 0.0f;   vyCmd_ = -speed; }
@@ -264,9 +244,7 @@ void Drive::brake() {
     m1_ul_.stop(); m2_ur_.stop(); m3_ll_.stop(); m4_lr_.stop();
 }
 
-// ─────────────────────────────────────────────────────────────────
 //  Yaw hold
-// ─────────────────────────────────────────────────────────────────
 void Drive::holdYaw(bool enable) {
     yawHoldEnabled_ = enable;
     if (enable) {
@@ -284,9 +262,7 @@ float Drive::getYaw() const {
     return const_cast<Drive*>(this)->bno_.getYaw();
 }
 
-// ─────────────────────────────────────────────────────────────────
 //  Omega manual
-// ─────────────────────────────────────────────────────────────────
 void Drive::setManualOmega(float omegaRadS) {
     manualOmegaEnabled_ = true;
     manualOmega_        = omegaRadS;
@@ -298,9 +274,7 @@ void Drive::clearManualOmega() {
     yawPid_.resetToMeasurement(bno_.getYaw(), targetYaw_);
 }
 
-// ─────────────────────────────────────────────────────────────────
 //  Helpers
-// ─────────────────────────────────────────────────────────────────
 float Drive::rad2deg(float r) { return r * (180.0f / M_PI); }
 float Drive::deg2rad(float d) { return d * (M_PI / 180.0f); }
 float Drive::clampf(float x, float lo, float hi) {
@@ -312,9 +286,7 @@ float Drive::wrapAngle(float a) {
     return a;
 }
 
-// ─────────────────────────────────────────────────────────────────
 //  testKinematics
-// ─────────────────────────────────────────────────────────────────
 void Drive::testKinematics(float v, uint32_t T) {
     holdYaw(false);
     Serial.println("Forward");  omni_.MoveXYW(+v,  0,  0); delay(T);
@@ -326,9 +298,7 @@ void Drive::testKinematics(float v, uint32_t T) {
     Serial.println("Stop");     omni_.Stop();                delay(1200);
 }
 
-// ─────────────────────────────────────────────────────────────────
 //  beginNoBNO / updateNoBNO
-// ─────────────────────────────────────────────────────────────────
 void Drive::beginNoBNO() {
     Serial.begin(115200);
     delay(500);
