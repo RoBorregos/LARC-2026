@@ -1,7 +1,7 @@
 
 #include <Arduino.h>
-#include "StateMachine.h"
-#include "robot/instances/instances.h"
+#include "StateMachine.hpp"
+#include "robot/instances/instances.hpp"
 #include "constants.h"
 #include "Vision.hpp"
 #include "testOdometry.hpp"
@@ -153,10 +153,10 @@ void LARCStateMachine::update()
     const float lineCorr = linePID.update(linePos, Constants::LineFollower::kSetpoint);
     const float vx = -lineCorr;
 
-    const bool FL = ir.getState(IR_mux::FL);
-    const bool FR = ir.getState(IR_mux::FR);
-    const bool BL = ir.getState(IR_mux::BL);
-    const bool BR = ir.getState(IR_mux::BR);
+    const bool FL = ir.getState(IRLine::FL);
+    const bool FR = ir.getState(IRLine::FR);
+    const bool BL = ir.getState(IRLine::BL);
+    const bool BR = ir.getState(IRLine::BR);
 
 // =========== Print to debug ============= 
     //ir.debugPrint();
