@@ -1,4 +1,4 @@
-#include "instances.h"
+#include "instances.hpp"
 #include "pins.h"
 
 Drive LARC;
@@ -7,14 +7,14 @@ ServoSystem servos;
 Elevator elevator;
 
 // IR directos
-const uint8_t irPins[IR_mux::N] = {
+const uint8_t irPins[IRLine::N] = {
     Pins::kIrChFL,
     Pins::kIrChFR,
     Pins::kIrChBL,
     Pins::kIrChBR
 };
 
-IR_mux ir(irPins, 0b0000);
+IRLine ir(irPins, 0b0000);
 
 Ultrasonic us1(Pins::kDistanceSensors[0][0], Pins::kDistanceSensors[0][1]);
 Ultrasonic us2(Pins::kDistanceSensors[1][0], Pins::kDistanceSensors[1][1]);
