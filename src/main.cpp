@@ -1,6 +1,6 @@
 #include <Arduino.h>
-#include "robot/StateMachine/StateMachine.h"
-#include "robot/instances/instances.h"
+#include "robot/StateMachine/StateMachine.hpp"
+#include "robot/instances/instances.hpp"
 
 LARCStateMachine stateMachine;
 
