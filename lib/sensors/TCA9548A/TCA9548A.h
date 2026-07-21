@@ -1,3 +1,19 @@
+/**
+ * TCA9548A - Multiplexor I2C de 8 canales.
+ *
+ * Resuelve el problema de tener varios dispositivos I2C con la misma
+ * dirección fija (ej. sensores ToF VL53L1X en 0x29) conectados al mismo
+ * bus: el mux expone 8 canales y solo el dispositivo del canal
+ * seleccionado queda "visible" en el bus a la vez.
+ *
+ * Uso en RoBorregos: se instancia en instances.cpp (i2cMux) y lo usan
+ * los sensores ToF (tofLeft, tofRight) en tof.cpp a través de
+ * selectIfMux() antes de cada lectura, para elegir su canal correcto.
+ *
+ * scanAll()/scanChannel()/scanDirect() son utilidades de debug para
+ * verificar qué direcciones I2C responden en cada canal (útil para
+ * checar cableado).
+ */
 #pragma once
 #include <Arduino.h>
 #include <Wire.h>
