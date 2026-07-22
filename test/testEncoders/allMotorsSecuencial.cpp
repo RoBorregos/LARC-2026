@@ -1,10 +1,8 @@
-// ═══════════════════════════════════════════════════════════════
-//  4-Motor PID Controller — rampa setpoint 0 a 70 RPM
-// ═══════════════════════════════════════════════════════════════
+// 4-Motor PID Controller - ramp setpoint 0 to 70 RPM
 #include <Arduino.h>
 #include "pins.h"
 
-// ─── Pin assignments ──────────────────────────────────────────
+// Pin assignments
 const uint8_t encUL_A = Pins::kEncoders[1];
 const uint8_t encUL_B = Pins::kEncoders[0];
 const uint8_t pwmUL   = Pins::kPwmPin[0];
@@ -29,10 +27,10 @@ const uint8_t pwmLR   = Pins::kPwmPin[3];
 const uint8_t inLR1   = Pins::kLowerMotors[2];
 const uint8_t inLR2   = Pins::kLowerMotors[3];
 
-// ─── Filter ──────────────────────────────────────────────────
+// Filter
 #define FILTER_SIZE 8
 
-// ─── Motor struct ─────────────────────────────────────────────
+// Motor struct
 struct Motor {
     uint8_t pwmPin, in1, in2;
     volatile unsigned long period_buf[FILTER_SIZE];
@@ -46,24 +44,24 @@ struct Motor {
     int8_t dir;
 };
 
-// ─── Motor instances ──────────────────────────────────────────
+// Motor instances
 Motor UR = { pwmUR, inUR1, inUR2, {}, 0, 0, false, 450.0f, 3.4f, 2.2f,  0.001f,  0.0f, 0, 0, -1 };
 Motor UL = { pwmUL, inUL1, inUL2, {}, 0, 0, false, 482.0f, 2.5f, 2.8f,  0.0022f, 0.0f, 0, 0,  1 };
 Motor LL = { pwmLL, inLL1, inLL2, {}, 0, 0, false, 495.0f, 2.1f, 3.9f,  0.0012f, 0.0f, 0, 0,  1 };
 Motor LR = { pwmLR, inLR1, inLR2, {}, 0, 0, false, 486.0f, 1.3f, 1.0f,  0.0035f, 0.0f, 0, 0, -1 };
 
-// ─── Rampa ───────────────────────────────────────────────────
-const float TARGET_RPM   = 48.0f;  // RPM objetivo
-const float RAMP_STEP    = 1.0f;   // RPM que sube cada tick
-const unsigned long RAMP_INTERVAL = 200; // ms entre cada incremento
+// Ramp
+const float TARGET_RPM   = 48.0f;  // target RPM
+const float RAMP_STEP    = 1.0f;   // RPM increase per tick
+const unsigned long RAMP_INTERVAL = 200; // ms between each increment
 unsigned long lastRampTick = 0;
 bool rampDone = false;
 
-// ─── PID timing ──────────────────────────────────────────────
+// PID timing
 const float   Ts        = 0.05f;
 unsigned long last_time = 0;
 
-// ─── Encoder push ─────────────────────────────────────────────
+// Encoder push
 inline void pushPeriod(Motor &m, unsigned long p)
 {
     m.period_buf[m.period_idx] = p;
@@ -71,7 +69,7 @@ inline void pushPeriod(Motor &m, unsigned long p)
     m.got_pulse  = true;
 }
 
-// ─── ISRs ─────────────────────────────────────────────────────
+// ISRs
 void isrUR_A() { unsigned long n=micros(); unsigned long p=n-UR.last_pulse_us; UR.last_pulse_us=n; if(p>200) pushPeriod(UR,p); }
 void isrUR_B() { unsigned long n=micros(); unsigned long p=n-UR.last_pulse_us; UR.last_pulse_us=n; if(p>200) pushPeriod(UR,p); }
 void isrUL_A() { unsigned long n=micros(); unsigned long p=n-UL.last_pulse_us; UL.last_pulse_us=n; if(p>200) pushPeriod(UL,p); }
@@ -81,7 +79,7 @@ void isrLL_B() { unsigned long n=micros(); unsigned long p=n-LL.last_pulse_us; L
 void isrLR_A() { unsigned long n=micros(); unsigned long p=n-LR.last_pulse_us; LR.last_pulse_us=n; if(p>200) pushPeriod(LR,p); }
 void isrLR_B() { unsigned long n=micros(); unsigned long p=n-LR.last_pulse_us; LR.last_pulse_us=n; if(p>200) pushPeriod(LR,p); }
 
-// ─── Measure RPM ─────────────────────────────────────────────
+// Measure RPM
 float measureRPM(Motor &m)
 {
     noInterrupts();
@@ -105,7 +103,7 @@ float measureRPM(Motor &m)
     return 60000000.0f / (avg * 4.0f * m.PPR);
 }
 
-// ─── Set motor ────────────────────────────────────────────────
+// Set motor
 void setMotor(Motor &m, float pwm)
 {
     pwm *= m.dir;
@@ -118,7 +116,7 @@ void setMotor(Motor &m, float pwm)
     analogWrite(m.pwmPin, (int)constrain(pwm, 0.0f, 255.0f));
 }
 
-// ─── PID step ─────────────────────────────────────────────────
+// PID step
 void pidStep(Motor &m, const char* label)
 {
     float rpm   = measureRPM(m);
@@ -140,7 +138,7 @@ void pidStep(Motor &m, const char* label)
     Serial.print("  ");
 }
 
-// ─── Setup ───────────────────────────────────────────────────
+// Setup
 void setup()
 {
     Serial.begin(115200);
@@ -174,12 +172,12 @@ void setup()
     lastRampTick   = millis();
 }
 
-// ─── Loop ────────────────────────────────────────────────────
+// Loop
 void loop()
 {
     unsigned long now = millis();
 
-    // ── Rampa del setpoint ────────────────────────────────────
+    // Setpoint ramp
     if (!rampDone && now - lastRampTick >= RAMP_INTERVAL) {
         lastRampTick = now;
         float newSp = UR.setpoint + RAMP_STEP;
@@ -194,7 +192,7 @@ void loop()
         LR.setpoint = newSp;
     }
 
-    // ── PID loop ─────────────────────────────────────────────
+    // PID loop
     if (now - last_time >= (unsigned long)(Ts * 1000.0f))
     {
         last_time += (unsigned long)(Ts * 1000.0f);
