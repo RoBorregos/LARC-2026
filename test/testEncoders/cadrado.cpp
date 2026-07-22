@@ -192,7 +192,7 @@ void ekfStep(float dt) {
     float w_LR = measureRPM(LR) * 2*PI/60.0f;
 
     const float k = kInvSqrt2 * kWheelRadius / 4.0f;
-    float vx = ( w_UL + w_UR + w_LL + w_LR) * k * kOdomScale;  // todos suman
+    float vx = ( w_UL + w_UR + w_LL + w_LR) * k * kOdomScale;  // all add up
     float vy = (-w_UL + w_UR - w_LL + w_LR) * k * kOdomScale;  // lateral
 
     bno1.update();
@@ -219,7 +219,7 @@ void ekfStep(float dt) {
     for(int i=0;i<3;i++) for(int j=0;j<3;j++) P[i][j]=Pn[i][j];
 }
 
-// ─── Comandos ─────────────────────────────────────────────────
+// Commands
 //            UL     UR     LL     LR
 // Forward:  +RPM   +RPM   +RPM   +RPM
 // Backward: -RPM   -RPM   -RPM   -RPM
@@ -236,7 +236,7 @@ void setRPMs(float ul, float ur, float ll, float lr) {
 
 void resetPose() { ekf_x=0; ekf_y=0; }
 
-// ─── Secuencia cuadrado ───────────────────────────────────────
+// Square sequence
 enum class Step : uint8_t { FORWARD, RIGHT, BACKWARD, LEFT, PAUSE, DONE };
 Step     step       = Step::FORWARD;
 uint32_t pauseStart = 0;
@@ -266,7 +266,7 @@ void startStep(Step s) {
     }
 }
 
-// ─── Setup ────────────────────────────────────────────────────
+// Setup
 void setup() {
     Serial.begin(115200);
     Wire.begin();
@@ -302,7 +302,7 @@ void setup() {
     startStep(Step::FORWARD);
 }
 
-// ─── Loop ─────────────────────────────────────────────────────
+// Loop
 void loop() {
     static uint32_t lastPid  = millis();
     static uint32_t lastEkf  = millis();
