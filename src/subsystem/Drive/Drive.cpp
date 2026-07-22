@@ -41,7 +41,7 @@ void Drive::begin() {
     resetOdometry();
 }
 
-//  update  — llamar siempre en loop(), sin delay()
+//  update - call always without delay 
 void Drive::update() {
     const uint32_t now = millis();
     if (now - lastControl_ < kControlMs) return;
@@ -78,7 +78,7 @@ void Drive::update() {
     else if (yawHoldEnabled_)     omega = yawPid_.update(yaw, targetYaw_);
     omega = clampf(omega, -kOmegaMax, +kOmegaMax);
 
-    // 4) Mover motores
+    // 4) Movermotors
     if (rpmModeEnabled_) {
     m1_ul_.move((int)(fabsf(rpmSetUL_ + omega) / 60.0f * 255.0f),
                 rpmSetUL_ + omega >= 0 ? DCMotor::Direction::FORWARD
@@ -99,13 +99,12 @@ void Drive::update() {
     // 4) Debug 10 Hz
     if (now - lastPrint_ >= kPrintMs) {
         lastPrint_ = now;
-        // Descomenta para depurar:
         // Serial.printf("x:%.3f y:%.3f dist:%.3f yaw:%.1f\n",
         //     ekf_.getX(), ekf_.getY(), ekf_.getDist(), rad2deg(yaw));
     }
 }
 
-//  updateOdometry — deltas de encoder → EKF
+//  updateOdometry — deltas from encoder → EKF
 
 void Drive::updateOdometry() {
     const float d1 = m1_ul_.getDistanceMeters();
@@ -121,7 +120,7 @@ void Drive::updateOdometry() {
     prevD1_ = d1; prevD2_ = d2;
     prevD3_ = d3; prevD4_ = d4;
 
-    // Delta distancia → RPM equivalente para el EKF
+    // Delta distance → RPM equivalent for the EKF
     const float dt   = kControlMs / 1000.0f;
     const float circ = M_PI * diameter;  // circunferencia = π × diámetro
 
@@ -230,7 +229,7 @@ void Drive::stopLineFollow() {
     stop();
 }
 
-//  Movimiento básico
+//  Basic movement
 void Drive::forward(float speed)      { vxCmd_ = +speed; vyCmd_ = 0.0f;  }
 void Drive::backward(float speed)     { vxCmd_ = -speed; vyCmd_ = 0.0f;  }
 void Drive::right(float speed)        { vxCmd_ = 0.0f;   vyCmd_ = -speed; }
@@ -262,7 +261,7 @@ float Drive::getYaw() const {
     return const_cast<Drive*>(this)->bno_.getYaw();
 }
 
-//  Omega manual
+// Manuel Omega
 void Drive::setManualOmega(float omegaRadS) {
     manualOmegaEnabled_ = true;
     manualOmega_        = omegaRadS;
@@ -322,7 +321,7 @@ void Drive::updateNoBNO() {
     if (now - lastControl_ < kControlMs) return;
     lastControl_ = now;
 
-    // Odometría simple sin EKF
+    // Simple odometry without EKF
     const float d1 = m1_ul_.getDistanceMeters();
     const float d2 = m2_ur_.getDistanceMeters();
     const float d3 = m3_ll_.getDistanceMeters();
