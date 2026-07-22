@@ -1,6 +1,6 @@
 /*
-- Solamente LL esta no da para atras
-Direcciones de los motores son las adecuadas
+- Only LL doesn't go backward
+Motor directions are correct
 */
 
 #include <Arduino.h>
@@ -11,7 +11,7 @@ Direcciones de los motores son las adecuadas
 
 BNO bno1;
 
-// ─── Configuración ────────────────────────────────────────────
+// Configuration
 static constexpr float kSideMeters  = 3.0f;
 static constexpr float kTargetRPM   = 30.0f;
 static constexpr float kStopTolM    = 0.03f;
@@ -21,7 +21,7 @@ static constexpr float kInvSqrt2    = 0.70710678f;
 static constexpr float kOdomScale   = 2.57f;
 static constexpr uint32_t kPausems  = 600;
 static constexpr float kPwmDeadband = 30.0f;
-static constexpr float kPwmMax = 100.0f;  // limita velocidad maxima
+static constexpr float kPwmMax = 100.0f;  // limits maximum speed
 
 static constexpr float kKp = 1.5f;
 static constexpr float kKi = 1.2f;
@@ -29,7 +29,7 @@ static constexpr float kKd = 0.005f;
 
 #define FILTER_SIZE 8
 
-// ─── Pines ────────────────────────────────────────────────────
+// Pins
 const uint8_t encUL_A = Pins::kEncoders[1];
 const uint8_t encUL_B = Pins::kEncoders[0];
 const uint8_t pwmUL   = Pins::kPwmPin[0];
@@ -54,7 +54,7 @@ const uint8_t pwmLR   = Pins::kPwmPin[3];
 const uint8_t inLR1   = Pins::kLowerMotors[2];
 const uint8_t inLR2   = Pins::kLowerMotors[3];
 
-// ─── Motor struct ─────────────────────────────────────────────
+// Motor struct
 struct Motor {
     uint8_t pwmPin, in1, in2;
     volatile unsigned long period_buf[FILTER_SIZE];
@@ -68,13 +68,13 @@ struct Motor {
     float last_error;
 };
 
-// UR con in1/in2 swapeados — motor fisicamente invertido
+// UR with in1/in2 swapped - motor physically inverted
 Motor UL = { pwmUL, inUL1, inUL2, {}, 0, 0, false, 482.0f, kKp, kKi, kKd, 0.0f, 0.0f, 0.0f };
 Motor UR = { pwmUR, inUR2, inUR1, {}, 0, 0, false, 475.0f, kKp, kKi, kKd, 0.0f, 0.0f, 0.0f };
 Motor LL = { pwmLL, inLL1, inLL2, {}, 0, 0, false, 495.0f, kKp, kKi, kKd, 0.0f, 0.0f, 0.0f };
 Motor LR = { pwmLR, inLR2, inLR1, {}, 0, 0, false, 486.0f, kKp, kKi, kKd, 0.0f, 0.0f, 0.0f };
 
-// ─── ISR ──────────────────────────────────────────────────────
+// ISR
 inline void pushPeriod(Motor &m, unsigned long p) {
     m.period_buf[m.period_idx] = p;
     m.period_idx = (m.period_idx + 1) % FILTER_SIZE;
@@ -90,7 +90,7 @@ void isrLL_B() { unsigned long n=micros(); unsigned long p=n-LL.last_pulse_us; L
 void isrLR_A() { unsigned long n=micros(); unsigned long p=n-LR.last_pulse_us; LR.last_pulse_us=n; if(p>200) pushPeriod(LR,p); }
 void isrLR_B() { unsigned long n=micros(); unsigned long p=n-LR.last_pulse_us; LR.last_pulse_us=n; if(p>200) pushPeriod(LR,p); }
 
-// ─── RPM ──────────────────────────────────────────────────────
+// RPM
 float measureRPM(Motor &m) {
     noInterrupts();
     unsigned long buf[FILTER_SIZE];
@@ -113,7 +113,7 @@ float measureRPM(Motor &m) {
     return (m.setpoint >= 0.0f) ? mag : -mag;
 }
 
-// ─── Motor driver con deadband ─────────────────────────────────
+// Motor driver with deadband
 void setMotorPWM(Motor &m, float pwm) {
     if (pwm == 0.0f) {
         analogWrite(m.pwmPin, 0);
@@ -123,7 +123,7 @@ void setMotorPWM(Motor &m, float pwm) {
     }
 
     float absPwm = fabsf(pwm);
-    // DESPUES:
+    // AFTER:
     absPwm = kPwmDeadband + (absPwm / 255.0f) * (kPwmMax - kPwmDeadband);
     absPwm = constrain(absPwm, kPwmDeadband, kPwmMax);
 
@@ -151,7 +151,7 @@ void stopAll() {
     stopMotor(LL); stopMotor(LR);
 }
 
-// ─── PID ──────────────────────────────────────────────────────
+// PID
 void pidStep(Motor &m) {
     if (m.setpoint == 0.0f) { stopMotor(m); return; }
 
@@ -165,7 +165,7 @@ void pidStep(Motor &m) {
     float output = m.Kp*error + m.Ki*m.integral + m.Kd*deriv;
     m.last_error = error;
 
-    // Signo del output lo da el setpoint
+    // Output sign is determined by the setpoint
     if (m.setpoint < 0.0f) output = -fabsf(output);
     else                   output =  fabsf(output);
 
@@ -173,7 +173,7 @@ void pidStep(Motor &m) {
     setMotorPWM(m, output);
 }
 
-// ─── EKF ──────────────────────────────────────────────────────
+// EKF
 float ekf_x=0, ekf_y=0, ekf_th=0;
 float P[3][3] = {{0.01f,0,0},{0,0.01f,0},{0,0,0.05f}};
 float Q[3][3] = {{0.0005f,0,0},{0,0.0005f,0},{0,0,0.003f}};
