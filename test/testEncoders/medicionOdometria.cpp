@@ -1,22 +1,20 @@
 /*
-- Con este codigo avanza desde un punto de inicio con rampa de 0 a 45 ppm
-- Distancia real : 1.79 m     vs. distancia output del odometro : 1.76 m
+- With this code it advances from a starting point with a ramp from 0 to 45 rpm
+- Real distance : 1.79 m     vs. odometer output distance : 1.76 m
 
 */#include <Arduino.h>
 #include "pins.h"
 
-// ═══════════════════════════════════════════════════════════════
-//  4-Motor PID + Odometría — Base Omni X config
-//  Rueda: d = 0.108 m
-//  Distancia centro → rueda: L = 0.18 m
-//  Ángulos:
-//    UL =  135°
-//    UR =   45°
-//    LL = -135°
-//    LR =  -45°
-// ═══════════════════════════════════════════════════════════════
+// 4-Motor PID + Odometry - Omni X base config
+// Wheel: d = 0.108 m
+// Distance center -> wheel: L = 0.18 m
+// Angles:
+//   UL =  135°
+//   UR =   45°
+//   LL = -135°
+//   LR =  -45°
 
-// ─── Pin assignments ──────────────────────────────────────────
+// Pin assignments
 const uint8_t encUL_A = Pins::kEncoders[1];
 const uint8_t encUL_B = Pins::kEncoders[0];
 const uint8_t pwmUL   = Pins::kPwmPin[0];
@@ -41,10 +39,10 @@ const uint8_t pwmLR   = Pins::kPwmPin[3];
 const uint8_t inLR1   = Pins::kLowerMotors[2];
 const uint8_t inLR2   = Pins::kLowerMotors[3];
 
-// ─── Filter ──────────────────────────────────────────────────
+// Filter
 #define FILTER_SIZE 8
 
-// ─── Motor struct ─────────────────────────────────────────────
+// Motor struct
 struct Motor {
     uint8_t pwmPin, in1, in2;
     volatile unsigned long period_buf[FILTER_SIZE];
@@ -55,34 +53,34 @@ struct Motor {
     float setpoint;
     float integral;
     float last_error;
-    int8_t motorDir;   // dirección física del motor
+    int8_t motorDir;   // physical motor direction
 };
 
-// ─── Motor instances ──────────────────────────────────────────
+// Motor instances
 Motor UR = { pwmUR, inUR1, inUR2, {}, 0, 0, false, 475.0f, 3.4f, 2.2f, 0.0010f, 0.0f, 0, 0, -1 };
 Motor UL = { pwmUL, inUL1, inUL2, {}, 0, 0, false, 482.0f, 2.5f, 2.8f, 0.0022f, 0.0f, 0, 0, +1 };
 Motor LL = { pwmLL, inLL1, inLL2, {}, 0, 0, false, 495.0f, 2.1f, 3.9f, 0.0012f, 0.0f, 0, 0, +1 };
 Motor LR = { pwmLR, inLR1, inLR2, {}, 0, 0, false, 486.0f, 1.3f, 1.0f, 0.0035f, 0.0f, 0, 0, -1 };
 
-// ─── Rampa ───────────────────────────────────────────────────
+// Ramp
 const float TARGET_RPM            = 48.0f;
 const float RAMP_STEP             = 1.0f;
 const unsigned long RAMP_INTERVAL = 200;
 unsigned long lastRampTick        = 0;
 bool rampDone                     = false;
 
-// ─── PID timing ──────────────────────────────────────────────
+// PID timing
 const float   Ts        = 0.05f;
 unsigned long last_time = 0;
 
-// ─── Odometría ───────────────────────────────────────────────
+// Odometry
 const float WHEEL_DIAMETER = 0.108f;      // m
 const float WHEEL_RADIUS   = WHEEL_DIAMETER / 2.0f;
 const float L              = 0.18f;       // m
 const float INV_SQRT2      = 0.70710678f;
 
-// factor empírico para que 0.79 m pase a ~1.70 m
-const float ODOM_LINEAR_SCALE = 2.25f;   // Ajusta este valor para obtener la distancia real
+// empirical factor to make 0.79 m become ~1.70 m
+const float ODOM_LINEAR_SCALE = 2.25f;   // Adjust this value to get the real distance
 
 float odom_x  = 0.0f;   // m
 float odom_y  = 0.0f;   // m
@@ -92,7 +90,7 @@ unsigned long last_odom_time   = 0;
 const unsigned long ODOM_PRINT_INTERVAL = 200;
 unsigned long last_odom_print  = 0;
 
-// ─── Encoder push ─────────────────────────────────────────────
+// Encoder push
 inline void pushPeriod(Motor &m, unsigned long p)
 {
     m.period_buf[m.period_idx] = p;
@@ -100,7 +98,7 @@ inline void pushPeriod(Motor &m, unsigned long p)
     m.got_pulse  = true;
 }
 
-// ─── ISRs ─────────────────────────────────────────────────────
+// ISRs
 void isrUR_A() { unsigned long n = micros(); unsigned long p = n - UR.last_pulse_us; UR.last_pulse_us = n; if (p > 200) pushPeriod(UR, p); }
 void isrUR_B() { unsigned long n = micros(); unsigned long p = n - UR.last_pulse_us; UR.last_pulse_us = n; if (p > 200) pushPeriod(UR, p); }
 
@@ -113,7 +111,7 @@ void isrLL_B() { unsigned long n = micros(); unsigned long p = n - LL.last_pulse
 void isrLR_A() { unsigned long n = micros(); unsigned long p = n - LR.last_pulse_us; LR.last_pulse_us = n; if (p > 200) pushPeriod(LR, p); }
 void isrLR_B() { unsigned long n = micros(); unsigned long p = n - LR.last_pulse_us; LR.last_pulse_us = n; if (p > 200) pushPeriod(LR, p); }
 
-// ─── Measure RPM ─────────────────────────────────────────────
+// Measure RPM
 float measureRPM(Motor &m)
 {
     noInterrupts();
@@ -140,13 +138,13 @@ float measureRPM(Motor &m)
     return 60000000.0f / (avg_period * 4.0f * m.PPR);
 }
 
-// RPM → rad/s
+// RPM -> rad/s
 float rpmToRadS(float rpm)
 {
     return rpm * 2.0f * PI / 60.0f;
 }
 
-// ─── Set motor ────────────────────────────────────────────────
+// Set motor
 void setMotor(Motor &m, float pwm)
 {
     pwm *= m.motorDir;
@@ -163,7 +161,7 @@ void setMotor(Motor &m, float pwm)
     analogWrite(m.pwmPin, (int)constrain(pwm, 0.0f, 255.0f));
 }
 
-// ─── PID step ─────────────────────────────────────────────────
+// PID step
 void pidStep(Motor &m, const char* label)
 {
     float rpm   = measureRPM(m);
@@ -188,10 +186,10 @@ void pidStep(Motor &m, const char* label)
     Serial.print("  ");
 }
 
-// ─── Odometría ────────────────────────────────────────────────
+// Odometry
 void updateOdom(float dt)
 {
-    // signos odométricos
+    // odometric signs
     float rpm_UL = +measureRPM(UL);
     float rpm_UR = -measureRPM(UR);
     float rpm_LL = -measureRPM(LL);
@@ -209,7 +207,7 @@ void updateOdom(float dt)
     float vy = (-w_UL - w_UR + w_LL + w_LR) * k_lin;
     float wz = (-w_UL + w_UR - w_LL + w_LR) * k_ang;
 
-    // corrección de escala lineal
+    // linear scale correction
     vx *= ODOM_LINEAR_SCALE;
     vy *= ODOM_LINEAR_SCALE;
 
@@ -222,7 +220,7 @@ void updateOdom(float dt)
     odom_y += (vx * s + vy * c) * dt;
 }
 
-// ─── Setup ───────────────────────────────────────────────────
+// Setup
 void setup()
 {
     Serial.begin(115200);
@@ -270,7 +268,7 @@ void setup()
     last_odom_print = millis();
 }
 
-// ─── Loop ────────────────────────────────────────────────────
+// Loop
 void loop()
 {
     unsigned long now = millis();
