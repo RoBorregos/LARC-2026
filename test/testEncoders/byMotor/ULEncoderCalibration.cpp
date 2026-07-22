@@ -1,11 +1,11 @@
-// UL calibration 
-
+// Calibration    <<<<<UL>>>>>>
 
 //Use this code to calibrate
 
-// Penultimo code o test para los Encoders
-// Funciona (4:50 am)
-// FINAL que manda velocidad al motor
+// Almost last code or test for the Encoders
+// Works (4:50 am)
+// FINAL gives velocit to the motor
+
 #include <Arduino.h>
 #include "pins.h"
 
@@ -15,7 +15,7 @@ const uint8_t motorPWM    = Pins::kPwmPin[1];
 const uint8_t motorIN1    = Pins::kUpperMotors[2];
 const uint8_t motorIN2    = Pins::kUpperMotors[3];
 
-// ─── Encoder / filtro ────────────────────────────────────────────────────────
+// Encoder Filter
 #define FILTER_SIZE 8
 
 volatile unsigned long period_buf[FILTER_SIZE] = {0};
@@ -25,7 +25,7 @@ volatile bool          got_pulse   = false;
 
 
 
-// ─── PID ─────────────────────────────────────────────────────────────────────
+//  PID 
 const float PPR = 482.0f;
 const float Ts  = 0.05f;   // 50ms — más estable que 10ms
 
@@ -39,7 +39,7 @@ float last_error = 0.0f;
 
 unsigned long last_time = 0;
 
-// ─── Helpers ISR ─────────────────────────────────────────────────────────────
+//  Helpers ISR 
 void pushPeriod(unsigned long p)
 {
     period_buf[period_idx] = p;
@@ -47,7 +47,7 @@ void pushPeriod(unsigned long p)
     got_pulse  = true;
 }
 
-// ─── ISR ─────────────────────────────────────────────────────────────────────
+//  ISR 
 void isrA()
 {
     unsigned long now = micros();
@@ -64,7 +64,7 @@ void isrB()
     if (p > 200UL) pushPeriod(p);  // Ignora rebotes < 200µs
 }
 
-// ─── Medición RPM ────────────────────────────────────────────────────────────
+//  Measurement RPM 
 float measureRPM()
 {
     noInterrupts();
@@ -77,7 +77,7 @@ float measureRPM()
     if (!has_got) return 0.0f;
     if (micros() - last > 200000UL) return 0.0f;
 
-    // Promedio de períodos válidos
+    // Average of valid periods
     unsigned long sum   = 0;
     uint8_t       count = 0;
     for (uint8_t i = 0; i < FILTER_SIZE; i++) {
@@ -89,7 +89,7 @@ float measureRPM()
     return 60000000.0f / (avg_period * 4.0f * PPR);
 }
 
-// ─── Motor ───────────────────────────────────────────────────────────────────
+// Motor 
 void setMotor(float pwm)
 {
     if (pwm >= 0.0f) {
@@ -103,7 +103,7 @@ void setMotor(float pwm)
     analogWrite(motorPWM, (int)constrain(pwm, 0.0f, 255.0f));
 }
 
-// ─── Setup ───────────────────────────────────────────────────────────────────
+//  Setup 
 void setup()
 {
     Serial.begin(115200);
@@ -123,7 +123,7 @@ void setup()
     last_time = millis();
 }
 
-// ─── Loop ────────────────────────────────────────────────────────────────────
+//  Loop 
 void loop()
 {
     unsigned long now = millis();
