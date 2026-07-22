@@ -29,7 +29,7 @@ public:
     void begin();
     void update();
 
-    // ── Movimiento básico ──────────────────────────────
+    // Basic movement
     void forward(float speed);
     void backward(float speed);
     void left(float speed);
@@ -39,33 +39,33 @@ public:
     void brake();
     void setTranslation(float vx, float vy);
 
-    // ── Movimiento autónomo ────────────────────────────
+    // autonomous movement
     void driveDistance(float meters, float speed);
     void strafeDistance(float meters, float speed);
     void turnTo(float targetDeg, uint32_t timeoutMs = 3000);
     bool isBusy() const { return busy_; }
 
-    // ── Yaw hold ──────────────────────────────────────
+    // Yaw hold 
     void  holdYaw(bool enable);
     void  setTargetYaw(float yawRad);
     float getYaw() const;
 
-    // ── Omega manual ──────────────────────────────────
+    //  Omega manual 
     void setManualOmega(float omegaRadS);
     void clearManualOmega();
 
-    // ── QTR ───────────────────────────────────────────
+    //  QTR 
     void attachQTR(QTR& qtr);
     void followLine(float vySpeed);
     void stopLineFollow();
     bool isFollowingLine() const { return lineFollowEnabled_; }
 
-    // ── Odometría ─────────────────────────────────────
+    //  Odometry 
     void  resetOdometry();
     float getOdoX() const { return ekf_.getX(); }
     float getOdoY() const { return ekf_.getY(); }
 
-    // ── Test / debug ──────────────────────────────────
+    //  Test / debug 
     void testKinematics(float v = 0.45f, uint32_t T = 2000);
 
     float getVxCmd() const { return vxCmd_; }
@@ -95,12 +95,12 @@ private:
     void updateOdometry();
     void updateBusy(uint32_t now);
 
-    // ── Hardware ──────────────────────────────────────
+    // Hardware 
     BNO        bno_;
     DCMotor    m1_ul_, m2_ur_, m3_ll_, m4_lr_;
     OmniMotors omni_;
 
-    // ── Yaw PID ───────────────────────────────────────
+    // Yaw PID 
     static constexpr float P         = Constants::PID::kKp;
     static constexpr float I         = Constants::PID::kKi;
     static constexpr float D         = Constants::PID::kKd;
@@ -112,11 +112,11 @@ private:
     bool  manualOmegaEnabled_ = false;
     float manualOmega_        = 0.0f;
 
-    // ── Comandos de velocidad ─────────────────────────
+    // Velocity command
     float vxCmd_ = 0.0f;
     float vyCmd_ = 0.0f;
 
-    // ── Movimiento autónomo ────────────────────────────
+    // Movimiento autónomo 
     bool     busy_        = false;
     float    distTarget_  = 0.0f;
     float    busyVx_      = 0.0f;
@@ -124,14 +124,14 @@ private:
     uint32_t busyStart_   = 0;
     uint32_t busyTimeout_ = 5000;
 
-    // ── Odometría EKF ─────────────────────────────────
+    // EKF Odometry 
     OdometryEKF ekf_;
     float prevD1_ = 0.0f;
     float prevD2_ = 0.0f;
     float prevD3_ = 0.0f;
     float prevD4_ = 0.0f;
 
-    // ── QTR / line follow ─────────────────────────────
+    //  QTR / line follow 
     QTR*          qtrFront_          = nullptr;
     PIDController linePid_;
     bool          lineFollowEnabled_ = false;
@@ -141,7 +141,7 @@ private:
     static constexpr float kLinePidMax   = 0.20f;
     static constexpr float kLineDeadband = 150.0f;
 
-    // ── Timing ────────────────────────────────────────
+    //  Timing 
     static constexpr uint32_t kControlMs = 10;
     static constexpr uint32_t kPrintMs   = 100;
     uint32_t lastControl_ = 0;
