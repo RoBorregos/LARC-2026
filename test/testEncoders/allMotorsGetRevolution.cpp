@@ -1,16 +1,16 @@
 /*
-- Se suman los ticks para obtener las revoluciones 
+- Ticks are summed to obtain revolutions
 */
 #include <Arduino.h>
 #include "pins.h"
 
-// Canal B (dirección)
+// Channel B (direction)
 const uint8_t encB_UL = Pins::kEncoders[0];
 const uint8_t encB_UR = Pins::kEncoders[3];
 const uint8_t encB_LL = Pins::kEncoders[5];
 const uint8_t encB_LR = Pins::kEncoders[7];
 
-// Canal A (interrupciones)
+// Channel A (interrupts)
 const uint8_t encA_UL = Pins::kEncoders[1];
 const uint8_t encA_UR = Pins::kEncoders[2];
 const uint8_t encA_LL = Pins::kEncoders[4];
@@ -46,7 +46,7 @@ void setup()
 
 void loop()
 {
-    // Reset con 'r' desde el monitor serial
+    // Reset with 'r' from the serial monitor
     if (Serial.available())
     {
         char c = Serial.read();
@@ -59,7 +59,7 @@ void loop()
         }
     }
 
-    // Imprimir cada 200ms
+    // Print every 200ms
     static unsigned long lastPrint = 0;
     if (millis() - lastPrint >= 200)
     {
