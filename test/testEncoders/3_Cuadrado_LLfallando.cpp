@@ -6,7 +6,7 @@
 
 BNO bno1;
 
-// ─── Configuración ────────────────────────────────────────────
+// Configuration
 static constexpr float kSideMeters  = 0.80f;
 static constexpr float kTargetRPM   = 48.0f;
 static constexpr float kStopTolM    = 0.03f;
@@ -24,7 +24,7 @@ static constexpr float kKd = 0.005f;
 
 #define FILTER_SIZE 8
 
-// ─── Pines ────────────────────────────────────────────────────
+// Pins
 const uint8_t encUL_A = Pins::kEncoders[1];
 const uint8_t encUL_B = Pins::kEncoders[0];
 const uint8_t pwmUL   = Pins::kPwmPin[0];
@@ -37,10 +37,10 @@ const uint8_t pwmUR   = Pins::kPwmPin[1];
 const uint8_t inUR1   = Pins::kUpperMotors[2];
 const uint8_t inUR2   = Pins::kUpperMotors[3];
 
-// LL usa pines del codigo que funcionaba:
+// LL uses pins from the code that worked:
 // A = kEncoders[4] = pin 41
 // B = kEncoders[5] = pin 13
-// ISR en RISING sobre canal A, lee canal B para direccion
+// ISR on RISING on channel A, reads channel B for direction
 const uint8_t encLL_A = Pins::kEncoders[4];  // pin 41
 const uint8_t encLL_B = Pins::kEncoders[5];  // pin 13
 const uint8_t pwmLL   = Pins::kPwmPin[2];    // pin 29
@@ -53,7 +53,7 @@ const uint8_t pwmLR   = Pins::kPwmPin[3];
 const uint8_t inLR1   = Pins::kLowerMotors[2];
 const uint8_t inLR2   = Pins::kLowerMotors[3];
 
-// ─── Motor struct ─────────────────────────────────────────────
+// Motor struct
 struct Motor {
     uint8_t pwmPin, in1, in2;
     volatile unsigned long period_buf[FILTER_SIZE];
@@ -74,7 +74,7 @@ Motor UR = { pwmUR, inUR1, inUR2, {}, 0, 0, false, 475.0f, kKp, kKi, kKd, 0.0f, 
 Motor LL = { pwmLL, inLL1, inLL2, {}, 0, 0, false, 495.0f, kKp, kKi, kKd, 0.0f, 0.0f, 0.0f, false };
 Motor LR = { pwmLR, inLR1, inLR2, {}, 0, 0, false, 486.0f, kKp, kKi, kKd, 0.0f, 0.0f, 0.0f, true  };
 
-// ─── ISR UL, UR, LR — metodo periodo ──────────────────────────
+// ISR UL, UR, LR - period method
 inline void pushPeriod(Motor &m, unsigned long p) {
     m.period_buf[m.period_idx] = p;
     m.period_idx = (m.period_idx + 1) % FILTER_SIZE;
@@ -88,9 +88,9 @@ void isrUR_B() { unsigned long n=micros(); unsigned long p=n-UR.last_pulse_us; U
 void isrLR_A() { unsigned long n=micros(); unsigned long p=n-LR.last_pulse_us; LR.last_pulse_us=n; if(p>200) pushPeriod(LR,p); }
 void isrLR_B() { unsigned long n=micros(); unsigned long p=n-LR.last_pulse_us; LR.last_pulse_us=n; if(p>200) pushPeriod(LR,p); }
 
-// ─── ISR LL — metodo RISING + canal B para direccion ──────────
-// Igual que el codigo que funcionaba: ISR en RISING sobre canal A,
-// lee canal B para determinar direccion (HIGH=adelante, LOW=atras)
+// ISR LL - RISING method + channel B for direction
+// Same as the code that worked: ISR on RISING on channel A,
+// reads channel B to determine direction (HIGH=forward, LOW=backward)
 volatile long ticksLL_count = 0;
 
 void isrLL() {
@@ -108,14 +108,14 @@ float measureRPM_LL(float dtSec) {
     interrupts();
 
     long dTicks = cur - prevTicksLL;
-    prevTicksLL = cur;  // avanza solo aqui — no llamar dos veces por ciclo
+    prevTicksLL = cur;  // advances only here - don't call twice per cycle
 
-    // PPR sin *4 porque solo contamos RISING de canal A (1 flanco por pulso)
+    // PPR without *4 because we only count RISING on channel A (1 edge per pulse)
     float mag = ((float)abs(dTicks) / 495.0f) / dtSec * 60.0f;
     return (LL.setpoint >= 0.0f) ? mag : -mag;
 }
 
-// ─── RPM para UL, UR, LR — metodo periodo ─────────────────────
+// RPM for UL, UR, LR - period method
 float measureRPM(Motor &m) {
     noInterrupts();
     unsigned long buf[FILTER_SIZE];
@@ -138,7 +138,7 @@ float measureRPM(Motor &m) {
     return (m.setpoint >= 0.0f) ? mag : -mag;
 }
 
-// ─── Motor driver con deadband e inversion ────────────────────
+// Motor driver with deadband and inversion
 void setMotorPWM(Motor &m, float pwm) {
     if (pwm == 0.0f) {
         analogWrite(m.pwmPin, 0);
@@ -178,7 +178,7 @@ void stopAll() {
     stopMotor(LL); stopMotor(LR);
 }
 
-// ─── PID ──────────────────────────────────────────────────────
+// PID
 void pidStepWithRPM(Motor &m, float rpm) {
     if (m.setpoint == 0.0f) { stopMotor(m); return; }
 
@@ -197,7 +197,7 @@ void pidStepWithRPM(Motor &m, float rpm) {
     setMotorPWM(m, output);
 }
 
-// ─── EKF ──────────────────────────────────────────────────────
+// EKF
 float ekf_x=0, ekf_y=0, ekf_th=0;
 float P[3][3] = {{0.01f,0,0},{0,0.01f,0},{0,0,0.05f}};
 float Q[3][3] = {{0.0005f,0,0},{0,0.0005f,0},{0,0,0.003f}};
@@ -243,7 +243,7 @@ void ekfStep(float dt, float rpmUL, float rpmUR, float rpmLL, float rpmLR) {
     for(int i=0;i<3;i++) for(int j=0;j<3;j++) P[i][j]=Pn[i][j];
 }
 
-// ─── Comandos ─────────────────────────────────────────────────
+// Commands
 //            UL     UR     LL     LR
 // Forward:  +RPM   +RPM   +RPM   +RPM
 // Backward: -RPM   -RPM   -RPM   -RPM
@@ -260,7 +260,7 @@ void setRPMs(float ul, float ur, float ll, float lr) {
 
 void resetPose() { ekf_x=0; ekf_y=0; }
 
-// ─── Secuencia cuadrado ───────────────────────────────────────
+// Square sequence
 enum class Step : uint8_t { FORWARD, RIGHT, BACKWARD, LEFT, PAUSE, DONE };
 Step     step       = Step::FORWARD;
 uint32_t pauseStart = 0;
@@ -290,7 +290,7 @@ void startStep(Step s) {
     }
 }
 
-// ─── Setup ────────────────────────────────────────────────────
+// Setup
 void setup() {
     Serial.begin(115200);
     Wire.begin();
@@ -306,14 +306,14 @@ void setup() {
     analogWriteResolution(8);
     analogWriteFrequency(pwmUL, 25000);
     analogWriteFrequency(pwmUR, 25000);
-    analogWriteFrequency(pwmLL, 4000);   // pin 29 no soporta 25kHz
+    analogWriteFrequency(pwmLL, 4000);   // pin 29 doesn't support 25kHz
     analogWriteFrequency(pwmLR, 25000);
 
     attachInterrupt(digitalPinToInterrupt(encUL_A), isrUL_A, CHANGE);
     attachInterrupt(digitalPinToInterrupt(encUL_B), isrUL_B, CHANGE);
     attachInterrupt(digitalPinToInterrupt(encUR_A), isrUR_A, CHANGE);
     attachInterrupt(digitalPinToInterrupt(encUR_B), isrUR_B, CHANGE);
-    attachInterrupt(digitalPinToInterrupt(encLL_A), isrLL,   RISING); // <-- RISING, igual que el codigo que funcionaba
+    attachInterrupt(digitalPinToInterrupt(encLL_A), isrLL,   RISING); // <-- RISING, same as the code that worked
     attachInterrupt(digitalPinToInterrupt(encLR_A), isrLR_A, CHANGE);
     attachInterrupt(digitalPinToInterrupt(encLR_B), isrLR_B, CHANGE);
 
@@ -325,7 +325,7 @@ void setup() {
     startStep(Step::FORWARD);
 }
 
-// ─── Loop ─────────────────────────────────────────────────────
+// Loop
 void loop() {
     static uint32_t lastCycle = millis();
     static uint32_t lastPrint = millis();
@@ -338,7 +338,7 @@ void loop() {
         // Medir RPM una sola vez por ciclo
         float rpmUL = measureRPM(UL);
         float rpmUR = measureRPM(UR);
-        float rpmLL = measureRPM_LL(dt);  // prevTicksLL avanza solo aqui
+        float rpmLL = measureRPM_LL(dt);  // prevTicksLL advances only here
         float rpmLR = measureRPM(LR);
 
         ekfStep(dt, rpmUL, rpmUR, rpmLL, rpmLR);
@@ -359,7 +359,7 @@ void loop() {
             Serial.print(" UR:");       Serial.print(rpmUR, 0);
             Serial.print(" LL:");       Serial.print(rpmLL, 0);
             Serial.print(" LR:");       Serial.print(rpmLR, 0);
-            Serial.print(" | tLL:");    Serial.print(ticksLL_count);  // debug ticks crudos
+            Serial.print(" | tLL:");    Serial.print(ticksLL_count);  // debug raw ticks
             Serial.print(" | step:");
             switch(step) {
                 case Step::FORWARD:  Serial.print("FWD");  break;
