@@ -5,15 +5,15 @@
 #include "BNO/bno.hpp"
 
 // ═══════════════════════════════════════════════════════════════
-//  4-Motor PID + EKF (x, y, theta)  :: con error de centimetros. 
-//  Midiendo tiene un error en "y" de 7 cm por cada 2 metros en "x"
+//  4-Motor PID + EKF (x, y, theta)  :: centimeter-level error.
+//  When measuring, there is a "y" error of 7 cm per 2 meters in "x"
 //  Prediction: encoders
-//  Corrección: yaw del BNO
+//  Correction: BNO yaw
 // ═══════════════════════════════════════════════════════════════
 
 BNO bno1;
 
-// ─── Pines ────────────────────────────────────────────────────
+// ─── Pins ─────────────────────────────────────────────────────
 const uint8_t encUL_A = Pins::kEncoders[1];
 const uint8_t encUL_B = Pins::kEncoders[0];
 const uint8_t pwmUL   = Pins::kPwmPin[0];
@@ -59,7 +59,7 @@ Motor UL = { pwmUL, inUL1, inUL2, {}, 0, 0, false, 482.0f, 2.5f, 2.8f, 0.0022f, 
 Motor LL = { pwmLL, inLL1, inLL2, {}, 0, 0, false, 495.0f, 2.1f, 3.9f, 0.0012f, 0.0f, 0, 0, +1 };
 Motor LR = { pwmLR, inLR1, inLR2, {}, 0, 0, false, 486.0f, 1.3f, 1.0f, 0.0035f, 0.0f, 0, 0, -1 };
 
-// ─── Rampa / PID ─────────────────────────────────────────────
+// ─── Ramp / PID ────────────────────────────────────────────────
 const float TARGET_RPM            = 48.0f;
 const float RAMP_STEP             = 1.0f;
 const unsigned long RAMP_INTERVAL = 200;
@@ -69,13 +69,13 @@ bool rampDone                     = false;
 const float Ts = 0.05f;
 unsigned long last_time = 0;
 
-// ─── Geometría ───────────────────────────────────────────────
+// ─── Geometry ──────────────────────────────────────────────────
 const float WHEEL_DIAMETER = 0.108f;
 const float WHEEL_RADIUS   = WHEEL_DIAMETER / 2.0f;
 const float INV_SQRT2      = 0.70710678f;
 const float ODOM_LINEAR_SCALE = 2.57f;
 
-// compensación lateral
+// lateral compensation
 const float kLeftScale  = 1.0f;
 const float kRightScale = 1.16f;
 
@@ -85,21 +85,21 @@ float ekf_x = 0.0f;
 float ekf_y = 0.0f;
 float ekf_th = 0.0f;
 
-// Covarianza P (3x3)
+// Covariance P (3x3)
 float P[3][3] = {
     {0.01f, 0.0f, 0.0f},
     {0.0f, 0.01f, 0.0f},
     {0.0f, 0.0f, 0.05f}
 };
 
-// Ruido de proceso Q
+// Process noise Q
 float Q[3][3] = {
     {0.0005f, 0.0f,    0.0f},
     {0.0f,    0.0005f, 0.0f},
     {0.0f,    0.0f,    0.003f}
 };
 
-// Ruido de medición del BNO para theta
+// BNO measurement noise for theta
 float R_theta = 0.02f;
 
 unsigned long last_ekf_time = 0;
@@ -207,7 +207,7 @@ void pidStep(Motor &m, const char* label)
 // ─── EKF predict + update ────────────────────────────────────
 void ekfStep(float dt)
 {
-    // ----- velocidades desde encoders -----
+    // ----- velocities from encoders -----
     float rpm_UL = +measureRPM(UL);
     float rpm_UR = -measureRPM(UR);
     float rpm_LL = -measureRPM(LL);
@@ -226,20 +226,20 @@ void ekfStep(float dt)
     vx_body *= ODOM_LINEAR_SCALE;
     vy_body *= ODOM_LINEAR_SCALE;
 
-    // medimos theta con BNO
+    // measure theta with BNO
     bno1.update();
     float z_theta = bno1.getYaw();
 
-    // ===== PREDICCIÓN =====
+    // ===== PREDICTION =====
     float c = cos(ekf_th);
     float s = sin(ekf_th);
 
-    // usamos yaw del estado actual para proyectar
+    // use current state yaw to project
     float x_pred  = ekf_x  + (vx_body * c - vy_body * s) * dt;
     float y_pred  = ekf_y  + (vx_body * s + vy_body * c) * dt;
-    float th_pred = ekf_th;   // la corrección fuerte de theta viene del BNO
+    float th_pred = ekf_th;   // the strong theta correction comes from the BNO
 
-    // Jacobiano F
+    // Jacobian F
     float F[3][3] = {
         {1.0f, 0.0f, (-vx_body * s - vy_body * c) * dt},
         {0.0f, 1.0f, ( vx_body * c - vy_body * s) * dt},
@@ -264,7 +264,7 @@ void ekfStep(float dt)
         for (int j = 0; j < 3; j++)
             P_pred[i][j] += Q[i][j];
 
-    // ===== UPDATE solo con theta =====
+    // ===== UPDATE using theta only =====
     // H = [0 0 1]
     float y_tilde = wrapPi(z_theta - th_pred);
 
@@ -359,7 +359,7 @@ void loop()
         if (baseSp >= TARGET_RPM) {
             baseSp = TARGET_RPM;
             rampDone = true;
-            Serial.println(">>> Rampa completa");
+            Serial.println(">>> Ramp complete");
         }
 
         UL.setpoint = baseSp * kLeftScale;
