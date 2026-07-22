@@ -13,7 +13,7 @@ Goes really well, it goes pretty smooth, it just need some tuning, but nothing m
 
 BNO bno1;
 
-// ─── Configuración ────────────────────────────────────────────
+// Configuration
 static constexpr float kSideMeters  = 0.80f;
 static constexpr float kTargetRPM   = 60.0f;
 static constexpr float kStopTolM    = 0.03f;
@@ -25,12 +25,12 @@ static constexpr uint32_t kPausems  = 600;
 static constexpr float kPwmDeadband = 60.0f;
 static constexpr float kPwmMax      = 120.0f;
 
-// ─── RPM PID ──────────────────────────────────────────────────
+// RPM PID
 static constexpr float kKp = 1.5f;
 static constexpr float kKi = 1.2f;
 static constexpr float kKd = 0.005f;
 
-// ─── Yaw PID ──────────────────────────────────────────────────
+// Yaw PID
 static constexpr float kYawKp  = 150.0f;
 static constexpr float kYawKi  = 0.5f;
 static constexpr float kYawKd  = 0.5f;
@@ -38,7 +38,7 @@ static constexpr float kYawMax = 30.0f;
 
 #define FILTER_SIZE 8
 
-// ─── Pines ────────────────────────────────────────────────────
+// Pins
 const uint8_t encUL_A = Pins::kEncoders[1];
 const uint8_t encUL_B = Pins::kEncoders[0];
 const uint8_t pwmUL   = Pins::kPwmPin[0];
@@ -63,7 +63,7 @@ const uint8_t pwmLR   = Pins::kPwmPin[3];
 const uint8_t inLR1   = Pins::kLowerMotors[2];
 const uint8_t inLR2   = Pins::kLowerMotors[3];
 
-// ─── Motor struct ─────────────────────────────────────────────
+// Motor struct
 struct Motor {
     uint8_t pwmPin, in1, in2;
     volatile unsigned long period_buf[FILTER_SIZE];
@@ -84,23 +84,23 @@ Motor UR = { pwmUR, inUR1, inUR2, {}, 0, 0, false, 475.0f, kKp, kKi, kKd, 0.0f, 
 Motor LL = { pwmLL, inLL1, inLL2, {}, 0, 0, false, 495.0f, kKp, kKi, kKd, 0.0f, 0.0f, 0.0f, false };
 Motor LR = { pwmLR, inLR1, inLR2, {}, 0, 0, false, 486.0f, kKp, kKi, kKd, 0.0f, 0.0f, 0.0f, true  };
 
-// ─── wrapPi — declarada primero para que todo la pueda usar ───
+// wrapPi - declared first so everything can use it
 float wrapPi(float a) {
     while(a >  PI) a -= 2*PI;
     while(a < -PI) a += 2*PI;
     return a;
 }
 
-// ─── Yaw PID state ────────────────────────────────────────────
+// Yaw PID state
 float yawTarget   = 0.0f;
 float yawIntegral = 0.0f;
 float yawPrevErr  = 0.0f;
 
 float yawPidStep(float yawMeasured, float dt) {
-    // ANTES:
+    // BEFORE:
     // float error = wrapPi(yawTarget - yawMeasured);
 
-    // DESPUES — invertido:
+    // AFTER - inverted:
     float error  = wrapPi(yawMeasured - yawTarget);
 
     yawIntegral += error * dt;
@@ -111,7 +111,7 @@ float yawPidStep(float yawMeasured, float dt) {
     return constrain(output, -kYawMax, kYawMax);
 }
 
-// ─── ISR UL, UR, LR — metodo periodo ──────────────────────────
+// ISR UL, UR, LR - period method
 inline void pushPeriod(Motor &m, unsigned long p) {
     m.period_buf[m.period_idx] = p;
     m.period_idx = (m.period_idx + 1) % FILTER_SIZE;
@@ -125,7 +125,7 @@ void isrUR_B() { unsigned long n=micros(); unsigned long p=n-UR.last_pulse_us; U
 void isrLR_A() { unsigned long n=micros(); unsigned long p=n-LR.last_pulse_us; LR.last_pulse_us=n; if(p>200) pushPeriod(LR,p); }
 void isrLR_B() { unsigned long n=micros(); unsigned long p=n-LR.last_pulse_us; LR.last_pulse_us=n; if(p>200) pushPeriod(LR,p); }
 
-// ─── ISR LL ───────────────────────────────────────────────────
+// ISR LL
 volatile long ticksLL_count = 0;
 
 void isrLL() {
@@ -149,7 +149,7 @@ float measureRPM_LL(float dtSec) {
     return (LL.setpoint >= 0.0f) ? mag : -mag;
 }
 
-// ─── RPM UL, UR, LR ───────────────────────────────────────────
+// RPM UL, UR, LR
 float measureRPM(Motor &m) {
     noInterrupts();
     unsigned long buf[FILTER_SIZE];
@@ -172,7 +172,7 @@ float measureRPM(Motor &m) {
     return (m.setpoint >= 0.0f) ? mag : -mag;
 }
 
-// ─── Motor driver ─────────────────────────────────────────────
+// Motor driver
 void setMotorPWM(Motor &m, float pwm) {
     if (pwm == 0.0f) {
         analogWrite(m.pwmPin, 0);
@@ -214,7 +214,7 @@ void stopAll() {
     yawPrevErr  = 0.0f;
 }
 
-// ─── RPM PID con correccion de yaw ────────────────────────────
+// RPM PID with yaw correction
 void pidStepWithRPM(Motor &m, float rpm, float extraRPM) {
     float sp = m.setpoint + extraRPM;
 
@@ -235,7 +235,7 @@ void pidStepWithRPM(Motor &m, float rpm, float extraRPM) {
     setMotorPWM(m, output);
 }
 
-// ─── EKF ──────────────────────────────────────────────────────
+// EKF
 float ekf_x=0, ekf_y=0, ekf_th=0;
 float P[3][3] = {{0.01f,0,0},{0,0.01f,0},{0,0,0.05f}};
 float Q[3][3] = {{0.0005f,0,0},{0,0.0005f,0},{0,0,0.003f}};
@@ -275,7 +275,7 @@ void ekfStep(float dt, float rpmUL, float rpmUR, float rpmLL, float rpmLR) {
     for(int i=0;i<3;i++) for(int j=0;j<3;j++) P[i][j]=Pn[i][j];
 }
 
-// ─── Comandos ─────────────────────────────────────────────────
+// Commands
 void setRPMs(float ul, float ur, float ll, float lr) {
     UL.setpoint=ul; UR.setpoint=ur;
     LL.setpoint=ll; LR.setpoint=lr;
@@ -286,7 +286,7 @@ void setRPMs(float ul, float ur, float ll, float lr) {
 
 void resetPose() { ekf_x=0; ekf_y=0; }
 
-// ─── Secuencia FORWARD -> LEFT ────────────────────────────────
+// Sequence FORWARD -> LEFT
 enum class Step : uint8_t { FORWARD, LEFT, PAUSE, DONE };
 Step     step      = Step::FORWARD;
 uint32_t pauseStart = 0;
@@ -316,7 +316,7 @@ void startStep(Step s) {
     }
 }
 
-// ─── Setup ────────────────────────────────────────────────────
+// Setup
 void setup() {
     Serial.begin(115200);
     Wire.begin();
@@ -352,7 +352,7 @@ void setup() {
     startStep(Step::FORWARD);
 }
 
-// ─── Loop ─────────────────────────────────────────────────────
+// Loop
 void loop() {
     static uint32_t lastCycle = millis();
     static uint32_t lastPrint = millis();
@@ -362,28 +362,28 @@ void loop() {
         float dt  = (now - lastCycle) / 1000.0f;
         lastCycle = now;
 
-        // Capa 1: medir RPM
+        // Layer 1: measure RPM
         float rpmUL = measureRPM(UL);
         float rpmUR = measureRPM(UR);
         float rpmLL = measureRPM_LL(dt);
         float rpmLR = measureRPM(LR);
 
-        // Capa 2: yaw PID
+        // Layer 2: yaw PID
         bno1.update();
         float yawNow = bno1.getYaw();
         float omega  = yawPidStep(yawNow, dt);
 
-        // Distribucion de omega a los motores (cinematica omni):
+        // Distribution of omega to the motors (omni kinematics):
         // CCW (+omega): UL+, UR-, LL+, LR-
         float omegaUL = +omega;
         float omegaUR = -omega;
         float omegaLL = +omega;
         float omegaLR = -omega;
 
-        // Capa 3: EKF
+        // Layer 3: EKF
         ekfStep(dt, rpmUL, rpmUR, rpmLL, rpmLR);
 
-        // Capa 1: RPM PID con correccion de yaw
+        // Layer 1: RPM PID with yaw correction
         pidStepWithRPM(UL, rpmUL, omegaUL);
         pidStepWithRPM(UR, rpmUR, omegaUR);
         pidStepWithRPM(LL, rpmLL, omegaLL);
