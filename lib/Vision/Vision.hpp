@@ -3,7 +3,16 @@
 
 /**
  * @file Vision.hpp
- * @brief Interface to the Raspberry Pi vision dispatcher (v4 — bitfield protocol).
+ * @brief Interface to the Orin vision dispatcher (v5 — bitfield protocol).
+ *
+ * This class only handles the serial link to the Orin: it parses incoming
+ * vision data / status / error bytes and sends START/STOP/STATUS commands.
+ * It does NOT drive any hardware.
+ *
+ * TODO (Teensy side): acting on this vision data — the servo / actuation
+ * control for the intake and separator — will be implemented later. The old
+ * servo logic lived on the vision computer and has been removed; the Teensy
+ * will own it going forward.
  *
  * Vision data is a single byte bitfield (0x00–0x0F), no header:
  *   bit 0 = beanTop        bit 1 = beanBottom
@@ -12,9 +21,9 @@
  * Box data (benefits phase) uses header: 0xFE + 1 byte type
  *
  * Error policy:
- *   0xE0 = raspi_visao died  = critical
+ *   0xE0 = orin_vision died  = critical
  *   0xE1 = separator died    = not critical
- *   0xE2 = both died         = critical (because raspi_visao is dead)
+ *   0xE2 = both died         = critical (because orin_vision is dead)
  *   0xE4 = benefits died     = not critical
  *   Anything else 0xE0-0xEF  = treated as critical (unknown = be safe)
  */
@@ -92,7 +101,7 @@ private:
 
     static constexpr uint8_t HEADER_BOX   = 0xFE;
 
-    static constexpr uint8_t ERR_RASPI_VISAO = 0xE0;
+    static constexpr uint8_t ERR_ORIN_VISION = 0xE0;
     static constexpr uint8_t ERR_SEPARATOR   = 0xE1;
     static constexpr uint8_t ERR_BOTH_BEANS  = 0xE2;
     static constexpr uint8_t ERR_BENEFITS    = 0xE4;
