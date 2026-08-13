@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 """
 benefits.py — Box color detector (dispatcher mode)
-====================================================
-Camera  : /dev/video{CAM_PORT}  (V4L2)
+Purpose of this code : Watch a fixed ROI during the benefits phase, decide
+                       whether the box in view is RED, BLUE, or none, and
+                       report it so the dispatcher can forward it to the Teensy.
+Camera  : /dev/video_c920  (V4L2)
 Config  : benefits_config.json
-Serial  : NONE — prints VISION:FE:XX lines for dispatcher to forward
-Output  : detection results + VISION tags to stdout
+Serial  : NONE — prints VISION:FE:XX lines for the dispatcher to forward
+Output  : detection results + VISION tags on stdout
 Ctrl+C  : stop
 """
 
@@ -13,9 +15,7 @@ import cv2
 import numpy as np
 import sys, os, time, json
 
-# ══════════════════════════════════════════════════════════════════════
-#  CONFIG
-# ══════════════════════════════════════════════════════════════════════
+# - Config
 CONFIG_FILE = "benefits_config.json"
 CAM_PORT    = 4
 FRAME_W     = 640
@@ -49,9 +49,7 @@ def load_cfg() -> dict:
     print(f"[Config] loaded {CONFIG_FILE}")
     return cfg
 
-# ══════════════════════════════════════════════════════════════════════
-#  DETECTION
-# ══════════════════════════════════════════════════════════════════════
+# - Detection
 def detect_box(roi_bgr, cfg):
     hsv = cv2.cvtColor(roi_bgr, cv2.COLOR_BGR2HSV)
     total_pixels = roi_bgr.shape[0] * roi_bgr.shape[1]
@@ -86,21 +84,19 @@ def detect_box(roi_bgr, cfg):
     else:
         return BOX_NONE, red_pct, blue_pct
 
-# ══════════════════════════════════════════════════════════════════════
-#  MAIN
-# ══════════════════════════════════════════════════════════════════════
+# - Main
 def main():
     cfg = load_cfg()
 
-    cap = cv2.VideoCapture(CAM_PORT, cv2.CAP_V4L2)
+    cap = cv2.VideoCapture("/dev/video_c920", cv2.CAP_V4L2)
     cap.set(cv2.CAP_PROP_FRAME_WIDTH,  FRAME_W)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, FRAME_H)
     if not cap.isOpened():
-        sys.exit(f"[ERROR] Cannot open /dev/video{CAM_PORT}")
+        sys.exit("[ERROR] Cannot open /dev/video_c920")
 
     actual_w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     actual_h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    print(f"[Camera] /dev/video{CAM_PORT}  {actual_w}x{actual_h}")
+    print(f"[Camera] /dev/video_c920  {actual_w}x{actual_h}")
     print("[Mode] Dispatcher (VISION tags via stdout)")
     print("[Running] Ctrl+C to stop")
 
@@ -123,8 +119,7 @@ def main():
             roi = frame[y1:y2, x1:x2]
             box_type, red_pct, blue_pct = detect_box(roi, cfg)
 
-            # Output vision data for dispatcher to forward
-            # Format: VISION:FE:XX (hex bytes)
+            # Emit vision data for the dispatcher to forward: VISION:FE:XX (hex)
             print(f"VISION:FE:{box_type:02X}", flush=True)
 
             frame_count += 1
@@ -136,7 +131,7 @@ def main():
                 t_last = now
 
             if box_type != last_box:
-                print(f"[DETECT] Box changed: {BOX_NAMES[last_box]} -> {BOX_NAMES[box_type]}")
+                print(f"[DETECT] Box changed: {BOX_NAMES[last_box]} to {BOX_NAMES[box_type]}")
                 last_box = box_type
 
     except KeyboardInterrupt:
