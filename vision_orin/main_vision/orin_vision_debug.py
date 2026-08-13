@@ -1,44 +1,52 @@
 #!/usr/bin/env python3
 """
-raspi_debug.py — Lightweight on-Pi debug viewer (no trackbars)
-==============================================================
-Reads config from raspi_config.json (same as raspi_visao.py).
-Shows 2 windows per side:
-    - FILTERS  : candidate mask + background-green + morph result
-    - RESULT   : detection zone, trigger band, picked circles, hit state
+orin_vision_debug.py — Bean sorter preview / calibration tool
+Purpose of this code : Same vision pipeline as orin_vision.py, but instead of
+                       emitting VISION tags it opens preview windows so you can
+                       SEE what the Orin would detect. Use it to calibrate.
+Camera  : /dev/video_zed  (V4L2, ZED 1344x376, processed at full resolution)
+Config  : orin_config.json  (shared with orin_vision.py)
+Serial  : NONE
+Output  : two on-screen windows (FILTERS + RESULT) + FPS on stdout
+Keys    : Q / ESC = quit
 
-No servo control, no serial. Pure visualization over X11 forwarding.
+How this differs from orin_vision.py (READ THIS)
+    This is the PC / debug build. It is meant to run on a computer (or on the
+    Orin over X11 forwarding) because it opens a preview window showing exactly
+    what the Orin would be detecting. You use it to calibrate: watch the FILTERS
+    and RESULT windows, adjust orin_config.json until the beans are picked
+    cleanly, then copy orin_config.json onto the Orin and run the headless
+    orin_vision.py there. This file drives no hardware and sends no serial — it
+    is purely for tuning and verification.
 
-Keys:  Q / ESC = quit
+Windows
+    FILTERS : candidate mask + background-green + morph result
+    RESULT  : detection zone, trigger band, picked circles, hit state
 """
 
 import cv2
 import numpy as np
 import sys, json, os, time
 
-# ══════════════════════════════════════════════════════════════════════
-#  CONSTANTS — match raspi_visao.py
-# ══════════════════════════════════════════════════════════════════════
-CONFIG_FILE = "raspi_config.json"
+# - Constants (must match orin_vision.py)
+CONFIG_FILE = "orin_config.json"
 CAM_DEV     = "/dev/video_zed"
 FRAME_W     = 1344
 FRAME_H     = 376
-DS          = 2
 
-# Display sizing — keep small for X11 forwarding
+# Display sizing — kept small so it stays smooth over X11 forwarding
 PANEL_W = 420
 PANEL_H = 235
 FONT    = cv2.FONT_HERSHEY_SIMPLEX
 
-# ══════════════════════════════════════════════════════════════════════
-#  CONFIG LOADER (identical to raspi_visao.py)
-# ══════════════════════════════════════════════════════════════════════
+# - Config loader (identical to orin_vision.py)
 def load_cfg() -> dict:
     if not os.path.exists(CONFIG_FILE):
-        sys.exit(f"[ERROR] {CONFIG_FILE} not found — run debug on Mac and press S first.")
+        sys.exit(f"[ERROR] {CONFIG_FILE} not found — tune on a PC and press S first.")
     with open(CONFIG_FILE) as f:
         raw = json.load(f)
-    s = DS
+    # Full resolution: config values are used directly (no downscale).
+    # area keeps the legacy x10 tuning multiplier from the original config.
     return dict(
         s_min      = raw['s_min'],
         v_dark     = raw['v_dark'],
@@ -46,26 +54,24 @@ def load_cfg() -> dict:
         bg_h_hi    = raw['bg_h_hi'],
         bg_s_min   = raw['bg_s_min'],
         bg_v_min   = raw['bg_v_min'],
-        area_min   = (raw['area_min'] * 10) // (s * s),
-        area_max   = (raw['area_max'] * 10) // (s * s),
-        rad_min    = max(1, raw['rad_min'] // s),
-        rad_max    = max(1, raw['rad_max'] // s),
+        area_min   = raw['area_min'] * 10,
+        area_max   = raw['area_max'] * 10,
+        rad_min    = max(1, raw['rad_min']),
+        rad_max    = max(1, raw['rad_max']),
         circ_min   = raw['circ_min'] * 0.01,
         circ_max   = raw['circ_max'] * 0.01,
         morph_k    = max(1, raw['morph_k'] | 1),
         morph_iter = max(1, raw['morph_iter']),
-        det_cy_l   = raw['det_cy_l'] // s,
-        det_cy_r   = raw['det_cy_r'] // s,
-        det_thick  = max(1, raw['det_thick'] // s),
-        trigger_x  = raw['trigger_x'] // s,
-        trig_y2    = raw['trig_y2'] // s,
+        det_cy_l   = raw['det_cy_l'],
+        det_cy_r   = raw['det_cy_r'],
+        det_thick  = max(1, raw['det_thick']),
+        trigger_x  = raw['trigger_x'],
+        trig_y2    = raw['trig_y2'],
     )
 
-# ══════════════════════════════════════════════════════════════════════
-#  VISION PIPELINE (shared with raspi_visao.py, kept local for clarity)
-# ══════════════════════════════════════════════════════════════════════
+# - Vision pipeline (mirrors orin_vision.py, kept local so this file runs standalone)
 def build_masks(half, cfg):
-    """Returns all intermediate masks for visualization."""
+    """Return every intermediate mask so the preview can show each stage."""
     hsv      = cv2.cvtColor(half, cv2.COLOR_BGR2HSV)
     coloured = (hsv[:,:,1] >= cfg['s_min'])
     dark     = (hsv[:,:,2] <  cfg['v_dark'])
@@ -110,19 +116,17 @@ def check_trigger(cdata, cfg):
             return True
     return False
 
-# ══════════════════════════════════════════════════════════════════════
-#  VISUALIZATION
-# ══════════════════════════════════════════════════════════════════════
+# - Visualization
 def panel_filters(half, masks):
-    """Combined mask view: blue=coloured, orange=dark, red=bg-green, yellow edges=final."""
+    """Combined mask view: orange=saturated, blue=dark, white=both, red=bg-green, yellow=final edge."""
     vis = np.zeros((*half.shape[:2], 3), np.uint8)
     coloured = masks['coloured']; dark = masks['dark']; bg = masks['bg_green'] > 0
-    vis[coloured & ~dark & ~bg] = (53, 130, 255)     # saturated → orange
-    vis[~coloured & dark  & ~bg] = (200, 80, 30)     # dark     → blue
-    vis[coloured & dark   & ~bg] = (255, 255, 255)   # both     → white
-    vis[bg]                     = (0, 0, 200)        # bg green → red
+    vis[coloured & ~dark & ~bg] = (53, 130, 255)     # saturated to orange
+    vis[~coloured & dark  & ~bg] = (200, 80, 30)     # dark      to blue
+    vis[coloured & dark   & ~bg] = (255, 255, 255)   # both      to white
+    vis[bg]                     = (0, 0, 200)        # bg green  to red
     edge = cv2.Canny(masks['morph'], 50, 150)
-    vis[edge > 0] = (0, 255, 255)                    # final edge → yellow
+    vis[edge > 0] = (0, 255, 255)                    # final edge to yellow
     out = cv2.resize(vis, (PANEL_W, PANEL_H))
     tp = half.shape[0] * half.shape[1]
     cv2.putText(out, f"surv:{np.count_nonzero(masks['morph']) * 100 // tp}%",
@@ -130,12 +134,12 @@ def panel_filters(half, masks):
     return cv2.rotate(out, cv2.ROTATE_90_COUNTERCLOCKWISE)
 
 def panel_result(half, cdata, cfg, side, hit):
-    """Live frame with zone, trigger band, detections, hit flag."""
+    """Live frame with detection zone, trigger band, picked circles and hit flag."""
     vis = cv2.resize(half, (PANEL_W, PANEL_H)).copy()
     sx = PANEL_W / half.shape[1]
     sy = PANEL_H / half.shape[0]
 
-    # detection zone (vertical band)
+    # Detection zone (vertical band)
     det_cy = cfg['det_cy_l'] if side == 'left' else cfg['det_cy_r']
     det_th = cfg['det_thick']
     zl = int((det_cy - det_th) * sx)
@@ -146,7 +150,7 @@ def panel_result(half, cdata, cfg, side, hit):
     cv2.line(vis, (zl, 0), (zl, PANEL_H), (0, 220, 0), 1)
     cv2.line(vis, (zr, 0), (zr, PANEL_H), (0, 220, 0), 1)
 
-    # trigger band (horizontal)
+    # Trigger band (horizontal)
     y1 = int(cfg['trigger_x'] * sy)
     y2 = int(cfg['trig_y2']   * sy)
     ylo, yhi = min(y1, y2), max(y1, y2)
@@ -158,7 +162,7 @@ def panel_result(half, cdata, cfg, side, hit):
     cv2.line(vis, (0, ylo), (PANEL_W, ylo), tc, 1)
     cv2.line(vis, (0, yhi), (PANEL_W, yhi), tc, 1)
 
-    # contours
+    # Contours
     for cx, cy, ri, area, circ, passed, pz, pr, pa, pc in cdata:
         dcx = int(cx * sx); dcy = int(cy * sy)
         dr  = max(1, int(ri * (sx + sy) / 2))
@@ -169,7 +173,7 @@ def panel_result(half, cdata, cfg, side, hit):
                         (max(0, dcx - dr), max(12, dcy - dr - 4)),
                         FONT, 0.32, (0, 220, 0), 1)
         else:
-            # show why it failed
+            # Show which check rejected this contour
             if   not pz: reason = "zone"
             elif not pr: reason = f"r:{ri}"
             elif not pa: reason = f"a:{int(area)}"
@@ -188,12 +192,10 @@ def panel_result(half, cdata, cfg, side, hit):
                     FONT, 0.6, (0, 0, 255), 2)
     return cv2.rotate(vis, cv2.ROTATE_90_COUNTERCLOCKWISE)
 
-# ══════════════════════════════════════════════════════════════════════
-#  MAIN
-# ══════════════════════════════════════════════════════════════════════
+# - Main
 def main():
     cfg = load_cfg()
-    print(f"[Config] loaded {CONFIG_FILE} (DS={DS}x)")
+    print(f"[Config] loaded {CONFIG_FILE} (full resolution)")
 
     cap = cv2.VideoCapture(CAM_DEV, cv2.CAP_V4L2)
     cap.set(cv2.CAP_PROP_FRAME_WIDTH,  FRAME_W)
@@ -205,9 +207,7 @@ def main():
     actual_w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     actual_h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     half_w   = actual_w // 2
-    ds_w     = half_w // DS
-    ds_h     = actual_h // DS
-    print(f"[Camera] {actual_w}x{actual_h}  half={half_w}x{actual_h}  ds={ds_w}x{ds_h}")
+    print(f"[Camera] {actual_w}x{actual_h}  half={half_w}x{actual_h}")
     print("[Keys]   Q / ESC = quit")
 
     FILTERS_WIN = "FILTERS (L top, R bottom)"
@@ -229,9 +229,10 @@ def main():
             if not ret or frame is None:
                 continue
 
+            # Process each half at full resolution
             halves = [
-                ('left',  cv2.resize(frame[:, :half_w], (ds_w, ds_h), interpolation=cv2.INTER_NEAREST)),
-                ('right', cv2.resize(frame[:, half_w:], (ds_w, ds_h), interpolation=cv2.INTER_NEAREST)),
+                ('left',  frame[:, :half_w]),
+                ('right', frame[:, half_w:]),
             ]
 
             filter_panels = []
