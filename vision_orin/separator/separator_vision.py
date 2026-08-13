@@ -1,24 +1,25 @@
 #!/usr/bin/env python3
 """
-separator_visao.py — Headless ball color sorter with servo control
-==================================================================
-Camera    : /dev/video_separator  (Global Shutter)
-Config    : separator_config.json
-Servos    : holder (pin 17) + separator (pin 27)
-Output    : VISION:FD:WW:CC lines for dispatcher
+separator_vision.py — Headless ball color classifier (vision to serial)
+Purpose of this code : Watch a fixed ROI on the Orin, classify the ball sitting
+                       there by color, and emit the result as VISION tags on
+                       stdout. The dispatcher forwards those bytes to the Teensy,
+                       which owns all servo / actuation logic. This file only
+                       looks and reports — it drives no hardware.
+Camera  : /dev/video_separator  (Global Shutter)
+Config  : separator_config.json
+Output  : VISION:FD:WW:CC lines on stdout  (WW = warm hit, CC = cool hit)
+Ctrl+C  : stop
 
 Classification
---------------
-  WHITE (background)  → no ball, idle
-  WARM (R/O/Y)        → separator → mature
-  COOL (blue + black) → separator → immature
-  unclassified ball   → holder pulse (fallback)
+    WHITE (background)  to no ball, idle
+    WARM (R/O/Y)        to mature
+    COOL (blue + black) to immature
 """
 
 import cv2
 import numpy as np
 import sys, json, os, time
-from ServoSystem import ServoSystem
 
 CONFIG_FILE = "separator_config.json"
 FRAME_W     = 640
@@ -40,9 +41,10 @@ DEFAULT_CFG = dict(
     morph_iter=1,
 )
 
+# - Config
 def load_cfg() -> dict:
     if not os.path.exists(CONFIG_FILE):
-        print(f"[Config] {CONFIG_FILE} not found — defaults", file=sys.stderr)
+        print(f"[Config] {CONFIG_FILE} not found — using defaults", file=sys.stderr)
         return dict(DEFAULT_CFG)
     with open(CONFIG_FILE) as f:
         saved = json.load(f)
@@ -55,13 +57,14 @@ def load_cfg() -> dict:
           file=sys.stderr)
     return cfg
 
-
+# - Classification
 def process(roi_hsv, cfg, roi_pixels):
-    """Returns (warm_hit, cool_hit, no_ball)."""
+    """Return (warm_hit, cool_hit, no_ball) for the current ROI."""
     warm = cv2.inRange(roi_hsv,
         np.array([cfg['warm_h_lo'], cfg['warm_s_min'], cfg['warm_v_min']], np.uint8),
         np.array([cfg['warm_h_hi'], 255, 255], np.uint8))
     if cfg['warm_h_lo'] < 10:
+        # Red wraps around the hue circle — also catch the high-hue red band
         warm = cv2.bitwise_or(warm, cv2.inRange(roi_hsv,
             np.array([160, cfg['warm_s_min'], cfg['warm_v_min']], np.uint8),
             np.array([180, 255, 255], np.uint8)))
@@ -91,7 +94,7 @@ def process(roi_hsv, cfg, roi_pixels):
     cool_hit = (not no_ball) and (np.count_nonzero(cool) / roi_pixels * 100) >= cfg['cool_frac']
     return warm_hit, cool_hit, no_ball
 
-
+# - Main
 def main():
     cfg = load_cfg()
 
@@ -112,14 +115,8 @@ def main():
     roi_pixels = rw * rh
     print(f"[ROI] {rw}x{rh} @ ({rx},{ry})  = {roi_pixels} px", file=sys.stderr)
 
-    servos = ServoSystem(holder_pin=17, separator_pin=27)
-    servos.holder.home()
-    servos.separator.force(30)
-    servos.update()
-    print("[Servos] holder=17, separator=27 initialized", file=sys.stderr)
-
     frames = 0
-    hits_w = hits_c = hits_none = idle = 0
+    hits_w = hits_c = idle = 0
     t0 = time.time()
     t_last = t0
 
@@ -132,29 +129,18 @@ def main():
             roi_hsv = cv2.cvtColor(frame[ry:ry+rh, rx:rx+rw], cv2.COLOR_BGR2HSV)
             warm_hit, cool_hit, no_ball = process(roi_hsv, cfg, roi_pixels)
 
-            # ball present but not classified as warm or cool → fallback holder pulse
-            unclassified = (not no_ball) and (not warm_hit) and (not cool_hit)
+            # Serial output: the dispatcher forwards this to the Teensy.
+            print(f"VISION:FD:{int(warm_hit):02X}:{int(cool_hit):02X}", flush=True)
 
-            if warm_hit:
-                servos.separator_mature()
-            elif cool_hit:
-                servos.separator_immature()
-
-            servos.holder_trigger(unclassified)
-            servos.update()
-
-            if no_ball:      idle      += 1
-            if warm_hit:     hits_w    += 1
-            if cool_hit:     hits_c    += 1
-            if unclassified: hits_none += 1
-
-            #print(f"VISION:FD:{int(warm_hit):02X}:{int(cool_hit):02X}", flush=True)
+            if no_ball:  idle   += 1
+            if warm_hit: hits_w += 1
+            if cool_hit: hits_c += 1
 
             frames += 1
             now = time.time()
             if now - t_last >= 2.0:
                 fps = frames / (now - t0)
-                print(f"[SEP] {fps:5.1f} fps  W:{hits_w}  C:{hits_c}  ?:{hits_none}  idle:{idle}",
+                print(f"[SEP] {fps:5.1f} fps  W:{hits_w}  C:{hits_c}  idle:{idle}",
                       file=sys.stderr)
                 t_last = now
 
@@ -162,7 +148,6 @@ def main():
         elapsed = time.time() - t0
         print(f"\n[Stopped] {frames} frames  {frames/max(elapsed,0.1):.1f} fps", file=sys.stderr)
     finally:
-        servos.close()
         cap.release()
 
 if __name__ == "__main__":
