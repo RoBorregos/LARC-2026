@@ -1,45 +1,36 @@
 #!/usr/bin/env python3
 """
-pi_dispatcher.py v5 — Multi-phase vision dispatcher with servo wakeup/sleep
-==========================================================================
-The dispatcher OWNS the serial port. Vision scripts do NOT open serial.
-Scripts print tagged lines to stdout:
-    VISION:05    → dispatcher merges bits and sends combined byte to Teensy
+dispatcher.py — Multi-phase vision dispatcher (v5)
+Purpose of this code : Own the serial link to the Teensy and, on command,
+                       launch/stop the right vision scripts per phase. It merges
+                       the VISION bitfields the scripts print and forwards one
+                       combined byte to the Teensy. All servo / actuation logic
+                       lives on the Teensy; this process only moves data.
+Serial  : /dev/ttyTeensy @ 115200  (this process is the ONLY serial owner)
+Runs on : the Orin
+Ctrl+C  : stop (kills scripts, closes serial)
 
-Vision data is a single byte bitfield (0x00–0x0F):
-    bit 0 = beanTop        bit 1 = beanBottom
-    bit 2 = warmBall       bit 3 = coolBall
+Protocol
+    Scripts print tagged lines to stdout:
+        VISION:05    to merge bits, send combined byte to the Teensy
+    The vision byte is a bitfield (0x00-0x0F):
+        bit 0 = beanTop     bit 1 = beanBottom
+        bit 2 = warmBall    bit 3 = coolBall
+    Each script owns its own bits (orin_vision: 0-1, separator: 2-3), so the
+    dispatcher merges them and one script can't clobber the other's bits.
+    Scripts MUST print VISION:00 every frame when nothing is detected, not only
+    when something IS detected — otherwise bits stay stuck.
+    Box data (benefits phase) uses a header byte: VISION:FE:02
 
-Each script owns its bits (raspi_visao: 0-1, separator: 2-3).
-The dispatcher merges them so one script can't clobber the other's bits.
+Phases
+    BEANS    to orin_vision.py + separator_vision.py
+    BENEFITS to benefits.py
 
-IMPORTANT: Scripts must print VISION:00 every frame when nothing is detected,
-not just VISION:XX when something IS detected. Otherwise bits stay stuck.
-
-Box data (benefits phase) still uses header: VISION:FE:02
-
-SERVO WAKEUP/SLEEP:
-  On Teensy connect    → servo_wakeup.py up   (sweep intake servos up)
-  On kill_all          → servo_wakeup.py down (sweep intake servos home)
-                           covers: CMD_STOP, disconnect, all-scripts-dead,
-                           clean shutdown. Skipped on phase-to-phase swaps.
-  CMD_STOP and serial disconnect always force the down-sweep, even when
-  no vision scripts were running, so a round reset can never leave the
-  intake servos deployed (and tossing beans).
-
-The wakeup script is a short-lived subprocess that opens GPIO pins, sweeps,
-then releases them — so vision scripts can claim the same pins later without
-conflict.
-
-PHASES:
-  BEANS    → raspi_visao.py + separator_visao.py
-  BENEFITS → benefits.py
-
-Teensy → Pi:
+Teensy to Orin:
     0xA0 = START BEANS     0xA1 = STOP ALL
     0xA2 = STATUS          0xA3 = START BENEFITS
 
-Pi → Teensy:
+Orin to Teensy:
     0xB0 = ready   0xB1 = starting   0xB2 = beans running
     0xB3 = stopped 0xB4 = benefits running
     0xE0-0xEF = errors (+ 1 byte error code)
@@ -55,29 +46,16 @@ import sys
 import os
 import re
 
-# ── CONFIG ────────────────────────────────────────────────────────────
+# - Config
 SERIAL_PORT = '/dev/ttyTeensy'
 SERIAL_BAUD = 115200
 
-# ── VISION SELECTION ──────────────────────────────────────────
-# 'original' — runs raspi_visao.py (production, stable)
-VISION_VARIANT = 'original' # Had a version before to run different versions, unused now
-_VISION_PATHS = {
-    'original': '/home/maximo/raspi_visao.py',
-    'buffed':   '/home/maximo/buffed_raspi_visao.py',
-}
-if VISION_VARIANT not in _VISION_PATHS:
-    raise ValueError(
-        f"VISION_VARIANT must be one of {list(_VISION_PATHS)}, got {VISION_VARIANT!r}"
-    )
-
+# - Scripts
 SCRIPTS = {
-    'raspi_visao':  _VISION_PATHS[VISION_VARIANT],
-    'separator':    '/home/maximo/separator_visao.py',
+    'orin_vision':  '/home/maximo/orin_vision.py',
+    'separator':    '/home/maximo/separator_vision.py',
     'benefits':     '/home/maximo/benefits.py',
 }
-
-SERVO_WAKEUP_SCRIPT = '/home/maximo/servo_wakeup.py'
 
 DEBUG_MODE = False
 DEBUG_PHASE = 'beans'
@@ -85,22 +63,15 @@ DEBUG_PHASE = 'beans'
 WORK_DIR = '/home/maximo'
 
 PHASES = {
-    'beans':    ['raspi_visao', 'separator'],
+    'beans':    ['orin_vision', 'separator'],
     'benefits': ['benefits'],
 }
 
 STARTUP_GRACE_SEC   = 5
 HEALTH_CHECK_SEC    = 2
 RECONNECT_DELAY_SEC = 2
-SERVO_SWEEP_TIMEOUT = 10
-POST_KILL_SETTLE    = 0.2 # let GPIO file descriptors release before sweep
 
-# Scripts that hold the servo GPIO pins (12/13). If one of these was
-# running when kill_all is called, we wait POST_KILL_SETTLE before running
-# servo_wakeup so gpiozero can release the pins cleanly.
-SERVO_GPIO_HOLDERS = {'raspi_visao'}
-
-# ── PROTOCOL ──────────────────────────────────────────────────────────
+# - Protocol
 CMD_START_BEANS    = 0xA0
 CMD_STOP           = 0xA1
 CMD_STATUS         = 0xA2
@@ -112,7 +83,7 @@ ACK_RUNNING  = 0xB2
 ACK_STOPPED  = 0xB3
 ACK_BENEFITS = 0xB4
 
-ERR_RASPI_VISAO = 0xE0
+ERR_ORIN_VISION = 0xE0
 ERR_SEPARATOR   = 0xE1
 ERR_BOTH_BEANS  = 0xE2
 ERR_CAMERA      = 0xE3
@@ -124,12 +95,12 @@ ECODE_EXCEPT = 0x02
 ECODE_NOCAM  = 0x04
 
 ERR_MAP = {
-    'raspi_visao': ERR_RASPI_VISAO,
+    'orin_vision': ERR_ORIN_VISION,
     'separator':   ERR_SEPARATOR,
     'benefits':    ERR_BENEFITS,
 }
 
-# ── STATE ─────────────────────────────────────────────────────────────
+# - State
 _procs = {}
 _outputs = {}
 _phase = None
@@ -139,16 +110,16 @@ _ser_lock = threading.Lock()
 
 MAX_OUTPUT_LINES = 100
 
-# Pattern to detect vision data lines: VISION:05 or VISION:FE:02
+# Matches vision data lines: VISION:05 or VISION:FE:02
 VISION_PATTERN = re.compile(r'^VISION:([0-9A-Fa-f:]+)$')
 
-# ── SHARED VISION STATE ──────────────────────────────────────────────
+# - Shared vision state
 _vision_state = 0
 _vision_lock = threading.Lock()
 
-# Each script owns specific bits — only those bits get updated when that script sends
+# Each script owns specific bits — only those bits update when that script sends.
 VISION_MASKS = {
-    'raspi_visao': 0x03,  # bits 0-1 (beanTop, beanBottom)
+    'orin_vision': 0x03,  # bits 0-1 (beanTop, beanBottom)
     'separator':   0x0C,  # bits 2-3 (warmBall, coolBall)
 }
 
@@ -158,35 +129,7 @@ def log(msg):
     print(f"[{ts}] {msg}", flush=True)
 
 
-# ── SERVO WAKEUP ──────────────────────────────────────────────────────
-def run_servo_sweep(direction):
-    """
-    Blocking subprocess call to servo_wakeup.py.
-    direction: 'up' (home → deploy) or 'down' (deploy → home).
-    Runs synchronously so pins are fully released before returning.
-    """
-    if not os.path.exists(SERVO_WAKEUP_SCRIPT):
-        log(f"[WARN] Servo wakeup script not found: {SERVO_WAKEUP_SCRIPT}")
-        return
-
-    log(f"Running servo sweep: {direction}")
-    try:
-        subprocess.run(
-            ['python3', '-u', SERVO_WAKEUP_SCRIPT, direction],
-            cwd=WORK_DIR,
-            timeout=SERVO_SWEEP_TIMEOUT,
-            check=True,
-        )
-        log(f"Sweep {direction} complete, pins released")
-    except subprocess.TimeoutExpired:
-        log(f"[WARN] Sweep {direction} timed out")
-    except subprocess.CalledProcessError as e:
-        log(f"[WARN] Sweep {direction} failed (rc={e.returncode})")
-    except Exception as e:
-        log(f"[WARN] Sweep {direction} failed: {e}")
-
-
-# ── SERIAL ────────────────────────────────────────────────────────────
+# - Serial
 def open_serial():
     global _ser
     while True:
@@ -227,19 +170,19 @@ def serial_read(n=1):
 
 
 def forward_vision_bytes(hex_str, script_name):
-    """Merge script bits into shared vision state and send combined byte."""
+    """Merge a script's bits into the shared vision state and send the combined byte."""
     global _vision_state
     try:
         data = bytes(int(b, 16) for b in hex_str.split(':'))
 
-        # Multi-byte (box data etc) — forward as-is
+        # Multi-byte (box data etc.) — forward as-is
         if len(data) > 1:
             with _ser_lock:
                 if _ser:
                     _ser.write(data)
             return
 
-        # Single byte — merge only this script's bits into shared state
+        # Single byte — merge only this script's bits into the shared state
         mask = VISION_MASKS.get(script_name, 0x0F)
         with _vision_lock:
             _vision_state = (_vision_state & ~mask) | (data[0] & mask)
@@ -253,16 +196,15 @@ def forward_vision_bytes(hex_str, script_name):
         log(f"[Forward] Error: {e}")
 
 
-# ── OUTPUT CAPTURE (with vision forwarding) ───────────────────────────
+# - Output capture (with vision forwarding)
 def _capture_output(proc, name):
-    """Read stdout, log it, and forward VISION: lines to Teensy."""
+    """Read a script's stdout, log it, and forward VISION: lines to the Teensy."""
     try:
         for line in proc.stdout:
             text = line.strip()
             if not text:
                 continue
 
-            # Check for vision data tag
             m = VISION_PATTERN.match(text)
             if m:
                 forward_vision_bytes(m.group(1), name)
@@ -285,37 +227,14 @@ def get_last_output(name, n=10):
         return _outputs.get(name, [])[-n:]
 
 
-# ── LAUNCH / KILL ────────────────────────────────────────────────────
-def kill_all(quiet=False, sweep_home=True, force_sweep=False):
+# - Launch / kill
+def kill_all(quiet=False):
     """
-    Kill all running vision scripts and (by default) sweep servos home.
+    Kill all running vision scripts and reset the shared vision state.
 
-    sweep_home=True: after killing, wait for GPIO pins to release and run
-      servo_wakeup.py down. This fires on every 'vision off' event coming
-      from the Teensy side — CMD_STOP, disconnect, shutdown, all-dead —
-      so the intake servos always go home and don't drop balls.
-    sweep_home=False: used internally by launch_phase when swapping from
-      one vision phase to another, since the next phase will reclaim the
-      pins immediately and we don't want to drop+raise+redeploy.
-    force_sweep=True: sweep home even if no procs were running. Used on
-      'reset the round' events (CMD_STOP, serial disconnect) where the
-      previous round may have left servos deployed and we cannot tolerate
-      tossing beans during the reset.
-    quiet=True: don't send ACK_STOPPED to Teensy (internal transitions).
-
-    A no-op sweep when nothing was running is skipped — servos are
-    already home in that case — unless force_sweep overrides that.
+    quiet=True: don't send ACK_STOPPED to the Teensy (internal transitions).
     """
     global _phase, _vision_state
-
-    # Remember whether any servo-holding script was running — if so we
-    # need the settle delay before running servo_wakeup so gpiozero can
-    # release pins 12/13 cleanly.
-    had_servo_holder = any(
-        name in SERVO_GPIO_HOLDERS and proc and proc.poll() is None
-        for name, proc in _procs.items()
-    )
-    had_any_proc = bool(_procs)
 
     for name, proc in list(_procs.items()):
         if proc and proc.poll() is None:
@@ -335,20 +254,13 @@ def kill_all(quiet=False, sweep_home=True, force_sweep=False):
         send(ACK_STOPPED)
         log("All scripts stopped")
 
-    if sweep_home and (had_any_proc or force_sweep):
-        if had_servo_holder:
-            time.sleep(POST_KILL_SETTLE)  # let gpiozero release pins 12/13
-        run_servo_sweep('down')
-
 
 def launch_phase(phase_name):
     global _phase
 
     if _procs:
         log(f"Stopping current phase ({_phase}) before starting {phase_name}")
-        # Don't sweep home between phases — scripts of the next phase will
-        # reclaim the servos immediately.
-        kill_all(quiet=True, sweep_home=False)
+        kill_all(quiet=True)
 
     script_names = PHASES.get(phase_name)
     if not script_names:
@@ -362,7 +274,7 @@ def launch_phase(phase_name):
     for name in script_names:
         path = SCRIPTS.get(name)
         if not path or not os.path.exists(path):
-            log(f"[ERROR] Script not found: {name} -> {path}")
+            log(f"[ERROR] Script not found: {name} to {path}")
             send(ERR_MAP.get(name, ERR_UNKNOWN), ECODE_EXCEPT)
             return
 
@@ -422,7 +334,7 @@ def launch_phase(phase_name):
         kill_all(quiet=True)
 
 
-# ── HEALTH CHECK ─────────────────────────────────────────────────────
+# - Health check
 def check_health():
     if not _phase:
         return
@@ -439,7 +351,7 @@ def check_health():
     if not crashed:
         return
 
-    # Report errors to Teensy
+    # Report errors to the Teensy
     if _phase == 'beans':
         for name in crashed:
             send(ERR_MAP.get(name, ERR_UNKNOWN), ECODE_EXIT)
@@ -498,17 +410,15 @@ def report_status():
     log(f"== END STATUS ==")
 
 
-# ── MAIN ──────────────────────────────────────────────────────────────
+# - Main
 def main():
     global _ser
 
-    log(f"Pi Dispatcher v5 starting... (vision variant: {VISION_VARIANT})")
+    log("Vision Dispatcher v5 starting...")
     log("Scripts configured:")
     for name, path in SCRIPTS.items():
         exists = "OK" if os.path.exists(path) else "MISSING"
         log(f"  {name}: {path} [{exists}]")
-    wakeup_ok = "OK" if os.path.exists(SERVO_WAKEUP_SCRIPT) else "MISSING"
-    log(f"  servo_wakeup: {SERVO_WAKEUP_SCRIPT} [{wakeup_ok}]")
     log("Phases:")
     for phase, scripts in PHASES.items():
         log(f"  {phase}: {scripts}")
@@ -526,7 +436,6 @@ def main():
             while True:
                 if ser is None:
                     ser = open_serial()         # blocks until connected
-                    run_servo_sweep('up')       # wake servos on connect
                     send(ACK_READY)
                     log("Dispatcher ready -- waiting for Teensy commands")
                     last_health = time.time()
@@ -540,7 +449,7 @@ def main():
                             launch_phase('beans')
                         elif cmd == CMD_STOP:
                             log(">> CMD: STOP")
-                            kill_all(force_sweep=True)  # always sweep — Teensy is resetting the round
+                            kill_all()  # Teensy is resetting the round
                         elif cmd == CMD_STATUS:
                             log(">> CMD: STATUS")
                             report_status()
@@ -558,7 +467,7 @@ def main():
                 except (pyserial.SerialException, OSError) as e:
                     log(f"[Serial] Disconnected: {e}")
                     log("[Serial] Killing scripts and reconnecting...")
-                    kill_all(quiet=True, force_sweep=True)  # always sweep — Teensy is resetting
+                    kill_all(quiet=True)
                     with _ser_lock:
                         try:
                             if _ser:
@@ -572,8 +481,6 @@ def main():
     except KeyboardInterrupt:
         log("Dispatcher shutting down...")
     finally:
-        # kill_all handles the 'down' sweep internally. No-op if nothing
-        # was running, which is exactly what we want.
         kill_all(quiet=True)
         with _ser_lock:
             if _ser:
