@@ -90,16 +90,26 @@ namespace Pins
     static constexpr uint8_t kToFchBL = 2; // Back Left / placeholder
     static constexpr uint8_t kToFchBR = 3; // Back Right / placeholder
 
-   // ======== Servos ========
-    constexpr uint8_t kUpperIntakeServo = 30;
-    constexpr uint8_t kLowerIntakeServo = 6;
-    constexpr uint8_t kSeparatorServo   = 255;
-    constexpr uint8_t kBenefitServo     = 255;
-    constexpr uint8_t kHolderServo      = 255;
+    // =========================================================
+    // SERVOS — PCA9685 16-channel PWM driver
+    // =========================================================
+    namespace Servos
+    {
+        constexpr uint8_t kPcaI2cAddress = 0x40; //Adress
+        constexpr uint8_t kI2cSda        = 18;   // SDA0
+        constexpr uint8_t kI2cScl        = 19;   // SCL0
+
+        // PCA9685 output channels (PROVISIONAL — verify against the wiring)
+        constexpr uint8_t kIntakeUpperCh = 12;
+        constexpr uint8_t kIntakeLowerCh = 8;
+        constexpr uint8_t kSeparatorCh   = 4;
+        constexpr uint8_t kBenefit1Ch    = 1;
+        constexpr uint8_t kBenefit2Ch    = 2;
+    } // namespace Servos
 
 
     // =========================================================
-    // OPTIONAL / LEGACY ULTRASONICS
+    // LEGACY ULTRASONICS
     // =========================================================
     constexpr uint8_t kDistanceSensors[4][2] = {
         {35, 33},     // FRONT LEFT  {TRIG, ECHO}
