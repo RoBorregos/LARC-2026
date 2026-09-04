@@ -1,23 +1,34 @@
 #!/usr/bin/env python3
 """
-benefits.py — Box color detector (dispatcher mode)
-Purpose of this code : Watch a fixed ROI during the benefits phase, decide
-                       whether the box in view is RED, BLUE, or none, and
-                       report it so the dispatcher can forward it to the Teensy.
-Camera  : /dev/video_c920  (V4L2)
+benefits.py — box colour detector (benefits phase)
+
+Purpose : Watch a fixed ROI during the benefits phase and report whether the
+          box in view is RED, BLUE or none, for the dispatcher to forward to
+          the Teensy. (To be changed, not final architecture.)
+Camera  : role "benefits" in ../cameras.json (C920 serial 0E9612EF, MJPG)
 Config  : benefits_config.json
-Serial  : NONE — prints VISION:FE:XX lines for the dispatcher to forward
-Output  : detection results + VISION tags on stdout
-Ctrl+C  : stop
+Output  : VISION:FE:XX lines on stdout. This file owns no serial port.
+Debug   : benefits_debug.py
+Stop    : Ctrl+C
 """
 
 import cv2
 import numpy as np
 import sys, os, time, json
 
+# Camera selection
+# The camera is chosen by IDENTITY (serial / VID:PID) out of cameras.json,
+# never by /dev/video number — those get reshuffled on every boot. See
+# ../link/camera_select.py and ../cameras.json.
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                "..", "link"))
+from camera_select import open_role, CameraNotFound
+
+
 # - Config
 CONFIG_FILE = "benefits_config.json"
-CAM_PORT    = 4
+# Kept for reference only — the real size comes from ../cameras.json.
 FRAME_W     = 640
 FRAME_H     = 480
 
@@ -88,15 +99,14 @@ def detect_box(roi_bgr, cfg):
 def main():
     cfg = load_cfg()
 
-    cap = cv2.VideoCapture("/dev/video_c920", cv2.CAP_V4L2)
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH,  FRAME_W)
-    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, FRAME_H)
-    if not cap.isOpened():
-        sys.exit("[ERROR] Cannot open /dev/video_c920")
+    try:
+        cap, cam = open_role("benefits")
+    except CameraNotFound as exc:
+        sys.exit(f"[ERROR] benefits camera: {exc}")
 
     actual_w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     actual_h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    print(f"[Camera] /dev/video_c920  {actual_w}x{actual_h}")
+    print(f"[Camera] {cam.device}  {cam.describe()}  {actual_w}x{actual_h}")
     print("[Mode] Dispatcher (VISION tags via stdout)")
     print("[Running] Ctrl+C to stop")
 
